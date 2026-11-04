@@ -26,7 +26,6 @@ test('git init does not run when repository validation fails for an execution er
     spawnProcess,
     resolveProjectPathById: () => '/workspace/repo',
     queryClaude: unexpectedProvider,
-    queryCursor: unexpectedProvider,
   });
   const app = express();
   app.use(express.json());
@@ -75,7 +74,6 @@ test('delete branch parses force and uses Git force deletion', async () => {
     spawnProcess,
     resolveProjectPathById: () => '/workspace/repo',
     queryClaude: unexpectedProvider,
-    queryCursor: unexpectedProvider,
   });
   const app = express();
   app.use(express.json());
@@ -111,7 +109,6 @@ test('delete branch rejects a non-boolean force value before running Git', async
     spawnProcess,
     resolveProjectPathById: () => '/workspace/repo',
     queryClaude: unexpectedProvider,
-    queryCursor: unexpectedProvider,
   });
   const app = express();
   app.use(express.json());

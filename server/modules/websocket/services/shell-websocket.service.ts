@@ -226,13 +226,6 @@ function buildShellCommand(
     return otherProgram(initialCommand);
   }
 
-  if (provider === 'cursor') {
-    if (resumeSessionId) {
-      return otherProgram(`cursor-agent --resume="${resumeSessionId}"`);
-    }
-    return otherProgram('cursor-agent');
-  }
-
   if (provider === 'codex') {
     if (resumeSessionId) {
       if (os.platform() === 'win32') {
@@ -564,7 +557,6 @@ export function handleShellConnection(
         const isLoginCommand =
           !!initialCommand &&
           (initialCommand.includes('setup-token') ||
-            initialCommand.includes('cursor-agent login') ||
             initialCommand.includes('auth login'));
 
         const commandSuffix =
@@ -783,9 +775,7 @@ export function handleShellConnection(
         let welcomeMsg = `\x1b[36mStarting terminal in: ${projectPath}\x1b[0m\r\n`;
         if (!isPlainShell) {
           const providerName =
-            provider === 'cursor'
-              ? 'Cursor'
-              : provider === 'codex'
+            provider === 'codex'
                 ? 'Codex'
                 : provider === 'opencode'
                     ? 'OpenCode'

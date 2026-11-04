@@ -16,10 +16,6 @@ const PROVIDER_WATCH_PATHS: Array<{ provider: LLMProvider; rootPath: string }> =
     rootPath: path.join(os.homedir(), '.claude', 'projects'),
   },
   {
-    provider: 'cursor',
-    rootPath: path.join(os.homedir(), '.cursor', 'projects'),
-  },
-  {
     provider: 'codex',
     rootPath: path.join(os.homedir(), '.codex', 'sessions'),
   },

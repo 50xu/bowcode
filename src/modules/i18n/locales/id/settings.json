@@ -347,7 +347,7 @@
     "apiDocsLink": "Dokumentasi API",
     "documentation": {
       "title": "Dokumentasi API Eksternal",
-      "description": "Pelajari cara menggunakan API eksternal untuk memicu sesi Claude/Cursor dari aplikasi.",
+      "description": "Pelajari cara menggunakan API eksternal untuk memicu sesi Claude/Codex dari aplikasi.",
       "viewLink": "Lihat Dokumentasi API →"
     },
     "loading": "Memuat...",
@@ -387,9 +387,6 @@
     "account": {
       "claude": {
         "description": "Asisten AI Anthropic Claude"
-      },
-      "cursor": {
-        "description": "Editor kode bertenaga AI Cursor"
       },
       "codex": {
         "description": "Asisten AI OpenAI Codex"
@@ -444,8 +441,7 @@
     "title": "Pengaturan Izin",
     "skipPermissions": {
       "label": "Lewati prompt izin (gunakan dengan hati-hati)",
-      "claudeDescription": "Setara dengan flag --dangerously-skip-permissions",
-      "cursorDescription": "Setara dengan flag -f di Cursor CLI"
+      "claudeDescription": "Setara dengan flag --dangerously-skip-permissions"
     },
     "allowedTools": {
       "title": "Tool yang Diizinkan",
@@ -539,7 +535,6 @@
     "title": "Server MCP",
     "description": {
       "claude": "Server Model Context Protocol menyediakan tool dan sumber data tambahan untuk Claude",
-      "cursor": "Server Model Context Protocol menyediakan tool dan sumber data tambahan untuk Cursor",
       "codex": "Server Model Context Protocol menyediakan tool dan sumber data tambahan untuk Codex",
       "opencode": "Server Model Context Protocol menyediakan tool dan sumber data tambahan untuk OpenCode"
     },
@@ -815,9 +810,9 @@
     "menuLabel": "Tambah Server MCP",
     "globalButtonLabel": "Tambah Server MCP Global",
     "providerButtonLabel": "Tambah Server MCP {{provider}}",
-    "globalAddDescription": "Tambah Server MCP Global menulis satu server stdio atau HTTP yang sama ke Claude, Cursor, Codex, dan OpenCode.",
+    "globalAddDescription": "Tambah Server MCP Global menulis satu server stdio atau HTTP yang sama ke Claude, Codex, dan OpenCode.",
     "providerAddDescription": "{{button}} hanya mengubah {{provider}}.",
-    "globalModalDescription": "Menambahkan server MCP ini ke setiap provider: Claude, Cursor, Codex, dan OpenCode. Hanya transport stdio dan HTTP yang didukung karena konfigurasi yang sama harus berfungsi pada semua provider.",
+    "globalModalDescription": "Menambahkan server MCP ini ke setiap provider: Claude, Codex, dan OpenCode. Hanya transport stdio dan HTTP yang didukung karena konfigurasi yang sama harus berfungsi pada semua provider.",
     "refreshingScopes": "Menyegarkan cakupan proyek...",
     "loadingServers": "Memuat server MCP...",
     "configCwd": "Cwd",

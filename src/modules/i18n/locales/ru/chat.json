@@ -16,7 +16,6 @@
     "error": "Ошибка",
     "tool": "Инструмент",
     "claude": "Claude",
-    "cursor": "Cursor",
     "codex": "Codex"
   },
   "tools": {
@@ -164,12 +163,10 @@
     "providerInfo": {
       "anthropic": "от Anthropic",
       "openai": "от OpenAI",
-      "cursorEditor": "AI редактор кода",
       "google": "от Google"
     },
     "readyPrompt": {
       "claude": "Готов использовать Claude с {{model}}. Начните вводить сообщение ниже.",
-      "cursor": "Готов использовать Cursor с {{model}}. Начните вводить сообщение ниже.",
       "codex": "Готов использовать Codex с {{model}}. Начните вводить сообщение ниже.",
       "default": "Выберите провайдера выше для начала"
     },

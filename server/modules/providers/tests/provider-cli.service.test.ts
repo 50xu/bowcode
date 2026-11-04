@@ -11,7 +11,6 @@ import spawn from 'cross-spawn';
 
 import { ClaudeProviderAuth } from '@/modules/providers/list/claude/claude-auth.provider.js';
 import { CodexProviderAuth } from '@/modules/providers/list/codex/codex-auth.provider.js';
-import { CursorProviderAuth } from '@/modules/providers/list/cursor/cursor-auth.provider.js';
 import { OpenCodeProviderAuth } from '@/modules/providers/list/opencode/opencode-auth.provider.js';
 import { createProviderCliService } from '@/modules/providers/services/provider-cli.service.js';
 import type { LLMProvider } from '@/shared/types.js';
@@ -211,13 +210,10 @@ test('each provider reports the version its CLI prints for --version', async () 
   await withIsolatedCliEnv(async (binDir) => {
     const claude = await createFakeCli(binDir, 'claude');
     await claude.set('version', '2.1.295 (Claude Code)\n');
-    const cursor = await createFakeCli(binDir, 'cursor-agent');
-    await cursor.set('version', '2026.07.20-8cc9c0b\n');
     const opencode = await createFakeCli(binDir, 'opencode');
     await opencode.set('version', '1.18.25\n');
 
     assert.deepEqual(new ClaudeProviderAuth().checkInstalled(), { installed: true, exitCode: 0, version: '2.1.295' });
-    assert.equal(new CursorProviderAuth().checkInstalled().version, '2026.07.20-8cc9c0b');
     const openCodeStatus = await new OpenCodeProviderAuth().getStatus();
     assert.equal(openCodeStatus.installed, true);
     assert.equal(openCodeStatus.installedVersion, '1.18.25');
@@ -237,11 +233,6 @@ test('a CLI that cannot be started is reported as not installed, with no version
     assert.equal(claudeStatus.installed, false);
     assert.equal(claudeStatus.installedVersion, null);
     assert.equal(claudeStatus.error, 'Claude Code CLI is not installed');
-
-    const cursorStatus = await new CursorProviderAuth().getStatus();
-    assert.equal(cursorStatus.installed, false);
-    assert.equal(cursorStatus.installedVersion, null);
-    assert.equal(cursorStatus.error, 'Cursor CLI is not installed');
 
     const openCodeStatus = await new OpenCodeProviderAuth().getStatus();
     assert.equal(openCodeStatus.installed, false);
@@ -281,10 +272,9 @@ test('a --version that timed out still counts as installed, with an unknown vers
     }));
     try {
       assert.deepEqual(new ClaudeProviderAuth().checkInstalled(), { installed: true, exitCode: null, version: null });
-      assert.deepEqual(new CursorProviderAuth().checkInstalled(), { installed: true, exitCode: null, version: null });
       // OpenCode needs a clean exit, as before.
       assert.equal(new OpenCodeProviderAuth().checkInstalled().installed, false);
-      assert.equal(versionProbe.mock.callCount(), 3);
+      assert.equal(versionProbe.mock.callCount(), 2);
     } finally {
       versionProbe.mock.restore();
     }
@@ -428,16 +418,9 @@ test('getCliStatus does not ask the registry about a CLI that is not installed',
   });
 });
 
-test('Cursor has no npm release to compare with; Codex ships with CloudCLI; platform mode offers no update', async () => {
+test('Codex ships with CloudCLI; platform mode offers no update', async () => {
   await withIsolatedCliEnv(async (binDir) => {
-    const cursor = await createFakeCli(binDir, 'cursor-agent');
-    await cursor.set('version', '2026.07.20-8cc9c0b\n');
     const service = createService();
-
-    const cursorStatus = await service.getCliStatus('cursor');
-    assert.equal(cursorStatus.latestVersion, null);
-    assert.equal(cursorStatus.updateCommand, 'cursor-agent update');
-    assert.equal(cursorStatus.updateUnavailableReason, null);
 
     const codexStatus = await service.getCliStatus('codex');
     assert.equal(codexStatus.installed, true);
@@ -446,12 +429,10 @@ test('Cursor has no npm release to compare with; Codex ships with CloudCLI; plat
     await rejectsWithAppError(service.updateCli('codex'), 'PROVIDER_CLI_UPDATE_UNAVAILABLE', 400);
 
     const platformService = createService({ platformMode: true });
-    const platformStatus = await platformService.getCliStatus('cursor');
-    assert.equal(platformStatus.installedVersion, '2026.07.20-8cc9c0b');
+    const platformStatus = await platformService.getCliStatus('claude');
     assert.equal(platformStatus.updateCommand, null);
     assert.equal(platformStatus.updateUnavailableReason, 'platform');
-    await rejectsWithAppError(platformService.updateCli('cursor'), 'PROVIDER_CLI_UPDATE_UNAVAILABLE', 403);
-    assert.equal(await cursor.read('update-count'), null);
+    await rejectsWithAppError(platformService.updateCli('claude'), 'PROVIDER_CLI_UPDATE_UNAVAILABLE', 403);
 
     // A CLI that is on npm is not looked up either: the platform, not this server, updates it.
     // (createService's default registry fails the test when it is asked.)
@@ -518,7 +499,7 @@ test('updateCli refuses while the provider is busy in a session and does not sta
 
 test('updateCli refuses when the CLI is not installed', async () => {
   await withIsolatedCliEnv(async () => {
-    await rejectsWithAppError(createService().updateCli('cursor'), 'PROVIDER_CLI_NOT_INSTALLED', 409);
+    await rejectsWithAppError(createService().updateCli('opencode'), 'PROVIDER_CLI_NOT_INSTALLED', 409);
   });
 });
 
@@ -547,34 +528,6 @@ test('updateCli reports a refused write as permission_denied, whatever the updat
     // Any other non-zero exit is a plain failure.
     await claude.set('update-stderr', 'Failed to check for updates\n');
     assert.equal((await createService().updateCli('claude')).failure, 'failed');
-  });
-});
-
-test('updateCli stops an updater that runs past the timeout, and the child it started', {
-  skip: process.platform === 'win32' ? 'POSIX process groups' : false,
-}, async () => {
-  await withIsolatedCliEnv(async (binDir) => {
-    const cursor = await createFakeCli(binDir, 'cursor-agent');
-    await cursor.set('version', '2026.07.20-8cc9c0b\n');
-    // An updater that ignores SIGTERM and has a download child running, as
-    // `claude update` has npm: only SIGKILL to the whole group stops both.
-    await cursor.set('ignore-sigterm', '1');
-    await cursor.set('child-sleep-ms', '2500');
-    await cursor.set('update-sleep-ms', '2500');
-    await cursor.set('update-new-version', '2026.10.09-1a2b3c4\n');
-
-    const startedAt = Date.now();
-    const result = await createService({ updateTimeoutMs: 1000, updateKillGraceMs: 300 }).updateCli('cursor');
-    assert.equal(result.failure, 'timed_out');
-    assert.equal(result.exitCode, null);
-    assert.equal(result.installedVersion, '2026.07.20-8cc9c0b');
-    assert.ok(Date.now() - startedAt < 2500, 'the result came from the kill, not from the updater finishing');
-    assert.ok(await cursor.read('child-pid'), 'the updater had started its child');
-
-    // Past the point where either would have finished on its own.
-    await delay(Math.max(0, startedAt + 3500 - Date.now()));
-    assert.equal(await cursor.read('update-finished'), null, 'the updater was stopped');
-    assert.equal(await cursor.read('child-finished'), null, 'its child was stopped with it');
   });
 });
 
@@ -673,40 +626,6 @@ test('getCliStatus reports a running update and, once it is over, that run\'s re
   });
 });
 
-test('getCliStatus does not run --version while an update runs, and reports the version from before it', async () => {
-  await withIsolatedCliEnv(async (binDir) => {
-    const cursor = await createFakeCli(binDir, 'cursor-agent');
-    await cursor.set('version', '2026.07.20-8cc9c0b\n');
-    await cursor.set('update-sleep-ms', '600');
-    await cursor.set('update-new-version', '2026.10.14-941492e\n');
-    const service = createService();
-
-    const running = service.updateCli('cursor');
-    await waitForFakeCliFile(cursor, 'update-count');
-    // The probe that recorded the version before the run.
-    assert.equal(await cursor.read('version-count'), '1');
-
-    // A page that follows the run asks every few seconds. A `--version` per
-    // answer would block the server each time and run the binary the updater
-    // is replacing.
-    for (let poll = 0; poll < 3; poll += 1) {
-      const during = await service.getCliStatus('cursor');
-      assert.equal(during.updateInProgress, true);
-      assert.equal(during.installed, true);
-      assert.equal(during.installedVersion, '2026.07.20-8cc9c0b');
-    }
-    assert.equal(await cursor.read('version-count'), '1', 'no --version ran while the update was running');
-
-    const result = await running;
-    assert.equal(result.installedVersion, '2026.10.14-941492e');
-    // Once the run is over, the status probes again and shows the new version.
-    const after = await service.getCliStatus('cursor');
-    assert.equal(after.updateInProgress, false);
-    assert.equal(after.installedVersion, '2026.10.14-941492e');
-    assert.equal(await cursor.read('version-count'), '3');
-  });
-});
-
 test('getCliStatus probes again when the update it saw running ended during the registry lookup', async () => {
   await withIsolatedCliEnv(async (binDir) => {
     const opencode = await createFakeCli(binDir, 'opencode');
@@ -787,49 +706,6 @@ test('getCliStatus reports the starting version of a run that began during the r
 
     const secondResult = await withDeadline(secondRun, 5000, 'the second update never finished');
     assert.equal(secondResult.installedVersion, '1.20.0');
-  });
-});
-
-test('a request still in its busy check is not reported as a running update', async () => {
-  await withIsolatedCliEnv(async (binDir) => {
-    const cursor = await createFakeCli(binDir, 'cursor-agent');
-    await cursor.set('version', '2026.07.20-8cc9c0b\n');
-    let answerBusyCheck: (busy: LLMProvider[]) => void = () => {};
-    const service = createService({
-      listBusyProviders: () => new Promise<LLMProvider[]>((resolve) => {
-        answerBusyCheck = resolve;
-      }),
-    });
-
-    const refused = service.updateCli('cursor');
-    // A row that mounts now must not follow a run that is about to be refused.
-    const whileChecking = await service.getCliStatus('cursor');
-    assert.equal(whileChecking.updateInProgress, false);
-
-    answerBusyCheck(['cursor']);
-    await rejectsWithAppError(refused, 'PROVIDER_CLI_BUSY', 409);
-    const afterRefusal = await service.getCliStatus('cursor');
-    assert.equal(afterRefusal.updateInProgress, false);
-    assert.equal(afterRefusal.lastUpdate, null);
-    assert.equal(await cursor.read('update-count'), null);
-  });
-});
-
-test('updateCli keeps only the final state of spinner and progress-bar lines', async () => {
-  await withIsolatedCliEnv(async (binDir) => {
-    const cursor = await createFakeCli(binDir, 'cursor-agent');
-    await cursor.set('version', '2026.07.20-8cc9c0b\n');
-    await cursor.set('update-new-version', '2026.10.14-941492e\n');
-    // `cursor-agent update` draws its download progress with carriage returns.
-    await cursor.set(
-      'update-stdout',
-      'Checking for updates...\nLatest version available: 2026.10.14-941492e\n\r####      6.0%\r########  56.2%\r########## 100.0%\nDone\n',
-    );
-
-    const result = await createService().updateCli('cursor');
-    assert.equal(result.output, 'Checking for updates...\nLatest version available: 2026.10.14-941492e\n########## 100.0%\nDone');
-    assert.equal(result.failure, null);
-    assert.equal(result.installedVersion, '2026.10.14-941492e');
   });
 });
 

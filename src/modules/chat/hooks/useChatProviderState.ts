@@ -30,12 +30,11 @@ const toProviderEffortOptions = (
 
 const FALLBACK_DEFAULT_MODEL: Record<LLMProvider, string> = {
   claude: 'default',
-  cursor: 'gpt-5.3-codex',
   codex: 'gpt-5.4',
   opencode: 'anthropic/claude-sonnet-4-5',
 };
 
-const PROVIDERS: LLMProvider[] = ['claude', 'cursor', 'codex', 'opencode'];
+const PROVIDERS: LLMProvider[] = ['claude', 'codex', 'opencode'];
 
 /** localStorage key holding the user's default model for one provider. */
 const providerModelStorageKey = (provider: LLMProvider): string => `${provider}-model`;
@@ -48,7 +47,6 @@ const providerModelStorageKey = (provider: LLMProvider): string => `${provider}-
  */
 const FALLBACK_PERMISSION_MODES: Record<LLMProvider, PermissionMode[]> = {
   claude: ['default', 'auto', 'acceptEdits', 'bypassPermissions', 'plan'],
-  cursor: ['default', 'acceptEdits', 'bypassPermissions', 'plan'],
   codex: ['default', 'acceptEdits', 'bypassPermissions'],
   opencode: ['default', 'acceptEdits', 'bypassPermissions', 'plan'],
 };

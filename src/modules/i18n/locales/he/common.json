@@ -239,9 +239,9 @@
       "usingProvidedToken": "שימוש בטוקן שהוזן",
       "noAuthentication": "ללא אימות",
       "sshKey": "מפתח SSH",
-      "existingInfo": "סביבת העבודה תתווסף לרשימת הפרויקטים ותהיה זמינה לסשנים של Claude/Cursor.",
+      "existingInfo": "סביבת העבודה תתווסף לרשימת הפרויקטים ותהיה זמינה לסשנים של Claude/Codex.",
       "newWithClone": "המאגר ישוכפל מהתיקייה הזו.",
-      "newEmpty": "סביבת העבודה תתווסף לרשימת הפרויקטים ותהיה זמינה לסשנים של Claude/Cursor.",
+      "newEmpty": "סביבת העבודה תתווסף לרשימת הפרויקטים ותהיה זמינה לסשנים של Claude/Codex.",
       "cloningRepository": "משכפל את המאגר…"
     },
     "buttons": {

@@ -245,9 +245,9 @@
       "usingProvidedToken": "Použije se zadaný token",
       "noAuthentication": "Bez ověření",
       "sshKey": "SSH klíč",
-      "existingInfo": "Pracovní prostor bude přidán do seznamu projektů a bude k dispozici pro relace Claude/Cursor.",
+      "existingInfo": "Pracovní prostor bude přidán do seznamu projektů a bude k dispozici pro relace Claude/Codex.",
       "newWithClone": "Repozitář bude naklonován z této složky.",
-      "newEmpty": "Pracovní prostor bude přidán do seznamu projektů a bude k dispozici pro relace Claude/Cursor.",
+      "newEmpty": "Pracovní prostor bude přidán do seznamu projektů a bude k dispozici pro relace Claude/Codex.",
       "cloningRepository": "Klonování repozitáře..."
     },
     "buttons": {

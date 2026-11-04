@@ -191,9 +191,9 @@
       "usingProvidedToken": "Menggunakan token yang diberikan",
       "noAuthentication": "Tanpa autentikasi",
       "sshKey": "Kunci SSH",
-      "existingInfo": "Workspace akan ditambahkan ke daftar proyek dan tersedia untuk sesi Claude/Cursor.",
+      "existingInfo": "Workspace akan ditambahkan ke daftar proyek dan tersedia untuk sesi Claude/Codex.",
       "newWithClone": "Repositori akan di-clone dari folder ini.",
-      "newEmpty": "Workspace akan ditambahkan ke daftar proyek dan tersedia untuk sesi Claude/Cursor.",
+      "newEmpty": "Workspace akan ditambahkan ke daftar proyek dan tersedia untuk sesi Claude/Codex.",
       "cloningRepository": "Melakukan clone repositori..."
     },
     "buttons": {

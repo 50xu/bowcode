@@ -55,8 +55,6 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
     setClaudePermissions,
     notificationPreferences,
     setNotificationPreferences,
-    cursorPermissions,
-    setCursorPermissions,
     codexPermissionMode,
     setCodexPermissionMode,
     providerAuthStatus,
@@ -240,8 +238,6 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
                   onProviderLogin={openLoginForProvider}
                   claudePermissions={claudePermissions}
                   onClaudePermissionsChange={setClaudePermissions}
-                  cursorPermissions={cursorPermissions}
-                  onCursorPermissionsChange={setCursorPermissions}
                   codexPermissionMode={codexPermissionMode}
                   onCodexPermissionModeChange={setCodexPermissionMode}
                   projects={projects}

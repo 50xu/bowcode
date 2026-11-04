@@ -256,43 +256,7 @@ test('providerMcpService handles opencode MCP config and capability validation',
   }
 });
 
-/**
- * This test covers Cursor MCP JSON format and user/project scope persistence.
- */
-test('providerMcpService handles cursor MCP JSON config formats', { concurrency: false }, async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-mcp-gc-'));
-  const workspacePath = path.join(tempRoot, 'workspace');
-  await fs.mkdir(workspacePath, { recursive: true });
 
-  const restoreHomeDir = patchHomeDir(tempRoot);
-  try {
-    await providerMcpService.upsertProviderMcpServer('cursor', {
-      name: 'cursor-stdio',
-      scope: 'project',
-      transport: 'stdio',
-      command: 'npx',
-      args: ['-y', 'mcp-server'],
-      env: { API_KEY: 'value' },
-      workspacePath,
-    });
-
-    await providerMcpService.upsertProviderMcpServer('cursor', {
-      name: 'cursor-http',
-      scope: 'user',
-      transport: 'http',
-      url: 'http://localhost:3333/mcp',
-      headers: { API_KEY: 'value' },
-    });
-
-    const cursorUserConfig = await readJson(path.join(tempRoot, '.cursor', 'mcp.json'));
-    const cursorHttpServer = (cursorUserConfig.mcpServers as Record<string, unknown>)['cursor-http'] as Record<string, unknown>;
-    assert.equal(cursorHttpServer.url, 'http://localhost:3333/mcp');
-    assert.equal(cursorHttpServer.type, undefined);
-  } finally {
-    restoreHomeDir();
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
 
 /**
  * This test covers the global MCP adder requirement: only http/stdio are allowed and
@@ -313,7 +277,7 @@ test('providerMcpService global adder writes to all providers and rejects unsupp
       workspacePath,
     });
 
-    assert.equal(globalResult.length, 4);
+    assert.equal(globalResult.length, 3);
     assert.ok(globalResult.every((entry) => entry.created === true));
 
     const claudeProject = await readJson(path.join(workspacePath, '.mcp.json'));
@@ -324,9 +288,6 @@ test('providerMcpService global adder writes to all providers and rejects unsupp
 
     const opencodeProject = await readJson(path.join(workspacePath, 'opencode.json'));
     assert.ok((opencodeProject.mcp as Record<string, unknown>)['global-http']);
-
-    const cursorProject = await readJson(path.join(workspacePath, '.cursor', 'mcp.json'));
-    assert.ok((cursorProject.mcpServers as Record<string, unknown>)['global-http']);
 
     await assert.rejects(
       providerMcpService.addMcpServerToAllProviders({

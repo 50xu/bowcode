@@ -16,7 +16,7 @@ test('the ignored matcher watches Claude sidecars but skips build output, VCS da
   assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.jsonl')), false);
   assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.meta.json')), false);
   assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'workflows', 'run', 'agent-1.jsonl')), true);
-  assert.equal(createWatcherIgnoredMatcher(root, 'cursor')(path.join(root, '-home-me-app', 'abc', 'subagents')), true);
+  assert.equal(createWatcherIgnoredMatcher(root, 'codex')(path.join(root, '-home-me-app', 'abc', 'subagents')), true);
   assert.equal(claudeSubagentParentSessionId(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.jsonl')), 'abc');
   assert.equal(claudeSubagentParentSessionId(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.meta.json')), 'abc');
   assert.equal(claudeSubagentParentSessionId(path.join(root, '-home-me-app', 'abc.jsonl')), null);

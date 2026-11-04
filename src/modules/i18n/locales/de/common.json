@@ -190,9 +190,9 @@
       "usingProvidedToken": "Angegebener Token wird verwendet",
       "noAuthentication": "Keine Authentifizierung",
       "sshKey": "SSH-Schlüssel",
-      "existingInfo": "Der Arbeitsbereich wird zur Projektliste hinzugefügt und steht für Claude/Cursor-Sitzungen zur Verfügung.",
+      "existingInfo": "Der Arbeitsbereich wird zur Projektliste hinzugefügt und steht für Claude/Codex-Sitzungen zur Verfügung.",
       "newWithClone": "Das Repository wird aus diesem Ordner geklont.",
-      "newEmpty": "Der Arbeitsbereich wird zur Projektliste hinzugefügt und steht für Claude/Cursor-Sitzungen zur Verfügung.",
+      "newEmpty": "Der Arbeitsbereich wird zur Projektliste hinzugefügt und steht für Claude/Codex-Sitzungen zur Verfügung.",
       "cloningRepository": "Repository wird geklont..."
     },
     "buttons": {

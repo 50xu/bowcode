@@ -16,7 +16,6 @@
     "error": "Erro",
     "tool": "Tool",
     "claude": "Claude",
-    "cursor": "Cursor",
     "codex": "Codex",
     "opencode": "OpenCode"
   },
@@ -199,12 +198,10 @@
     "providerInfo": {
       "anthropic": "da Anthropic",
       "openai": "da OpenAI",
-      "cursorEditor": "Editor de código IA",
       "google": "do Google"
     },
     "readyPrompt": {
       "claude": "Pronto para usar o Claude com {{model}}. Comece a digitar sua mensagem abaixo.",
-      "cursor": "Pronto para usar o Cursor com {{model}}. Comece a digitar sua mensagem abaixo.",
       "codex": "Pronto para usar o Codex com {{model}}. Comece a digitar sua mensagem abaixo.",
       "opencode": "Pronto para usar o OpenCode com {{model}}. Comece a digitar sua mensagem abaixo.",
       "default": "Selecione um provedor acima para começar"

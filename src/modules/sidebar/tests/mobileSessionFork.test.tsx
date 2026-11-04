@@ -28,7 +28,6 @@ vi.mock('@/shared/api', () => ({
             providers: [
               { provider: 'claude', supportsSessionForking: true },
               { provider: 'codex', supportsSessionForking: true },
-              { provider: 'cursor', supportsSessionForking: false },
             ],
           },
         }),
@@ -110,7 +109,7 @@ test('forking from the mobile sheet passes the owning session once and dismisses
   assert.equal(screen.getByRole('button', { name: 'Session options for Session one' }).getAttribute('aria-expanded'), 'false');
 });
 
-test.each<LLMProvider>(['cursor', 'opencode'])('mobile withholds a fork when %s is unsupported or absent from the matrix', async (provider) => {
+test.each<LLMProvider>(['opencode'])('mobile withholds a fork when %s is unsupported or absent from the matrix', async (provider) => {
   render(<SidebarSessionItem {...rowProps({ session: { ...SESSION, __provider: provider } })} />);
   const sheet = await openOptions();
 

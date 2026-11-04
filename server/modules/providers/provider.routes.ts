@@ -317,7 +317,6 @@ const parseProvider = (value: unknown): LLMProvider => {
   if (
     normalized === 'claude'
     || normalized === 'codex'
-    || normalized === 'cursor'
     || normalized === 'opencode'
   ) {
     return normalized;

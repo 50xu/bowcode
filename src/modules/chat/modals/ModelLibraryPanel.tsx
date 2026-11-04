@@ -24,7 +24,6 @@ import type {
 const PROVIDERS: Array<{ id: LLMProvider; label: string }> = [
   { id: 'claude', label: 'Claude' },
   { id: 'codex', label: 'Codex' },
-  { id: 'cursor', label: 'Cursor' },
   { id: 'opencode', label: 'OpenCode' },
 ];
 

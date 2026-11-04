@@ -1,7 +1,7 @@
 <div align="center">
  <img src="public/logo.svg" alt="CloudCLI UI" width="64" height="64">
  <h1>Cloud CLI (aka Claude Code UI)</h1>
- <p>A desktop and mobile UI for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, <a href="https://docs.cursor.com/en/cli/overview">Cursor CLI</a>, and <a href="https://developers.openai.com/codex">Codex</a>.<br>Use it locally or remotely to view your active projects and sessions from everywhere.</p>
+ <p>A desktop and mobile UI for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, <a href="https://developers.openai.com/codex">Codex</a>, and OpenCode.<br>Use it locally or remotely to view your active projects and sessions from everywhere.</p>
 </div>
 
 <p align="center">
@@ -43,7 +43,7 @@
 <h3>CLI Selection</h3>
 <img src="public/screenshots/cli-selection.png" alt="CLI Selection" width="400">
 <br>
-<em>Select between Claude Code, Cursor CLI and Codex</em>
+<em>Select between Claude Code, Codex and OpenCode</em>
 </td>
 </tr>
 </table>
@@ -131,14 +131,14 @@ CloudCLI UI is the open source UI layer that powers CloudCLI Cloud. You can self
 | **Machine needs to stay on** | Yes | Yes | No |
 | **Mobile access** | Any browser on your network | Any browser on your network | Any device |
 | **Desktop companion** | Optional. Choose Local CloudCLI | Optional. Choose Local CloudCLI | Optional. Opens cloud environments |
-| **Agents supported** | Claude Code, Cursor CLI, Codex | Claude Code, Codex | Claude Code, Cursor CLI, Codex |
+| **Agents supported** | Claude Code, Codex, OpenCode | Claude Code, Codex | Claude Code, Codex, OpenCode |
 | **File explorer and Git** | Yes | Yes | Yes |
 | **MCP configuration** | Synced with `~/.claude` | Managed via UI | Managed via UI |
 | **REST API** | Yes | Yes | Yes |
 | **Team sharing** | No | No | Yes |
 | **Platform cost** | Free, open source | Free, open source | Starts at €7/month |
 
-> All options use your own AI subscriptions (Claude, Cursor, etc.) — CloudCLI provides the environment, not the AI.
+> All options use your own AI subscriptions (Claude, Codex, etc.) — CloudCLI provides the environment, not the AI.
 
 ---
 
@@ -211,7 +211,7 @@ Here's what that means in practice:
 
 - **All your sessions, not just one** — CloudCLI UI auto-discovers every session from your `~/.claude` folder. Remote Control only exposes the single active session to make it available in the Claude mobile app.
 - **Your settings are your settings** — MCP servers, tool permissions, and project config you change in CloudCLI UI are written directly to your Claude Code config and take effect immediately, and vice versa.
-- **Works with more agents** — Claude Code, Cursor CLI and Codex, not just Claude Code.
+- **Works with more agents** — Claude Code, Codex and OpenCode, not just Claude Code.
 - **Full UI, not just a chat window** — file explorer, Git integration, MCP management, and a shell terminal are all built in.
 - **CloudCLI Cloud runs in the cloud** — close your laptop, the agent keeps running. No terminal to babysit, no machine to keep awake.
 
@@ -220,7 +220,7 @@ Here's what that means in practice:
 <details>
 <summary>Do I need to pay for an AI subscription separately?</summary>
 
-Yes. CloudCLI provides the environment, not the AI. You bring your own Claude, Cursor, or Codex subscription. CloudCLI Cloud starts at €7/month for the hosted environment on top of that.
+Yes. CloudCLI provides the environment, not the AI. You bring your own Claude, Codex, or OpenCode subscription. CloudCLI Cloud starts at €7/month for the hosted environment on top of that.
 
 </details>
 
@@ -259,7 +259,6 @@ CloudCLI UI - (https://cloudcli.ai).
 
 ### Built With
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic's official CLI
-- **[Cursor CLI](https://docs.cursor.com/en/cli/overview)** - Cursor's official CLI
 - **[Codex](https://developers.openai.com/codex)** - OpenAI Codex
 - **[React](https://react.dev/)** - User interface library
 - **[Vite](https://vitejs.dev/)** - Fast build tool and dev server
@@ -273,5 +272,5 @@ CloudCLI UI - (https://cloudcli.ai).
 ---
 
 <div align="center">
- <strong>Made with care for the Claude Code, Cursor and Codex community.</strong>
+ <strong>Made with care for the Claude Code, Codex and OpenCode community.</strong>
 </div>

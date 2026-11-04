@@ -48,8 +48,7 @@ type ProviderCapabilities = {
  * The capability matrix mirrors what each runtime actually implements today:
  * - permission modes match the option sets accepted by each CLI/SDK.
  * - the Claude and OpenCode SDK integrations surface interactive permission
- *   requests (and the agent's questions); Cursor and Codex run without them.
- * - Cursor has no token usage endpoint support (its store.db has no usage rows).
+ *   requests (and the agent's questions); Codex runs without them.
  */
 const PROVIDER_CAPABILITIES: Record<LLMProvider, ProviderCapabilities> = {
   claude: {
@@ -67,20 +66,6 @@ const PROVIDER_CAPABILITIES: Record<LLMProvider, ProviderCapabilities> = {
     // `forkSession` copies a transcript prefix into a new session file.
     supportsMessageEditing: true,
     supportsSessionForking: true,
-  },
-  cursor: {
-    provider: 'cursor',
-    permissionModes: ['default', 'acceptEdits', 'bypassPermissions', 'plan'],
-    defaultPermissionMode: 'default',
-    supportsImages: true,
-    supportsFiles: true,
-    supportsAbort: true,
-    supportsPermissionRequests: false,
-    supportsTokenUsage: false,
-    supportsEffort: false,
-    effortLevels: [],
-    supportsMessageEditing: false,
-    supportsSessionForking: false,
   },
   codex: {
     provider: 'codex',

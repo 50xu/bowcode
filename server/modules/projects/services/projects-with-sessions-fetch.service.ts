@@ -128,7 +128,8 @@ function mapSessionRowToSummary(row: SessionRepositoryRow): SessionSummary {
 }
 
 function readProjectSessionsIncludingArchived(projectPath: string): ProjectSessionsPageResult {
-  const rows = sessionsDb.getSessionsByProjectPathIncludingArchived(projectPath) as SessionRepositoryRow[];
+  const rows = (sessionsDb.getSessionsByProjectPathIncludingArchived(projectPath) as SessionRepositoryRow[])
+    .filter((row) => row.provider !== 'cursor');
 
   return {
     sessions: rows.map(mapSessionRowToSummary),

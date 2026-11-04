@@ -190,9 +190,9 @@
       "usingProvidedToken": "使用提供的權杖",
       "noAuthentication": "無身分驗證",
       "sshKey": "SSH 金鑰",
-      "existingInfo": "工作區將加入您的專案列表，並可用於 Claude/Cursor 工作階段。",
+      "existingInfo": "工作區將加入您的專案列表，並可用於 Claude/Codex 工作階段。",
       "newWithClone": "儲存庫將從此資料夾複製。",
-      "newEmpty": "工作區將加入您的專案列表，並可用於 Claude/Cursor 工作階段。",
+      "newEmpty": "工作區將加入您的專案列表，並可用於 Claude/Codex 工作階段。",
       "cloningRepository": "正在複製儲存庫..."
     },
     "buttons": {

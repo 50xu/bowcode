@@ -190,9 +190,9 @@
       "usingProvidedToken": "入力されたトークンを使用",
       "noAuthentication": "認証なし",
       "sshKey": "SSHキー",
-      "existingInfo": "ワークスペースがプロジェクト一覧に追加され、Claude/Cursorセッションで使用できるようになります。",
+      "existingInfo": "ワークスペースがプロジェクト一覧に追加され、Claude/Codexセッションで使用できるようになります。",
       "newWithClone": "このフォルダからリポジトリがクローンされます。",
-      "newEmpty": "ワークスペースがプロジェクト一覧に追加され、Claude/Cursorセッションで使用できるようになります。",
+      "newEmpty": "ワークスペースがプロジェクト一覧に追加され、Claude/Codexセッションで使用できるようになります。",
       "cloningRepository": "リポジトリをクローンしています..."
     },
     "buttons": {

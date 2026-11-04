@@ -30,14 +30,6 @@ const agentConfig: Record<AgentProvider, AgentVisualConfig> = {
     subtextClass: 'text-blue-700 dark:text-blue-300',
     buttonClass: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800',
   },
-  cursor: {
-    name: 'Cursor',
-    bgClass: 'bg-purple-50 dark:bg-purple-900/20',
-    borderClass: 'border-purple-200 dark:border-purple-800',
-    textClass: 'text-purple-900 dark:text-purple-100',
-    subtextClass: 'text-purple-700 dark:text-purple-300',
-    buttonClass: 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800',
-  },
   codex: {
     name: 'Codex',
     bgClass: 'bg-muted/50',

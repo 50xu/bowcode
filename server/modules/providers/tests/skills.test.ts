@@ -467,58 +467,10 @@ test('providerSkillsService lists opencode project and user compatibility skills
 });
 
 /**
- * This test covers Cursor skill directory rules, including shared
- * `.agents/skills` project support.
- */
-test('providerSkillsService lists cursor skills from its configured directories', { concurrency: false }, async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-skills-gc-'));
-  const workspacePath = path.join(tempRoot, 'workspace');
-  await fs.mkdir(workspacePath, { recursive: true });
-
-  const restoreHomeDir = patchHomeDir(tempRoot);
-  try {
-    await writeSkill(
-      path.join(tempRoot, '.agents', 'skills'),
-      'agents-user-dir',
-      'agents-user',
-      'Agents user skill',
-    );
-    await writeSkill(
-      path.join(workspacePath, '.agents', 'skills'),
-      'agents-project-dir',
-      'agents-project',
-      'Agents project skill',
-    );
-    await writeSkill(
-      path.join(workspacePath, '.cursor', 'skills'),
-      'cursor-project-dir',
-      'cursor-project',
-      'Cursor project skill',
-    );
-    await writeSkill(
-      path.join(tempRoot, '.cursor', 'skills'),
-      'cursor-user-dir',
-      'cursor-user',
-      'Cursor user skill',
-    );
-
-    const cursorSkills = await providerSkillsService.listProviderSkills('cursor', { workspacePath });
-    const cursorByName = new Map(cursorSkills.map((skill) => [skill.name, skill]));
-    assert.equal(cursorByName.get('agents-project')?.scope, 'project');
-    assert.equal(cursorByName.get('cursor-project')?.scope, 'project');
-    assert.equal(cursorByName.get('cursor-user')?.scope, 'user');
-    assert.equal(cursorByName.get('cursor-user')?.command, '/cursor-user');
-  } finally {
-    restoreHomeDir();
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
-/**
  * This test covers managed global skill creation for providers that own a
  * writable user skill directory.
  */
-test('providerSkillsService adds global skills for claude, codex, and cursor', { concurrency: false }, async () => {
+test('providerSkillsService adds global skills for claude and codex', { concurrency: false }, async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-skills-create-'));
   const restoreHomeDir = patchHomeDir(tempRoot);
 
@@ -621,30 +573,9 @@ test('providerSkillsService adds global skills for claude, codex, and cursor', {
     );
     await assert.rejects(fs.stat(pendingBatchSkillPath), { code: 'ENOENT' });
 
-    const createdCursorSkills = await providerSkillsService.addProviderSkills('cursor', {
-      entries: [
-        {
-          directoryName: 'cursor-global-dir',
-          content: '---\nname: cursor-global\ndescription: Cursor global skill\n---\n\nCursor body.\n',
-        },
-      ],
-    });
-    const createdCursorSkill = createdCursorSkills[0];
-    assert.ok(createdCursorSkill);
-    assert.equal(createdCursorSkill.command, '/cursor-global');
-    assert.equal(
-      createdCursorSkill.sourcePath.endsWith(path.join('.cursor', 'skills', 'cursor-global-dir', 'SKILL.md')),
-      true,
-    );
-
-    const listedClaudeSkills = await providerSkillsService.listProviderSkills('claude');
-    assert.equal(listedClaudeSkills.some((skill) => skill.name === 'claude-global'), true);
-
     const listedCodexSkills = await providerSkillsService.listProviderSkills('codex');
     assert.equal(listedCodexSkills.some((skill) => skill.name === 'replacement'), true);
 
-    const listedCursorSkills = await providerSkillsService.listProviderSkills('cursor');
-    assert.equal(listedCursorSkills.some((skill) => skill.name === 'cursor-global'), true);
 
     const removedCodexSkill = await providerSkillsService.removeProviderSkill('codex', {
       directoryName: 'uploaded-codex-folder',

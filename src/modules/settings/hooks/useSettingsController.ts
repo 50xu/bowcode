@@ -12,13 +12,7 @@ import {
   writeUserPreferences,
 } from '@/shared/userSettings';
 import { useProviderAuthStatus } from '@/modules/provider-auth';
-import type { AgentProvider, ClaudePermissionsState, CodeEditorSettingsState, CodexPermissionMode, CursorPermissionsState, NotificationPreferencesState, ProjectSortOrder, SettingsMainTab } from '@/shared/types';
-
-const DEFAULT_CURSOR_PERMISSIONS: CursorPermissionsState = {
-  allowedCommands: [],
-  disallowedCommands: [],
-  skipPermissions: false,
-};
+import type { AgentProvider, ClaudePermissionsState, CodeEditorSettingsState, CodexPermissionMode, NotificationPreferencesState, ProjectSortOrder, SettingsMainTab } from '@/shared/types';
 
 type ThemeContextValue = {
   isDarkMode: boolean;
@@ -35,12 +29,6 @@ type ClaudeSettingsStorage = {
   disallowedTools?: string[];
   skipPermissions?: boolean;
   projectSortOrder?: ProjectSortOrder;
-};
-
-type CursorSettingsStorage = {
-  allowedCommands?: string[];
-  disallowedCommands?: string[];
-  skipPermissions?: boolean;
 };
 
 type CodexSettingsStorage = {
@@ -79,10 +67,6 @@ const createEmptyClaudePermissions = (): ClaudePermissionsState => ({
   allowedTools: [],
   disallowedTools: [],
   skipPermissions: false,
-});
-
-const createEmptyCursorPermissions = (): CursorPermissionsState => ({
-  ...DEFAULT_CURSOR_PERMISSIONS,
 });
 
 const createDefaultNotificationPreferences = (): NotificationPreferencesState => ({
@@ -133,9 +117,6 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
   const [claudePermissions, setClaudePermissions] = useState<ClaudePermissionsState>(() => (
     createEmptyClaudePermissions()
   ));
-  const [cursorPermissions, setCursorPermissions] = useState<CursorPermissionsState>(() => (
-    createEmptyCursorPermissions()
-  ));
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferencesState>(() => (
     createDefaultNotificationPreferences()
   ));
@@ -159,13 +140,6 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
       });
       setProjectSortOrder(readUserPreference<ProjectSortOrder>('projectSortOrder', 'name') === 'date' ? 'date' : 'name');
 
-      const savedCursorSettings = readUserPreference<CursorSettingsStorage>('cursorPermissions', {});
-      setCursorPermissions({
-        allowedCommands: savedCursorSettings.allowedCommands || [],
-        disallowedCommands: savedCursorSettings.disallowedCommands || [],
-        skipPermissions: Boolean(savedCursorSettings.skipPermissions),
-      });
-
       const savedCodexSettings = readUserPreference<CodexSettingsStorage>('codexPermissions', {});
       setCodexPermissionMode(toCodexPermissionMode(savedCodexSettings.permissionMode));
 
@@ -188,7 +162,6 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
     } catch (error) {
       console.error('Error loading settings:', error);
       setClaudePermissions(createEmptyClaudePermissions());
-      setCursorPermissions(createEmptyCursorPermissions());
       setNotificationPreferences(createDefaultNotificationPreferences());
       setCodexPermissionMode('default');
       setProjectSortOrder('name');
@@ -229,11 +202,6 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
           skipPermissions: claudePermissions.skipPermissions,
         },
         projectSortOrder,
-        cursorPermissions: {
-          allowedCommands: cursorPermissions.allowedCommands,
-          disallowedCommands: cursorPermissions.disallowedCommands,
-          skipPermissions: cursorPermissions.skipPermissions,
-        },
         codexPermissions: {
           permissionMode: codexPermissionMode,
         },
@@ -256,9 +224,6 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
     claudePermissions.disallowedTools,
     claudePermissions.skipPermissions,
     codexPermissionMode,
-    cursorPermissions.allowedCommands,
-    cursorPermissions.disallowedCommands,
-    cursorPermissions.skipPermissions,
     notificationPreferences,
     projectSortOrder,
   ]);
@@ -362,8 +327,6 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
     updateCodeEditorSetting,
     claudePermissions,
     setClaudePermissions,
-    cursorPermissions,
-    setCursorPermissions,
     notificationPreferences,
     setNotificationPreferences,
     codexPermissionMode,

@@ -18,7 +18,6 @@
     "error": "Error",
     "tool": "Herramienta",
     "claude": "Claude",
-    "cursor": "Cursor",
     "codex": "Codex",
     "opencode": "OpenCode"
   },
@@ -204,12 +203,10 @@
     "providerInfo": {
       "anthropic": "de Anthropic",
       "openai": "de OpenAI",
-      "cursorEditor": "Editor de código con IA",
       "google": "de Google"
     },
     "readyPrompt": {
       "claude": "Listo para usar Claude con {{model}}. Escribe tu mensaje abajo.",
-      "cursor": "Listo para usar Cursor con {{model}}. Escribe tu mensaje abajo.",
       "codex": "Listo para usar Codex con {{model}}. Escribe tu mensaje abajo.",
       "opencode": "Listo para usar OpenCode con {{model}}. Escribe tu mensaje abajo.",
       "default": "Selecciona un proveedor arriba para empezar"

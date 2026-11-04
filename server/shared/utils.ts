@@ -1359,27 +1359,6 @@ export function isClaudeNonTurnMessageRow(row: AnyRecord): boolean {
 }
 
 // ---------------------------
-//----------------- CLI PROMPT ARGUMENT UTILITIES ------------
-/**
- * Makes a prompt safe to pass as one CLI argument to `.cmd`-shimmed tools on
- * Windows (cursor-agent installed via an npm-style shim).
- *
- * cmd.exe cannot carry newlines inside an argument: everything after the
- * first newline is silently dropped before the target CLI ever sees it, which
- * truncates multi-line prompts and any appended `<images_input>` block.
- * Collapsing newline runs to single spaces loses formatting but never loses
- * content, so runtimes should call this on win32 right before spawning.
- *
- * Used by the cursor spawn runtime.
- */
-export function flattenPromptForWindowsShell(prompt: string): string {
-  if (process.platform !== 'win32' || typeof prompt !== 'string') {
-    return prompt;
-  }
-  return prompt.replace(/\s*\r?\n\s*/g, ' ').trim();
-}
-
-// ---------------------------
 //----------------- TERMINAL OUTPUT UTILITIES ------------
 /**
  * Matches the escape sequences a CLI emits when it believes it is writing to a
@@ -1451,7 +1430,7 @@ export const terminalTextStyles = {
  *
  * Each provider CLI wraps it differently: `2.1.295 (Claude Code)`,
  * `codex-cli 0.156.1`, a bare `1.18.25` from OpenCode, and the date-based
- * `2026.07.20-8cc9c0b` from cursor-agent. This returns the first
+ * date-based prerelease versions. This returns the first
  * `major.minor.patch` token with any `-prerelease` or `+build` suffix, or null
  * when the text has none.
  */

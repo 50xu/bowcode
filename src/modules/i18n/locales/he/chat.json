@@ -18,7 +18,6 @@
     "error": "שגיאה",
     "tool": "כלי",
     "claude": "Claude",
-    "cursor": "Cursor",
     "codex": "Codex",
     "opencode": "OpenCode"
   },
@@ -177,12 +176,10 @@
     "providerInfo": {
       "anthropic": "מאת Anthropic",
       "openai": "מאת OpenAI",
-      "cursorEditor": "עורך קוד AI",
       "google": "מאת Google"
     },
     "readyPrompt": {
       "claude": "Claude מוכן לשימוש עם {{model}}. אפשר להתחיל להקליד הודעה למטה.",
-      "cursor": "Cursor מוכן לשימוש עם {{model}}. אפשר להתחיל להקליד הודעה למטה.",
       "codex": "Codex מוכן לשימוש עם {{model}}. אפשר להתחיל להקליד הודעה למטה.",
       "opencode": "OpenCode מוכן לשימוש עם {{model}}. אפשר להתחיל להקליד הודעה למטה.",
       "default": "יש לבחור ספק למעלה כדי להתחיל"

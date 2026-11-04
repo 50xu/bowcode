@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { AgentCategory, AgentContextByProvider, AgentProvider, AgentSettingsProject, ClaudePermissionsState, CodexPermissionMode, CursorPermissionsState, ProviderAuthStatus } from '@/shared/types';
+import type { AgentCategory, AgentContextByProvider, AgentProvider, AgentSettingsProject, ClaudePermissionsState, CodexPermissionMode, ProviderAuthStatus } from '@/shared/types';
 import AgentCategoryContentSection from '@/modules/settings/tabs/agents-settings/sections/AgentCategoryContentSection';
 import AgentCategoryTabsSection from '@/modules/settings/tabs/agents-settings/sections/AgentCategoryTabsSection';
 import AgentSelectorSection from '@/modules/settings/tabs/agents-settings/sections/AgentSelectorSection';
@@ -12,8 +12,6 @@ type AgentsSettingsTabProps = {
   onProviderLogin: (provider: AgentProvider) => void;
   claudePermissions: ClaudePermissionsState;
   onClaudePermissionsChange: (value: ClaudePermissionsState) => void;
-  cursorPermissions: CursorPermissionsState;
-  onCursorPermissionsChange: (value: CursorPermissionsState) => void;
   codexPermissionMode: CodexPermissionMode;
   onCodexPermissionModeChange: (value: CodexPermissionMode) => void;
   projects: AgentSettingsProject[];
@@ -25,8 +23,6 @@ export default function AgentsSettingsTab({
   onProviderLogin,
   claudePermissions,
   onClaudePermissionsChange,
-  cursorPermissions,
-  onCursorPermissionsChange,
   codexPermissionMode,
   onCodexPermissionModeChange,
   projects,
@@ -40,17 +36,13 @@ export default function AgentsSettingsTab({
   ), [selectedAgent]);
 
   const visibleAgents = useMemo<AgentProvider[]>(() => {
-    return ['claude', 'cursor', 'codex', 'opencode'];
+    return ['claude', 'codex', 'opencode'];
   }, []);
 
   const agentContextById = useMemo<AgentContextByProvider>(() => ({
     claude: {
       authStatus: providerAuthStatus.claude,
       onLogin: () => onProviderLogin('claude'),
-    },
-    cursor: {
-      authStatus: providerAuthStatus.cursor,
-      onLogin: () => onProviderLogin('cursor'),
     },
     codex: {
       authStatus: providerAuthStatus.codex,
@@ -64,7 +56,6 @@ export default function AgentsSettingsTab({
     onProviderLogin,
     providerAuthStatus.claude,
     providerAuthStatus.codex,
-    providerAuthStatus.cursor,
     providerAuthStatus.opencode,
   ]);
 
@@ -97,8 +88,6 @@ export default function AgentsSettingsTab({
           agentContextById={agentContextById}
           claudePermissions={claudePermissions}
           onClaudePermissionsChange={onClaudePermissionsChange}
-          cursorPermissions={cursorPermissions}
-          onCursorPermissionsChange={onCursorPermissionsChange}
           codexPermissionMode={codexPermissionMode}
           onCodexPermissionModeChange={onCodexPermissionModeChange}
           projects={projects}

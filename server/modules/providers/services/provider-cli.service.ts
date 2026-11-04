@@ -52,12 +52,6 @@ const CLI_UPDATERS: Partial<Record<LLMProvider, CliUpdater>> = {
     args: ['update'],
     npmPackage: '@anthropic-ai/claude-code',
   },
-  cursor: {
-    // cursor-agent is distributed by Cursor's installer only, so there is no registry to compare with.
-    resolveCommand: () => 'cursor-agent',
-    args: ['update'],
-    npmPackage: null,
-  },
   opencode: {
     resolveCommand: () => 'opencode',
     args: ['upgrade'],
@@ -179,7 +173,6 @@ function getProviderLabel(provider: LLMProvider): string {
   const labels: Record<LLMProvider, string> = {
     claude: 'Claude Code',
     codex: 'Codex',
-    cursor: 'Cursor CLI',
     opencode: 'OpenCode',
   };
   return labels[provider];
@@ -396,7 +389,7 @@ export function createProviderCliService(dependencyOverrides: Partial<ProviderCl
       // While an updater runs, the version from just before it is reported
       // instead of probed. `--version` runs synchronously and holds up every
       // other request for the CLI's start-up time (about a second for OpenCode
-      // and cursor-agent), a page that follows the run asks every few seconds,
+      // a page that follows the run asks every few seconds,
       // and the updater may be replacing that binary right then.
       const running = updatesInProgress.get(provider.id);
       let { installed, version: installedVersion } = running?.before ?? provider.auth.checkInstalled();

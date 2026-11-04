@@ -73,7 +73,6 @@ function createDependencies(queryClaude: RunFunction): AgentDependencies {
     },
     runs: chatRunRegistry,
     queryClaude,
-    queryCursor: unexpected as RunFunction,
     queryCodex: unexpected as RunFunction,
     queryOpenCode: unexpected as RunFunction,
     GithubClient: class {} as unknown as AgentDependencies['GithubClient'],

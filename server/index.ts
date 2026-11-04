@@ -85,16 +85,13 @@ console.log('SERVER_PORT from env:', process.env.SERVER_PORT);
 const app = express();
 const server = http.createServer(app);
 const queryClaude = providerRuntimeService.getRunner('claude');
-const queryCursor = providerRuntimeService.getRunner('cursor');
 const queryCodex = providerRuntimeService.getRunner('codex');
 const queryOpenCode = providerRuntimeService.getRunner('opencode');
 const gitRoutes = createGitModule({
     queryClaude,
-    queryCursor,
 });
 const agentRoutes = createAgentModule({
     queryClaude,
-    queryCursor,
     queryCodex,
     queryOpenCode,
 });

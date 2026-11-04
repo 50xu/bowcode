@@ -28,7 +28,7 @@ import type { FetchHistoryResult } from '@/shared/types.js';
  *
  * Only history readers that read `jsonl_path` itself may use this cache —
  * callers pass `transcriptPath: null` for providers whose messages live
- * elsewhere (Cursor's store.db, OpenCode's shared SQLite), which bypasses
+ * elsewhere (OpenCode's shared SQLite), which bypasses
  * caching entirely.
  */
 

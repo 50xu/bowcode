@@ -17,13 +17,6 @@ const providerCards = [
     loginButtonClassName: 'bg-blue-600 hover:bg-blue-700',
   },
   {
-    provider: 'cursor' as const,
-    title: 'Cursor',
-    connectedClassName: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
-    iconContainerClassName: 'bg-purple-100 dark:bg-purple-900/30',
-    loginButtonClassName: 'bg-purple-600 hover:bg-purple-700',
-  },
-  {
     provider: 'codex' as const,
     title: 'OpenAI Codex',
     connectedClassName: 'bg-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600',
