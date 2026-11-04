@@ -227,19 +227,14 @@ async function dispatchRun(
 ): Promise<{ started: boolean; error: string | null }> {
   const provider = session.provider as LLMProvider;
 
-  // Only a provider-native resume can collide with another CLI process.
-  // Check before reserving a run so a refused send has no side effects.
+  // Only a provider-native resume can collide with another CLI process (the
+  // user's TUI, say). Every send contributes to the session, so a send always
+  // takes it over: the external process is verified and stopped before this
+  // run resumes the session, never run alongside it. Callers that must not
+  // interrupt an external turn (the queue) check its status before sending.
   if (provider === 'claude' && session.provider_session_id) {
     const holder = await (dependencies.findExternalSession ?? findExternalClaudeCliSession)(session.provider_session_id);
     if (holder) {
-      if (data.takeOver !== true) {
-        if (ws) {
-          sendProtocolError(ws, 'SESSION_HELD_EXTERNALLY',
-            `This session is open in another Claude process (pid ${holder.pid}). Take over to continue here.`,
-            sessionId, { pid: holder.pid });
-        }
-        return { started: false, error: `Session is open in another Claude process (pid ${holder.pid}).` };
-      }
       try {
         await (dependencies.terminateExternalSession ?? terminateExternalClaudeCliSession)(holder);
       } catch (error) {
@@ -484,19 +479,10 @@ async function handleSendQueuedNow(
 ): Promise<void> {
   const resolved = resolveSendTarget(ws, data, dependencies, 'chat.send-queued-now');
   if (!resolved) return;
-  const { sessionId, session, provider } = resolved;
+  const { sessionId } = resolved;
 
-  // Refuse before aborting or claiming: a provider-native session owned elsewhere
-  // cannot be resumed here without an explicit takeover.
-  if (provider === 'claude' && session.provider_session_id) {
-    const holder = await (dependencies.findExternalSession ?? findExternalClaudeCliSession)(session.provider_session_id);
-    if (holder) {
-      sendProtocolError(ws, 'SESSION_HELD_EXTERNALLY',
-        `This session is open in another Claude process (pid ${holder.pid}). Take over to continue here.`,
-        sessionId, { pid: holder.pid });
-      return;
-    }
-  }
+  // A session held by an external Claude CLI needs nothing special here: the
+  // queued turn goes through dispatchRun, which takes the session over.
 
   try {
     const activeRun = chatRunRegistry.getRun(sessionId);

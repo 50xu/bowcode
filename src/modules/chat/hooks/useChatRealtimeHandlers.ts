@@ -42,7 +42,7 @@ type UseChatRealtimeHandlersArgs = {
   /** Reports the tasks a session still runs once its turn ends, so it reads as background work rather than idle. */
   onSessionBackground?: MarkSessionBackground;
   getSessionActivity?: GetSessionActivity;
-  onExternalHoldError?: (sessionId: string, message: string | null) => void;
+  onExternalHoldError?: (sessionId: string, message: string) => void;
   onSendNowFailed?: (sessionId: string) => void;
   onWebSocketReconnect?: () => void;
   requestLatestMessages: (sessionId: string, allowNetwork?: boolean) => Promise<void>;
@@ -182,9 +182,9 @@ export function useChatRealtimeHandlers({
               .catch((error: unknown) => console.error('[Chat] Could not restore queued draft:', error));
             return;
           }
-          if (sid && (msg.code === 'SESSION_HELD_EXTERNALLY' || msg.code === 'TAKEOVER_FAILED')) {
+          if (sid && msg.code === 'TAKEOVER_FAILED') {
             onSessionIdle?.(sid);
-            onExternalHoldError?.(sid, msg.code === 'TAKEOVER_FAILED' ? String(msg.error || 'Takeover failed') : null);
+            onExternalHoldError?.(sid, String(msg.error || 'Could not take over the session from the other Claude process.'));
             return;
           }
           // The ✕ on a task whose end never reached this client (its process

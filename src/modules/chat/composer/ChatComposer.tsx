@@ -53,9 +53,7 @@ type ChatComposerProps = {
   activity: SessionActivity | null;
   isLoading: boolean;
   externallyHeld?: boolean;
-  takeOverNextSend?: boolean;
   takeoverError?: string | null;
-  onTakeOver?: () => void;
   onAbortSession: () => void;
   permissionMode: PermissionMode;
   availablePermissionModes: PermissionMode[];
@@ -135,9 +133,7 @@ export default function ChatComposer({
   activity,
   isLoading,
   externallyHeld = false,
-  takeOverNextSend = false,
   takeoverError,
-  onTakeOver,
   onAbortSession,
   permissionMode,
   availablePermissionModes,
@@ -395,12 +391,18 @@ export default function ChatComposer({
               onSendNow={onSendNowQueuedDraft}
             />
           )}
-          {externallyHeld && (
-            <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2 text-xs">
-              <span className="min-w-0 flex-1 break-words">{takeoverError || t('composer.externalHold.message')}</span>
-              <button type="button" onClick={onTakeOver} className="min-h-9 shrink-0 rounded-lg px-2 font-medium text-primary hover:bg-accent">
-                {t('composer.externalHold.takeOver')}
-              </button>
+          {/* One writer per session: while another Claude process runs a turn,
+              this view follows it live and sends queue behind it; when that
+              process is idle, a send here continues the session here. */}
+          {(externallyHeld || takeoverError) && (
+            <div className={`flex min-w-0 items-center gap-2 border-b border-border px-3 py-1.5 text-xs ${takeoverError ? 'text-destructive' : 'text-muted-foreground'}`}>
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${takeoverError ? 'bg-destructive' : isLoading ? 'animate-pulse bg-amber-500' : 'bg-muted-foreground/60'}`} aria-hidden />
+              <span className="min-w-0 flex-1 break-words">
+                {takeoverError
+                  || (isLoading
+                    ? t('composer.externalHold.running', { defaultValue: 'Running in Claude CLI — messages queue until it finishes.' })
+                    : t('composer.externalHold.message', { defaultValue: 'Open in Claude CLI — sending here continues the session here.' }))}
+              </span>
             </div>
           )}
           {isDragActive && (
@@ -548,7 +550,7 @@ export default function ChatComposer({
                       : undefined
               }
               disabled={
-                (externallyHeld && !takeOverNextSend) || (isLoading
+                (isLoading
                   ? false
                   : isRecording
                     ? false

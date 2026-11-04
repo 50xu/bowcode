@@ -77,8 +77,10 @@ async function isSessionBusy(
 ): Promise<boolean> {
   if (chatRunRegistry.isProcessing(sessionId) || runtime.hasBackgroundWork(sessionId)) return true;
   const session = sessionsDb.getSessionById(sessionId);
-  return session?.provider === 'claude' && !!session.provider_session_id &&
-    !!(await findHolder(session.provider_session_id));
+  // A queued turn waits for an external CLI's turn to finish ("send when this
+  // finishes"); once that CLI is idle the send takes the session over.
+  if (session?.provider !== 'claude' || !session.provider_session_id) return false;
+  return (await findHolder(session.provider_session_id))?.status === 'busy';
 }
 
 /** Used by the websocket module to claim and start one queued turn on demand, even over background work. */

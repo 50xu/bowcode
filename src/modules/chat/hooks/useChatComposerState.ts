@@ -48,6 +48,8 @@ type UseChatComposerStateArgs = {
   currentProviderEffort: string;
   isLoading: boolean;
   externallyHeld?: boolean;
+  /** Called right before a take-over send so the session stops reading as held by its old CLI. */
+  onTakeOverSession?: (sessionId: string) => void;
   processingSessions?: SessionActivityMap;
   canAbortSession: boolean;
   tokenBudget: Record<string, unknown> | null;
@@ -97,7 +99,6 @@ type SubmitOptions = {
    * run that command instead of being sent.
    */
   skipCommandInterception?: boolean;
-  takeOver?: boolean;
 };
 
 const createFakeSubmitEvent = () => {
@@ -224,6 +225,7 @@ export function useChatComposerState({
   currentProviderEffort,
   isLoading,
   externallyHeld = false,
+  onTakeOverSession,
   processingSessions,
   canAbortSession,
   tokenBudget,
@@ -270,8 +272,6 @@ export function useChatComposerState({
     };
   });
   const input = inputState.value;
-  // Arms exactly one future send if Take over was clicked with an empty composer.
-  const [takeOverNextSend, setTakeOverNextSend] = useState<{ scope: string | null } | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [fileErrors, setFileErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
@@ -884,9 +884,9 @@ export function useChatComposerState({
         return;
       }
 
-      if (externallyHeld && !submitOptions?.takeOver && takeOverNextSend?.scope !== sessionKey) return;
-
-      // A turn is already in flight: stash this message instead of sending it.
+      // A turn is already in flight (here, or in another Claude process such as
+      // the TUI): stash this message instead of sending it. One writer per
+      // session — the queue sends it once that turn finishes, Send now interrupts.
       // Upload attached files now so the queued record contains durable image
       // descriptors that can be sent even if another session is open later.
       if (isLoading) {
@@ -1078,6 +1078,14 @@ export function useChatComposerState({
         ...(editingAnchorId ? { replacesAnchorId: editingAnchorId } : {}),
       };
 
+      // Before marking our own run as processing: drop the old CLI's hold and
+      // its "running in the Claude CLI" entry so stale polls cannot re-lock or
+      // refresh over the reply.
+      // An idle external holder (the TUI between turns) is stopped by the
+      // server before this run; stop treating the session as held right away.
+      if (externallyHeld) {
+        onTakeOverSession?.(targetSessionId);
+      }
       addMessage(userMessage);
       // Mark this request as processing in the per-session activity map (the
       // single source of truth the indicator derives from). The id is always
@@ -1099,7 +1107,6 @@ export function useChatComposerState({
         // report why it was refused.
         type: editingAnchorId ? 'chat.edit-send' : 'chat.send',
         sessionId: targetSessionId,
-        ...((submitOptions?.takeOver || takeOverNextSend?.scope === sessionKey) ? { takeOver: true } : {}),
         ...(editingAnchorId ? { anchorId: editingAnchorId } : {}),
         content: messageContent,
         options: {
@@ -1107,7 +1114,6 @@ export function useChatComposerState({
           attachments: uploadedAttachments,
         },
       });
-      setTakeOverNextSend(null);
       setEditingAnchorId(null);
 
       // Recorded under the (possibly just-allocated) session id, so the first
@@ -1139,6 +1145,7 @@ export function useChatComposerState({
       editingAnchorId,
       executeCommand,
       externallyHeld,
+      onTakeOverSession,
       isLoading,
       onSessionProcessing,
       onSessionEstablished,
@@ -1153,7 +1160,6 @@ export function useChatComposerState({
       addMessage,
       setIsUserScrolledUp,
       slashCommands,
-      takeOverNextSend,
       t,
     ],
   );
@@ -1186,14 +1192,6 @@ export function useChatComposerState({
     },
     [submitMessage],
   );
-
-  const handleTakeOver = useCallback(() => {
-    if (!inputValueRef.current.trim() && attachedFiles.length === 0) {
-      setTakeOverNextSend({ scope: sessionKey });
-      return;
-    }
-    void handleSubmit(createFakeSubmitEvent(), undefined, { takeOver: true });
-  }, [attachedFiles.length, handleSubmit, sessionKey]);
 
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
@@ -1261,9 +1259,12 @@ export function useChatComposerState({
   const sendQueuedDraftNow = useCallback(() => {
     const targetSessionId = queuedDraftSessionRef.current;
     if (!queuedDraft || !targetSessionId) return;
+    // Send now interrupts whoever runs the session — this server's run or an
+    // external CLI — so drop the external hold right away.
+    if (externallyHeld) onTakeOverSession?.(targetSessionId);
     sendMessage({ type: 'chat.send-queued-now', sessionId: targetSessionId });
     setQueuedDraft(null);
-  }, [queuedDraft, sendMessage]);
+  }, [externallyHeld, onTakeOverSession, queuedDraft, sendMessage]);
 
   const restoreQueuedDraftAfterFailure = useCallback((failedSessionId: string) => {
     if (sessionKeyRef.current === failedSessionId) {
@@ -1581,8 +1582,6 @@ export function useChatComposerState({
     isDragActive,
     openAttachmentPicker: open,
     handleSubmit,
-    handleTakeOver,
-    takeOverNextSend: takeOverNextSend?.scope === sessionKey,
     backgroundSendPrompt,
     resolveBackgroundSendPrompt,
     queuedDraft,

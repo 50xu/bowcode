@@ -84,15 +84,14 @@ test('send-now on an idle session dispatches the queued message immediately', as
   });
 });
 
-test('send-now refuses an externally held session without claiming its message', async () => {
+test('send-now on an externally held session still sends (the dispatch takes it over)', async () => {
   await withGateway(async ({ userId, socket, runs, sendNow, external }) => {
     sessionsDb.assignProviderSessionId('send-now-session', 'external');
     external.held = true;
-    sessionDraftsDb.saveDraft(userId, 'send-now-session', { text: '', queuedMessage: { content: 'keep queued' } });
+    sessionDraftsDb.saveDraft(userId, 'send-now-session', { text: '', queuedMessage: { content: 'interrupt the CLI' } });
     await sendNow();
-    assert.equal(socket.frames.find((frame) => frame.kind === 'protocol_error')?.code, 'SESSION_HELD_EXTERNALLY');
-    assert.deepEqual(runs, []);
-    assert.deepEqual(sessionDraftsDb.getDrafts(userId)[0]?.queuedMessage, { content: 'keep queued' });
+    assert.equal(socket.frames.some((frame) => frame.code === 'SESSION_HELD_EXTERNALLY'), false);
+    assert.deepEqual(runs, ['interrupt the CLI']);
   });
 });
 

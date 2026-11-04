@@ -252,8 +252,8 @@
   },
   "composer": {
     "externalHold": {
-      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
-      "takeOver": "Take over"
+      "message": "Open in Claude CLI — sending here continues the session here.",
+      "running": "Running in Claude CLI — messages queue until it finishes."
     },
     "permissionHeading": "Wie sollen Aktionen von {{provider}} genehmigt werden?",
     "permissionCycleHint": "Tab im Eingabefeld drücken, um den Modus zu wechseln",

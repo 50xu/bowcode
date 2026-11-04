@@ -78,12 +78,18 @@ function ChatInterface({
   const processingSessions = useProcessingSessions();
   const externalHolders = useExternalSessionHolders();
   // A refusal can arrive before the next ownership poll; keep its banner visible for that session.
-  const [externalError, setExternalError] = useState<{ sessionId: string; message: string | null; poll: ReadonlyMap<string, number | undefined> } | null>(null);
+  // A failed take-over (the external process could not be verified/stopped);
+  // shown until that process is gone or the next take-over attempt.
+  const [externalError, setExternalError] = useState<{ sessionId: string; message: string } | null>(null);
+  useEffect(() => {
+    if (externalError && !externalHolders.has(externalError.sessionId)) setExternalError(null);
+  }, [externalError, externalHolders]);
   const {
     markSessionProcessing: onSessionProcessing,
     markSessionIdle: onSessionIdle,
     markSessionBackground: onSessionBackground,
     getSessionActivity,
+    markSessionTakenOver,
   } = useSessionProtectionActions();
 
   const sessionStore = useSessionStore();
@@ -191,9 +197,8 @@ function ChatInterface({
   }, [setCurrentSessionId, onSessionEstablished, onNavigateToSession]);
 
   const viewedSessionId = selectedSession?.id || currentSessionId || null;
-  const refused = externalError?.sessionId === viewedSessionId && (externalError.poll === externalHolders || externalHolders.has(viewedSessionId));
-  const externallyHeld = Boolean(viewedSessionId && (externalHolders.has(viewedSessionId) || refused));
-  const takeoverError = refused ? externalError?.message : null;
+  const externallyHeld = Boolean(viewedSessionId && externalHolders.has(viewedSessionId));
+  const takeoverError = externalError?.sessionId === viewedSessionId ? externalError.message : null;
   const {
     input,
     setInput,
@@ -222,8 +227,6 @@ function ChatInterface({
     isDragActive,
     openAttachmentPicker,
     handleSubmit,
-    handleTakeOver,
-    takeOverNextSend,
     backgroundSendPrompt,
     resolveBackgroundSendPrompt,
     queuedDraft,
@@ -261,6 +264,10 @@ function ChatInterface({
     currentProviderEffort,
     isLoading: isProcessing,
     externallyHeld,
+    onTakeOverSession: (sessionId: string) => {
+      markSessionTakenOver(sessionId);
+      setExternalError(null);
+    },
     processingSessions,
     canAbortSession,
     tokenBudget,
@@ -312,7 +319,7 @@ function ChatInterface({
     onSessionBackground,
     getSessionActivity,
     onSendNowFailed: restoreQueuedDraftAfterFailure,
-    onExternalHoldError: (sessionId, message) => setExternalError({ sessionId, message, poll: externalHolders }),
+    onExternalHoldError: (sessionId, message) => setExternalError({ sessionId, message }),
     onWebSocketReconnect: handleWebSocketReconnect,
     requestLatestMessages,
     sessionStore,
@@ -553,9 +560,7 @@ function ChatInterface({
           activity={sessionActivity}
           isLoading={isProcessing}
           externallyHeld={externallyHeld}
-          takeOverNextSend={takeOverNextSend}
           takeoverError={takeoverError}
-          onTakeOver={handleTakeOver}
           onAbortSession={handleAbortSession}
           permissionMode={permissionMode}
           availablePermissionModes={availablePermissionModes}

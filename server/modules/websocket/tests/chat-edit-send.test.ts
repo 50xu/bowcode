@@ -136,25 +136,31 @@ async function withGateway(
 /** The handler is async and the socket listener does not await it. */
 const settle = () => new Promise((resolve) => { setTimeout(resolve, 30); });
 
-test('external Claude holder refuses a resumed send unless explicitly taken over', async () => {
+test('a send to a session held by an idle external Claude CLI takes it over', async () => {
   const holder: ExternalClaudeCliSession = { providerSessionId: SESSION_ID, pid: 42, status: 'idle', startedAt: 1, cwd: '/work' };
   const terminated: number[] = [];
   await withGateway('claude', async ({ socket, runs }) => {
-    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'no takeover' }));
+    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'continue here' }));
     await settle();
-    assert.equal(runs.length, 0);
-    assert.equal(socket.frames.at(-1)?.kind, 'protocol_error');
-    assert.equal(socket.frames.at(-1)?.code, 'SESSION_HELD_EXTERNALLY');
-    assert.equal(socket.frames.at(-1)?.pid, 42);
-    assert.equal(socket.frames.at(-1)?.error, 'This session is open in another Claude process (pid 42). Take over to continue here.');
-
-    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'takeover', takeOver: true }));
-    await settle();
-    assert.deepEqual(terminated, [42]);
+    assert.deepEqual(terminated, [42], 'the external process is stopped before the run');
     assert.equal(runs.length, 1);
+    assert.equal(socket.frames.some((frame) => frame.kind === 'protocol_error'), false);
   }, TRANSCRIPT_ROWS, {
     find: async () => holder,
     terminate: async (session) => { terminated.push(session.pid); },
+  });
+});
+
+test('a failed take-over reports TAKEOVER_FAILED and starts no run', async () => {
+  const holder: ExternalClaudeCliSession = { providerSessionId: SESSION_ID, pid: 42, status: 'idle', startedAt: 1, cwd: '/work' };
+  await withGateway('claude', async ({ socket, runs }) => {
+    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'continue here' }));
+    await settle();
+    assert.equal(runs.length, 0);
+    assert.equal(socket.frames.at(-1)?.code, 'TAKEOVER_FAILED');
+  }, TRANSCRIPT_ROWS, {
+    find: async () => holder,
+    terminate: async () => { throw new Error('identity could not be verified'); },
   });
 });
 

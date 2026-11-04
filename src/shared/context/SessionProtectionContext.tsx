@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
@@ -39,7 +40,17 @@ type SessionProtectionActions = {
   syncProcessingSessions: SyncProcessingSessions;
   isSessionProcessing: IsSessionProcessing;
   getSessionActivity: GetSessionActivity;
+  /** Called right before a take-over send: stop treating the session as held by its old CLI process. */
+  markSessionTakenOver: (sessionId: string) => void;
 };
+
+/**
+ * A take-over kills the external CLI on the server, but the 5s running-sessions
+ * poll can still report it for a moment. During this grace window those stale
+ * external entries are ignored, so the composer is not re-locked and the
+ * external-refresh path does not overwrite the reply that is now streaming.
+ */
+const TAKE_OVER_GRACE_MS = 20_000;
 
 const SessionProtectionStateContext = createContext<SessionActivityMap | null>(null);
 const SessionProtectionActionsContext = createContext<SessionProtectionActions | null>(null);
@@ -139,6 +150,15 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
 
   // Kept separate from processing activity so an idle CLI holder never lights a spinner.
   const [externalHolders, setExternalHolders] = useState<ReadonlyMap<string, number | undefined>>(() => new Map());
+  const takenOverUntilRef = useRef(new Map<string, number>());
+
+  const isInTakeOverGrace = useCallback((sessionId: string) => {
+    const until = takenOverUntilRef.current.get(sessionId);
+    if (until === undefined) return false;
+    if (Date.now() < until) return true;
+    takenOverUntilRef.current.delete(sessionId);
+    return false;
+  }, []);
 
   const refreshRunningSessions = useCallback(async () => {
     try {
@@ -152,7 +172,8 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
 
       const holders = new Map<string, number | undefined>();
       for (const session of sessions) {
-        if (typeof session.sessionId === 'string' && session.externallyHeld === true) {
+        if (typeof session.sessionId === 'string' && session.externallyHeld === true
+          && !isInTakeOverGrace(session.sessionId)) {
           holders.set(session.sessionId, typeof session.pid === 'number' ? session.pid : undefined);
         }
       }
@@ -160,7 +181,14 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
       setExternalHolders(holders);
 
       syncProcessingSessions(
-        sessions.filter((session) => session.processing !== false)
+        sessions
+          .filter((session) => session.processing !== false)
+          // A just-taken-over session keeps its own run's entry but drops the
+          // stale "running in the Claude CLI" one.
+          .filter((session) => !(typeof session.sessionId === 'string'
+            && session.externallyHeld === true
+            && session.canInterrupt === false
+            && isInTakeOverGrace(session.sessionId)))
           .map((session) => {
             if (typeof session.sessionId !== 'string' || !session.sessionId) {
               return null;
@@ -180,7 +208,22 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
     } catch (error) {
       console.error('[SessionProtection] Failed to sync running sessions:', error);
     }
-  }, [syncProcessingSessions]);
+  }, [isInTakeOverGrace, syncProcessingSessions]);
+
+  const markSessionTakenOver = useCallback((sessionId: string) => {
+    takenOverUntilRef.current.set(sessionId, Date.now() + TAKE_OVER_GRACE_MS);
+    setExternalHolders((previous) => {
+      if (!previous.has(sessionId)) return previous;
+      const next = new Map(previous);
+      next.delete(sessionId);
+      return next;
+    });
+    // Drop the external CLI's "processing" entry; the take-over send marks this
+    // server's own run as processing right after.
+    if (getSessionActivity(sessionId)?.canInterrupt === false) {
+      markSessionIdle(sessionId);
+    }
+  }, [getSessionActivity, markSessionIdle]);
 
   useEffect(() => {
     void refreshRunningSessions();
@@ -202,9 +245,11 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
       syncProcessingSessions,
       isSessionProcessing,
       getSessionActivity,
+      markSessionTakenOver,
     }),
     [
       getSessionActivity,
+      markSessionTakenOver,
       isSessionProcessing,
       markSessionBackground,
       markSessionIdle,
