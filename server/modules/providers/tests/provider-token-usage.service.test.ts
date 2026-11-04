@@ -164,18 +164,6 @@ test('OpenCode token usage resolves its provider-native id from the session row'
   }
 });
 
-test('Cursor returns an explicit unsupported token usage result', async () => {
-  const service = createProviderTokenUsageService({
-    getSessionById: () => createSessionRow({ provider: 'cursor' }),
-  });
-
-  const result = await service.getSessionTokenUsage('app-session');
-
-  assert.equal(result.unsupported, true);
-  assert.equal(result.used, 0);
-  assert.equal(result.total, 0);
-});
-
 test('token usage reports SESSION_NOT_FOUND for an unknown app session id', async () => {
   const service = createProviderTokenUsageService({ getSessionById: () => null });
 

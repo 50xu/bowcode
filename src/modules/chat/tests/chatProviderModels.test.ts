@@ -6,8 +6,8 @@ import { afterEach, beforeEach, test, vi } from 'vitest';
 import { resetUserPreferences, writeUserPreference } from '@/shared/userSettings';
 
 /**
- * The four per-provider default models used to be four useState slots with four
- * copy-pasted reconciliation effects and a four-branch setter. They are now one
+ * The per-provider default models used to be separate state slots with
+ * copy-pasted reconciliation effects and provider-specific setters. They are now one
  * Record with one loop. These tests pin the behaviour that has to survive that:
  * each provider keeps its own model, under its own storage key, and choosing a
  * model persists it.
@@ -61,7 +61,6 @@ afterEach(() => {
 
 test('each provider gets its own model from its own storage key', async () => {
   localStorage.setItem('claude-model', 'claude-stored');
-  localStorage.setItem('cursor-model', 'cursor-stored');
   localStorage.setItem('codex-model', 'codex-stored');
   localStorage.setItem('opencode-model', 'opencode-stored');
 
@@ -70,7 +69,6 @@ test('each provider gets its own model from its own storage key', async () => {
   await waitFor(() => {
     assert.equal(result.current.providerModels.claude, 'claude-stored');
   });
-  assert.equal(result.current.providerModels.cursor, 'cursor-stored');
   assert.equal(result.current.providerModels.codex, 'codex-stored');
   assert.equal(result.current.providerModels.opencode, 'opencode-stored');
 });
@@ -136,13 +134,13 @@ test('setting the same model twice keeps the record identity stable', async () =
 test('the active provider’s model is what currentProviderModel reports', async () => {
   // The provider selection is a stored preference; the per-provider model is
   // still a plain localStorage key.
-  writeUserPreference('selectedProvider', 'cursor');
-  localStorage.setItem('cursor-model', 'cursor-active');
+  writeUserPreference('selectedProvider', 'codex');
+  localStorage.setItem('codex-model', 'codex-active');
 
   const { result } = await renderProviderState();
 
   await waitFor(() => {
-    assert.equal(result.current.provider, 'cursor');
+    assert.equal(result.current.provider, 'codex');
   });
-  assert.equal(result.current.currentProviderModel, 'cursor-active');
+  assert.equal(result.current.currentProviderModel, 'codex-active');
 });

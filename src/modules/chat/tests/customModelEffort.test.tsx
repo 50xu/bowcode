@@ -56,11 +56,6 @@ const CATALOG: Partial<Record<LLMProvider, ProviderModelsDefinition>> = {
     DEFAULT: 'default',
     EFFORT_LEVELS: ['low', 'medium', 'high', 'xhigh', 'max', 'ultracode'],
   },
-  cursor: {
-    OPTIONS: [{ value: 'auto', label: 'Auto', isCustom: false }],
-    DEFAULT: 'auto',
-    EFFORT_LEVELS: [],
-  },
   // What OpenCode serves on a machine with only OpenCode Zen connected: none of
   // the visible built-in models declares effort, yet the provider supports it.
   opencode: {
@@ -178,19 +173,6 @@ test('OpenCode offers its effort levels even when no visible built-in model decl
 
   await waitFor(() => assert.equal(created.length, 1));
   assert.deepEqual(created[0]?.input.effort, { values: ['none', 'high'] });
-});
-
-test('providers without effort support show no effort levels and send none', async () => {
-  const { actions, created } = createActions();
-  render(<ModelLibraryPanel initialProvider="cursor" providerModelCatalog={CATALOG} actions={actions} />);
-
-  assert.equal(screen.queryByText('Reasoning levels'), null);
-  fireEvent.change(screen.getByLabelText('Model name'), { target: { value: 'Cursor Custom' } });
-  fireEvent.change(screen.getByLabelText('Model ID'), { target: { value: 'cursor-custom' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Add model' }));
-
-  await waitFor(() => assert.equal(created.length, 1));
-  assert.equal('effort' in (created[0]?.input ?? {}), false);
 });
 
 test('the composer offers exactly the declared levels for a selected custom model', async () => {

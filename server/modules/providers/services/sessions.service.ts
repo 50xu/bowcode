@@ -213,7 +213,8 @@ export const sessionsService = {
       runningById.set(session.session_id, entries[entries.length - 1]);
     }
 
-    return entries;
+    const supportedProviders = new Set(providerRegistry.listProviders().map((provider) => provider.id));
+    return entries.filter((entry) => supportedProviders.has(entry.provider));
   },
 
   /**
@@ -519,7 +520,7 @@ export const sessionsService = {
 
     // Claude and Codex history readers parse `jsonl_path` itself, so a page
     // can be sliced from the stat-validated full-transcript cache instead of
-    // re-parsing the whole file per request. Cursor and OpenCode read their
+    // re-parsing the whole file per request. OpenCode reads its
     // messages from elsewhere (store.db / shared SQLite), so that file's stat
     // says nothing about their history — they stay on the direct path.
     const transcriptPath = provider === 'claude' || provider === 'codex'

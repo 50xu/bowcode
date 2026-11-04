@@ -241,7 +241,7 @@ test('an anchor the transcript does not hold is refused', async () => {
 });
 
 test('a provider that cannot re-run from a point is refused rather than sending a new message', async () => {
-  await withGateway('cursor', async ({ socket, runs }) => {
+  await withGateway('opencode', async ({ socket, runs }) => {
     socket.emit('message', JSON.stringify({
       type: 'chat.edit-send',
       sessionId: SESSION_ID,

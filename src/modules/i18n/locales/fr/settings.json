@@ -309,7 +309,7 @@
     "apiDocsLink": "Documentation API",
     "documentation": {
       "title": "Documentation de l'API externe",
-      "description": "Apprenez à utiliser l'API externe pour déclencher des sessions Claude/Cursor depuis vos applications.",
+      "description": "Apprenez à utiliser l'API externe pour déclencher des sessions Claude/Codex depuis vos applications.",
       "viewLink": "Voir la documentation API →"
     },
     "loading": "Chargement...",
@@ -349,9 +349,6 @@
     "account": {
       "claude": {
         "description": "Assistant IA Claude d'Anthropic"
-      },
-      "cursor": {
-        "description": "Éditeur de code IA Cursor"
       },
       "codex": {
         "description": "Assistant IA Codex d'OpenAI"
@@ -406,8 +403,7 @@
     "title": "Paramètres de permission",
     "skipPermissions": {
       "label": "Ignorer les invites de permission (à utiliser avec précaution)",
-      "claudeDescription": "Équivalent au flag --dangerously-skip-permissions",
-      "cursorDescription": "Équivalent au flag -f dans le CLI Cursor"
+      "claudeDescription": "Équivalent au flag --dangerously-skip-permissions"
     },
     "allowedTools": {
       "title": "Outils autorisés",
@@ -501,7 +497,6 @@
     "title": "Serveurs MCP",
     "description": {
       "claude": "Les serveurs Model Context Protocol fournissent des outils et sources de données supplémentaires à Claude",
-      "cursor": "Les serveurs Model Context Protocol fournissent des outils et sources de données supplémentaires à Cursor",
       "codex": "Les serveurs Model Context Protocol fournissent des outils et sources de données supplémentaires à Codex",
       "opencode": "Les serveurs Model Context Protocol fournissent des outils et sources de données supplémentaires à OpenCode"
     },

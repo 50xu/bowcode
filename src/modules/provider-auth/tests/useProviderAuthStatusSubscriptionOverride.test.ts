@@ -84,9 +84,9 @@ describe('useProviderAuthStatus installed version', () => {
       email: 'someone@example.com',
       method: 'credentials_file',
     };
-    payloads.cursor = {
+    payloads.codex = {
       installed: true,
-      provider: 'cursor',
+      provider: 'codex',
       installedVersion: null,
       authenticated: false,
       email: null,
@@ -96,11 +96,11 @@ describe('useProviderAuthStatus installed version', () => {
     const { result } = renderHook(() => useProviderAuthStatus({ initialLoading: false }));
     await act(async () => {
       await result.current.checkProviderAuthStatus('claude');
-      await result.current.checkProviderAuthStatus('cursor');
+      await result.current.checkProviderAuthStatus('codex');
     });
 
     expect(result.current.providerAuthStatus.claude.installedVersion).toBe('2.1.295');
-    expect(result.current.providerAuthStatus.cursor.installedVersion).toBeNull();
-    expect('installedVersion' in result.current.providerAuthStatus.cursor).toBe(true);
+    expect(result.current.providerAuthStatus.codex.installedVersion).toBeNull();
+    expect('installedVersion' in result.current.providerAuthStatus.codex).toBe(true);
   });
 });

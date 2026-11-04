@@ -296,7 +296,7 @@ test('the custom-only route restricts a provider catalog to its custom models', 
     assert.equal(enabled.payload.data?.models.CUSTOM_MODELS_ONLY, true);
     // Persisted, and scoped to the one provider.
     assert.deepEqual(await readCatalog('codex'), enabled.payload.data?.models);
-    assert.equal((await readCatalog('cursor')).CUSTOM_MODELS_ONLY, false);
+    assert.equal((await readCatalog('opencode')).CUSTOM_MODELS_ONLY, false);
 
     for (const invalid of [{}, { enabled: 'true' }, { enabled: 1 }, []]) {
       const rejected = await putCustomOnly('codex', invalid);
@@ -387,7 +387,6 @@ test('custom model routes accept, validate, and return reasoning-effort levels',
       { provider: 'claude', effort: { values: ['low'], default: 'high' }, code: 'INVALID_MODEL_EFFORT' },
       { provider: 'claude', effort: { values: ['turbo'] }, code: 'INVALID_MODEL_EFFORT' },
       { provider: 'claude', effort: 'high', code: 'INVALID_MODEL_EFFORT' },
-      { provider: 'cursor', effort: { values: ['low'] }, code: 'MODEL_EFFORT_NOT_SUPPORTED' },
     ];
     for (const [index, invalid] of invalidPayloads.entries()) {
       const rejected = await postModel(invalid.provider, {

@@ -21,27 +21,13 @@ test('uses the selected session summary as the page title', () => {
   assert.equal(getPageTitle(project, session), 'Fix browser tab title');
 });
 
-test('uses the selected Cursor session name as the page title', () => {
+test('uses the selected session name as the page title', () => {
   const session: ProjectSession = {
     id: 'session-1',
-    name: 'Cursor session name',
-    __provider: 'cursor',
+    name: 'Session name',
+    __provider: 'codex',
   };
-
-  assert.equal(getPageTitle(project, session), 'Cursor session name');
-});
-
-test('prefers the persisted summary of a Cursor session, as the sessions API returns it', () => {
-  // The sessions API carries every provider's custom name as `summary` and never
-  // sets `name`, so a renamed Cursor session must not fall through to the placeholder.
-  const session: ProjectSession = {
-    id: 'session-1',
-    summary: 'Cursor session renamed',
-    __provider: 'cursor',
-  };
-
-  assert.equal(getPageTitle(project, session), 'Cursor session renamed');
-  assert.equal(getPageTitle(project, { id: 'session-2', summary: '', __provider: 'cursor' }), 'Untitled Session');
+  assert.equal(getPageTitle(project, session), 'Session name');
 });
 
 test('falls back to the project title when no session is selected', () => {

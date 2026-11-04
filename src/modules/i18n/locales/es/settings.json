@@ -348,7 +348,7 @@
     "apiDocsLink": "Documentación de la API",
     "documentation": {
       "title": "Documentación de la API externa",
-      "description": "Aprende a usar la API externa para lanzar sesiones de Claude/Cursor desde tus aplicaciones.",
+      "description": "Aprende a usar la API externa para lanzar sesiones de Claude/Codex desde tus aplicaciones.",
       "viewLink": "Ver documentación de la API →"
     },
     "loading": "Cargando...",
@@ -388,9 +388,6 @@
     "account": {
       "claude": {
         "description": "Asistente de IA Claude de Anthropic"
-      },
-      "cursor": {
-        "description": "Editor de código con IA Cursor"
       },
       "codex": {
         "description": "Asistente de IA Codex de OpenAI"
@@ -458,8 +455,7 @@
     "title": "Ajustes de permisos",
     "skipPermissions": {
       "label": "Omitir avisos de permisos (usar con precaución)",
-      "claudeDescription": "Equivalente al flag --dangerously-skip-permissions",
-      "cursorDescription": "Equivalente al flag -f en la CLI de Cursor"
+      "claudeDescription": "Equivalente al flag --dangerously-skip-permissions"
     },
     "allowedTools": {
       "title": "Herramientas permitidas",
@@ -553,7 +549,6 @@
     "title": "Servidores MCP",
     "description": {
       "claude": "Los servidores del Model Context Protocol proporcionan herramientas y fuentes de datos adicionales a Claude",
-      "cursor": "Los servidores del Model Context Protocol proporcionan herramientas y fuentes de datos adicionales a Cursor",
       "codex": "Los servidores del Model Context Protocol proporcionan herramientas y fuentes de datos adicionales a Codex",
       "opencode": "Los servidores del Model Context Protocol proporcionan herramientas y fuentes de datos adicionales a OpenCode"
     },
@@ -844,9 +839,9 @@
     "menuLabel": "Añadir servidor MCP",
     "globalButtonLabel": "Añadir servidor MCP global",
     "providerButtonLabel": "Añadir servidor MCP de {{provider}}",
-    "globalAddDescription": "Añadir servidor MCP global escribe un servidor stdio o HTTP común en Claude, Cursor, Codex y OpenCode.",
+    "globalAddDescription": "Añadir servidor MCP global escribe un servidor stdio o HTTP común en Claude, Codex y OpenCode.",
     "providerAddDescription": "{{button}} solo cambia {{provider}}.",
-    "globalModalDescription": "Añade este servidor MCP a todos los proveedores: Claude, Cursor, Codex y OpenCode. Solo se admiten los transportes stdio y HTTP, porque la misma configuración debe funcionar en todos los proveedores.",
+    "globalModalDescription": "Añade este servidor MCP a todos los proveedores: Claude, Codex y OpenCode. Solo se admiten los transportes stdio y HTTP, porque la misma configuración debe funcionar en todos los proveedores.",
     "refreshingScopes": "Actualizando los ámbitos del proyecto...",
     "loadingServers": "Cargando servidores MCP...",
     "configCwd": "Directorio",

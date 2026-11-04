@@ -16,7 +16,6 @@
     "error": "錯誤",
     "tool": "工具",
     "claude": "Claude",
-    "cursor": "Cursor",
     "codex": "Codex"
   },
   "tools": {
@@ -183,12 +182,10 @@
     "providerInfo": {
       "anthropic": "由 Anthropic 提供",
       "openai": "由 OpenAI 提供",
-      "cursorEditor": "AI 程式碼編輯器",
       "google": "由 Google 提供"
     },
     "readyPrompt": {
       "claude": "準備好使用 {{model}} 的 Claude。請在下方開始輸入您的訊息。",
-      "cursor": "準備好使用 {{model}} 的 Cursor。請在下方開始輸入您的訊息。",
       "codex": "準備好使用 {{model}} 的 Codex。請在下方開始輸入您的訊息。",
       "default": "請在上方選擇一個提供者以開始"
     },

@@ -8,7 +8,7 @@ import type { ProviderRunFunction } from '@/shared/types.js';
 import { normalizeProjectPath } from '../../shared/utils.js';
 
 /** The providers an Agent API run can start: the ones with a runtime and a model catalog. */
-const AGENT_RUN_PROVIDERS = ['claude', 'cursor', 'codex', 'opencode'];
+const AGENT_RUN_PROVIDERS = ['claude', 'codex', 'opencode'];
 
 /** What the route reads off a session row it continues: the row, not the request, says which provider and project a session belongs to. */
 type AgentSessionRow = {
@@ -38,7 +38,6 @@ type AgentRouterDependencies = {
   /** The live-run registry the chat socket uses; registering here is what puts an API run on the running-sessions list. */
   runs: Pick<typeof import('../websocket/index.js').chatRunRegistry, 'startRun' | 'completeRunIfCurrent' | 'isProcessing'>;
   queryClaude: ProviderRunFunction;
-  queryCursor: ProviderRunFunction;
   queryCodex: ProviderRunFunction;
   queryOpenCode: ProviderRunFunction;
   GithubClient: typeof import('@octokit/rest').Octokit;
@@ -62,7 +61,6 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
   const sessionGateway = dependencies.sessions;
   const runRegistry = dependencies.runs;
   const queryClaudeSDK = dependencies.queryClaude;
-  const spawnCursor = dependencies.queryCursor;
   const queryCodex = dependencies.queryCodex;
   const spawnOpenCode = dependencies.queryOpenCode;
   const Octokit = dependencies.GithubClient;
@@ -631,7 +629,7 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
    *                          - Source for auto-generated branch names (if createBranch=true and no branchName)
    *                          - Fallback for PR title if no commits are made
    *
-   * @param {string} provider - (Optional) AI provider to use. Options: 'claude' | 'cursor' | 'codex' | 'opencode'
+   * @param {string} provider - (Optional) AI provider to use. Options: 'claude' | 'codex' | 'opencode'
    *                           Default: 'claude'
    *
    * @param {boolean} stream - (Optional) Enable Server-Sent Events (SSE) streaming for real-time updates.
@@ -646,14 +644,9 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
    *
    * @param {string} model - (Optional) Model identifier for providers.
    *                        Omitted: the provider's catalog DEFAULT from GET /api/providers/:provider/models,
-   *                        which is the first custom model while "Use only my models" is on. Cursor
-   *                        without that setting leaves the choice to its CLI.
+   *                        which is the first custom model while "Use only my models" is on.
    *
    *                        Claude models: 'default', 'sonnet', 'opus', 'haiku', 'sonnet[1m]', 'opus[1m]', 'fable'
-   *                        Cursor models: 'gpt-5' (default), 'gpt-5.2', 'gpt-5.2-high', 'sonnet-4.5', 'opus-4.5',
-   *                                       'composer-1', 'auto', 'gpt-5.1', 'gpt-5.1-high',
-   *                                       'gpt-5.1-codex', 'gpt-5.1-codex-high', 'gpt-5.1-codex-max',
-   *                                       'gpt-5.1-codex-max-high', 'opus-4.1', 'grok', and thinking variants
    *                        Codex models: 'gpt-5.4' (default), 'gpt-5.5', 'gpt-5.4-mini'
    *
    * @param {string} effort - (Optional) Reasoning effort for providers/models that support it.
@@ -762,7 +755,7 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
    * Input Validations (400 Bad Request):
    *   - Either githubUrl OR projectPath must be provided (not neither)
    *   - message must be non-empty string
-   *   - provider must be 'claude', 'cursor', 'codex', or 'opencode'
+   *   - provider must be 'claude', 'codex', or 'opencode'
    *   - createBranch/createPR requires githubUrl OR projectPath (not neither)
    *   - branchName must pass Git naming rules (if provided)
    *
@@ -893,7 +886,7 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
     }
 
     if (requestedProvider !== null && !AGENT_RUN_PROVIDERS.includes(requestedProvider)) {
-      return res.status(400).json({ error: 'provider must be "claude", "cursor", "codex", or "opencode"' });
+      return res.status(400).json({ error: 'provider must be "claude", "codex", or "opencode"' });
     }
 
     // Validate GitHub branch/PR creation requirements
@@ -1025,18 +1018,11 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
       // A request without `model` runs on the catalog's DEFAULT, the value
       // /api/providers/:provider/models and the API docs advertise. It is the
       // first custom model while the provider lists only custom models.
-      // Only the four runnable providers have a catalog: a continued legacy
+      // Only registered runnable providers have a catalog: a continued legacy
       // session whose provider is no longer registered must not fail here.
       const providerModels = AGENT_RUN_PROVIDERS.includes(provider)
         ? await providerModelsService.getProviderModels(provider)
         : null;
-      // Cursor otherwise leaves the choice to its CLI, so it only takes the
-      // catalog DEFAULT when that is one of the user's own models.
-      const cursorDefaultModel = providerModels?.CUSTOM_MODELS_ONLY === true
-        && providerModels.OPTIONS.some((option) => option.isCustom)
-        ? providerModels.DEFAULT
-        : undefined;
-
       // Start the appropriate session
       if (provider === 'claude') {
         console.log('🤖 Starting Claude SDK session');
@@ -1050,16 +1036,6 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
           permissionMode: 'bypassPermissions' // Bypass all permissions for API calls
         }, run.writer);
 
-      } else if (provider === 'cursor') {
-        console.log('🖱️ Starting Cursor CLI session');
-
-        await spawnCursor(message.trim(), {
-          projectPath: finalProjectPath,
-          cwd: finalProjectPath,
-          sessionId: appSessionId,
-          model: model || cursorDefaultModel,
-          skipPermissions: true // Bypass permissions for Cursor
-        }, run.writer);
       } else if (provider === 'codex') {
         console.log('🤖 Starting Codex SDK session');
 

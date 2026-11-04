@@ -53,6 +53,22 @@ test('session archive queries hide archived rows from active project views', asy
   });
 });
 
+test('legacy Cursor rows remain stored but do not appear in session lists or counts', async () => {
+  await withIsolatedDatabase(() => {
+    sessionsDb.createSession('legacy-cursor', 'cursor', '/workspace/demo-project', 'Legacy');
+    sessionsDb.createSession('active-claude', 'claude', '/workspace/demo-project', 'Active');
+    assert.equal(sessionsDb.getSessionById('legacy-cursor')?.provider, 'cursor');
+    assert.deepEqual(sessionsDb.getAllSessions().map((row) => row.session_id), ['active-claude']);
+    assert.deepEqual(sessionsDb.getSessionsByProjectPath('/workspace/demo-project').map((row) => row.session_id), ['active-claude']);
+    assert.deepEqual(sessionsDb.getSessionsByProjectPathPage('/workspace/demo-project', 1, 0).map((row) => row.session_id), ['active-claude']);
+    assert.equal(sessionsDb.countSessionsByProjectPath('/workspace/demo-project'), 1);
+    assert.equal(sessionsDb.getRecentSessionsPage(1, 0).total, 1);
+    assert.equal(sessionsDb.getRecentSessionsPage(1, 0).sessions[0]?.session_id, 'active-claude');
+    sessionsDb.updateSessionIsArchived('legacy-cursor', true);
+    assert.equal(sessionsDb.getArchivedSessions().some((row) => row.session_id === 'legacy-cursor'), false);
+  });
+});
+
 test('createSession reactivates archived rows when the session becomes active again', async () => {
   await withIsolatedDatabase(() => {
     sessionsDb.createSession('session-reused', 'claude', '/workspace/demo-project', 'First Name');

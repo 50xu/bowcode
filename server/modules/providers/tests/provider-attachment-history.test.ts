@@ -3,8 +3,7 @@ import test from 'node:test';
 
 import { ClaudeSessionsProvider } from '@/modules/providers/list/claude/claude-sessions.provider.js';
 import { CodexSessionsProvider, extractCodexUserImages } from '@/modules/providers/list/codex/codex-sessions.provider.js';
-import { CursorSessionsProvider } from '@/modules/providers/list/cursor/cursor-sessions.provider.js';
-import { appendFilesInputTag, appendImagesInputTag } from '@/shared/image-attachments.js';
+import { appendFilesInputTag } from '@/shared/image-attachments.js';
 
 const SESSION_ID = 'session-1';
 
@@ -164,84 +163,5 @@ test('codex history: normalized user entries restore file reference blocks', () 
   assert.equal(messages[0].content, 'Review this');
   assert.deepEqual(messages[0].files, [
     { path: 'C:/Users/x/.cloudcli/assets/spec.docx', name: 'spec.docx' },
-  ]);
-});
-
-// ---------------------------------------------------------------- Cursor
-
-test('cursor history: <images_input> inside user_query is stripped and attached', () => {
-  const provider = new CursorSessionsProvider();
-  const taggedPrompt = appendImagesInputTag('Fix the layout bug', [{ path: '.cloudcli/assets/shot.png' }]);
-  const blobs = [
-    {
-      id: 'blob1',
-      sequence: 1,
-      rowid: 1,
-      content: {
-        role: 'user',
-        content: `<timestamp>2026-07-03</timestamp>\n<user_query>${taggedPrompt}</user_query>`,
-      },
-    },
-    {
-      id: 'blob2',
-      sequence: 2,
-      rowid: 2,
-      content: {
-        role: 'assistant',
-        content: [{ type: 'text', text: 'Done — the flex container was wrong.' }],
-      },
-    },
-  ];
-
-  const messages = provider.normalizeCursorBlobs(blobs, SESSION_ID);
-
-  assert.equal(messages.length, 2);
-  assert.equal(messages[0].role, 'user');
-  assert.equal(messages[0].content, 'Fix the layout bug');
-  assert.deepEqual(messages[0].images, [{ path: '.cloudcli/assets/shot.png' }]);
-  assert.equal(messages[1].role, 'assistant');
-  assert.equal(messages[1].images, undefined);
-});
-
-test('cursor history: user text without a tag keeps existing behavior', () => {
-  const provider = new CursorSessionsProvider();
-  const blobs = [
-    {
-      id: 'blob1',
-      sequence: 1,
-      rowid: 1,
-      content: {
-        role: 'user',
-        content: '<timestamp>2026-07-03</timestamp>\n<user_query>plain question</user_query>',
-      },
-    },
-  ];
-
-  const messages = provider.normalizeCursorBlobs(blobs, SESSION_ID);
-  assert.equal(messages.length, 1);
-  assert.equal(messages[0].content, 'plain question');
-  assert.equal(messages[0].images, undefined);
-});
-
-test('cursor history: file reference blocks are stripped and attached', () => {
-  const provider = new CursorSessionsProvider();
-  const taggedPrompt = appendFilesInputTag('Check the data', [
-    { path: 'C:/Users/x/.cloudcli/assets/data.csv', name: 'data.csv' },
-  ]);
-  const messages = provider.normalizeCursorBlobs([
-    {
-      id: 'blob-file',
-      sequence: 1,
-      rowid: 1,
-      content: {
-        role: 'user',
-        content: `<user_query>${taggedPrompt}</user_query>`,
-      },
-    },
-  ], SESSION_ID);
-
-  assert.equal(messages[0].content, 'Check the data');
-  assert.deepEqual(messages[0].files, [
-    { path: 'C:/Users/x/.cloudcli/assets/data.csv', name: 'data.csv' },
   ]);
 });

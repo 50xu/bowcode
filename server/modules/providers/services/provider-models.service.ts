@@ -78,7 +78,7 @@ const toCustomProviderModelOption = (
 /**
  * Effort levels a custom model of this provider may declare, weakest first:
  * the levels its runtime can pass on, from the capability matrix. Empty
- * (Cursor) means no effort support at all.
+ * means no effort support at all.
  *
  * Deliberately not derived from the predefined models: OpenCode narrows its
  * catalog to the upstream providers this machine has connected, and only its

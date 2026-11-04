@@ -74,7 +74,6 @@ test('providerRegistry owns one runtime for every registered provider', () => {
   assert.deepEqual(providers.map((provider) => provider.id), [
     'claude',
     'codex',
-    'cursor',
     'opencode',
   ]);
   assert.equal(providers.every((provider) => typeof provider.runtime.run === 'function'), true);
@@ -125,7 +124,7 @@ test('routes permission decisions through provider-owned runtime capabilities', 
   });
   const service = createService([
     createProvider('claude', claudeRuntime),
-    createProvider('cursor', createRuntime()),
+    createProvider('codex', createRuntime()),
   ]);
   const decision = { allow: true, message: 'approved' };
 

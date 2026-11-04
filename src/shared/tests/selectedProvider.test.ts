@@ -44,7 +44,7 @@ test('a write publishes a same-tab change, which the storage event does not', ()
     changes += 1;
   });
 
-  writeSelectedProvider('cursor');
+  writeSelectedProvider('opencode');
 
   unsubscribe();
   assert.equal(changes, 1);

@@ -47,10 +47,6 @@ const getProviderCommand = ({
     return 'claude --dangerously-skip-permissions /login';
   }
 
-  if (provider === 'cursor') {
-    return 'cursor-agent login';
-  }
-
   if (provider === 'codex') {
     return IS_PLATFORM ? 'codex login --device-auth' : 'codex login';
   }
@@ -64,7 +60,6 @@ const getProviderCommand = ({
 
 const getProviderTitle = (provider: LLMProvider) => {
   if (provider === 'claude') return 'Claude CLI Login';
-  if (provider === 'cursor') return 'Cursor CLI Login';
   if (provider === 'codex') return 'Codex CLI Login';
   if (provider === 'opencode') return 'OpenCode CLI Login';
   return 'Claude CLI Login';

@@ -348,7 +348,7 @@
     "apiDocsLink": "תיעוד API",
     "documentation": {
       "title": "תיעוד ה-API החיצוני",
-      "description": "איך להשתמש ב-API החיצוני כדי להפעיל סשנים של Claude/Cursor מאפליקציות אחרות.",
+      "description": "איך להשתמש ב-API החיצוני כדי להפעיל סשנים של Claude/Codex מאפליקציות אחרות.",
       "viewLink": "צפייה בתיעוד ה-API ←"
     },
     "loading": "טוען…",
@@ -388,9 +388,6 @@
     "account": {
       "claude": {
         "description": "Claude, עוזר ה-AI של Anthropic"
-      },
-      "cursor": {
-        "description": "Cursor, עורך קוד מבוסס AI"
       },
       "codex": {
         "description": "Codex, עוזר ה-AI של OpenAI"
@@ -458,8 +455,7 @@
     "title": "הגדרות הרשאות",
     "skipPermissions": {
       "label": "דילוג על בקשות הרשאה (בזהירות)",
-      "claudeDescription": "שקול לדגל --dangerously-skip-permissions",
-      "cursorDescription": "שקול לדגל -f ב-Cursor CLI"
+      "claudeDescription": "שקול לדגל --dangerously-skip-permissions"
     },
     "allowedTools": {
       "title": "כלים מאושרים",
@@ -534,7 +530,6 @@
     "title": "שרתי MCP",
     "description": {
       "claude": "שרתי Model Context Protocol מספקים ל-Claude כלים ומקורות מידע נוספים",
-      "cursor": "שרתי Model Context Protocol מספקים ל-Cursor כלים ומקורות מידע נוספים",
       "codex": "שרתי Model Context Protocol מספקים ל-Codex כלים ומקורות מידע נוספים",
       "opencode": "שרתי Model Context Protocol מספקים ל-OpenCode כלים ומקורות מידע נוספים"
     },
@@ -823,9 +818,9 @@
     "menuLabel": "הוספת שרת MCP",
     "globalButtonLabel": "הוספת שרת MCP גלובלי",
     "providerButtonLabel": "הוספת שרת MCP ל-{{provider}}",
-    "globalAddDescription": "הוספת שרת MCP גלובלי כותבת שרת stdio או HTTP משותף אחד ל-Claude, Cursor, Codex ו-OpenCode.",
+    "globalAddDescription": "הוספת שרת MCP גלובלי כותבת שרת stdio או HTTP משותף אחד ל-Claude, Codex ו-OpenCode.",
     "providerAddDescription": "{{button}} משנה רק את {{provider}}.",
-    "globalModalDescription": "מוסיף את שרת ה-MCP הזה לכל הספקים: Claude, Cursor, Codex ו-OpenCode. נתמכות רק תעבורות stdio ו-HTTP, כי אותה תצורה צריכה לעבוד בכל הספקים.",
+    "globalModalDescription": "מוסיף את שרת ה-MCP הזה לכל הספקים: Claude, Codex ו-OpenCode. נתמכות רק תעבורות stdio ו-HTTP, כי אותה תצורה צריכה לעבוד בכל הספקים.",
     "refreshingScopes": "מרענן את היקפי הפרויקט…",
     "loadingServers": "טוען שרתי MCP…",
     "configCwd": "Cwd",

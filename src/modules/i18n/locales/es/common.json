@@ -241,9 +241,9 @@
       "usingProvidedToken": "Usando token proporcionado",
       "noAuthentication": "Sin autenticación",
       "sshKey": "Clave SSH",
-      "existingInfo": "El espacio de trabajo se añadirá a tu lista de proyectos y estará disponible para sesiones de Claude/Cursor.",
+      "existingInfo": "El espacio de trabajo se añadirá a tu lista de proyectos y estará disponible para sesiones de Claude/Codex.",
       "newWithClone": "El repositorio se clonará desde esta carpeta.",
-      "newEmpty": "El espacio de trabajo se añadirá a tu lista de proyectos y estará disponible para sesiones de Claude/Cursor.",
+      "newEmpty": "El espacio de trabajo se añadirá a tu lista de proyectos y estará disponible para sesiones de Claude/Codex.",
       "cloningRepository": "Clonando repositorio..."
     },
     "buttons": {

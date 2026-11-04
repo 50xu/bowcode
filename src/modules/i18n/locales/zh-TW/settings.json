@@ -305,7 +305,7 @@
     "apiDocsLink": "API 文件",
     "documentation": {
       "title": "外部 API 文件",
-      "description": "了解如何使用外部 API 從您的應用程式觸發 Claude/Cursor 工作階段。",
+      "description": "了解如何使用外部 API 從您的應用程式觸發 Claude/Codex 工作階段。",
       "viewLink": "查看 API 文件 →"
     },
     "loading": "載入中...",
@@ -345,9 +345,6 @@
     "account": {
       "claude": {
         "description": "Anthropic Claude AI 助手"
-      },
-      "cursor": {
-        "description": "Cursor AI 驅動的程式碼編輯器"
       },
       "codex": {
         "description": "OpenAI Codex AI 助手"
@@ -399,8 +396,7 @@
     "title": "權限設定",
     "skipPermissions": {
       "label": "略過權限提示（請謹慎使用）",
-      "claudeDescription": "等同於 --dangerously-skip-permissions 旗標",
-      "cursorDescription": "等同於 Cursor CLI 中的 -f 旗標"
+      "claudeDescription": "等同於 --dangerously-skip-permissions 旗標"
     },
     "allowedTools": {
       "title": "允許的工具",
@@ -494,7 +490,6 @@
     "title": "MCP 伺服器",
     "description": {
       "claude": "Model Context Protocol 伺服器為 Claude 提供額外的工具和資料來源",
-      "cursor": "Model Context Protocol 伺服器為 Cursor 提供額外的工具和資料來源",
       "codex": "Model Context Protocol 伺服器為 Codex 提供額外的工具和資料來源"
     },
     "addButton": "新增 MCP 伺服器",

@@ -16,7 +16,6 @@
     "error": "Fehler",
     "tool": "Werkzeug",
     "claude": "Claude",
-    "cursor": "Cursor",
     "codex": "Codex"
   },
   "tools": {
@@ -153,12 +152,10 @@
     "providerInfo": {
       "anthropic": "von Anthropic",
       "openai": "von OpenAI",
-      "cursorEditor": "KI-Code-Editor",
       "google": "von Google"
     },
     "readyPrompt": {
       "claude": "Bereit, Claude mit {{model}} zu verwenden. Gib unten deine Nachricht ein.",
-      "cursor": "Bereit, Cursor mit {{model}} zu verwenden. Gib unten deine Nachricht ein.",
       "codex": "Bereit, Codex mit {{model}} zu verwenden. Gib unten deine Nachricht ein.",
       "default": "Wähl oben einen Anbieter, um zu beginnen"
     },

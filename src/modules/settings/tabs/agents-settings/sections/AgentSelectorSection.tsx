@@ -10,7 +10,6 @@ type AgentSelectorSectionProps = {
 
 const AGENT_NAMES: Record<AgentProvider, string> = {
   claude: 'Claude',
-  cursor: 'Cursor',
   codex: 'Codex',
   opencode: 'OpenCode',
 };
@@ -28,7 +27,6 @@ export default function AgentSelectorSection({
         {agents.map((agent) => {
           const dotColor =
             agent === 'claude' ? 'bg-blue-500' :
-            agent === 'cursor' ? 'bg-purple-500' :
             agent === 'opencode' ? 'bg-zinc-500' : 'bg-foreground/60';
 
           return (

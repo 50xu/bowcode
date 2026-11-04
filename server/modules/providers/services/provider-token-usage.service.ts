@@ -436,18 +436,6 @@ export function createProviderTokenUsageService(
 
       const providerSessionId = session.provider_session_id || sessionId;
 
-      if (session.provider === 'cursor') {
-        return {
-          used: 0,
-          total: 0,
-          inputTokens: 0,
-          outputTokens: 0,
-          breakdown: { input: 0, output: 0 },
-          unsupported: true,
-          message: 'Token usage tracking not available for Cursor sessions',
-        };
-      }
-
       if (session.provider === 'opencode') {
         const databasePath = dependencies.getOpenCodeDatabasePath();
         if (!dependencies.fileExists(databasePath)) {

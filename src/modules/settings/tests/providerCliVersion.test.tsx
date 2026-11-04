@@ -202,28 +202,7 @@ describe('ProviderCliVersion', () => {
     expect(await screen.findByText('Already up to date (v2.1.300).')).toBeTruthy();
     unmount();
 
-    // Cursor has no npm release to compare with.
-    responses.status = [claudeStatus({
-      provider: 'cursor',
-      installedVersion: '2026.07.20-8cc9c0b',
-      latestVersion: null,
-      updateAvailable: false,
-      updateCommand: 'cursor-agent update',
-    })];
-    responses.update = () => json({
-      success: true,
-      data: updateResult({
-        command: 'cursor-agent update',
-        previousVersion: '2026.07.20-8cc9c0b',
-        installedVersion: '2026.07.20-8cc9c0b',
-        output: 'Already up to date',
-      }),
-    });
-    renderRow('2026.07.20-8cc9c0b');
-    fireEvent.click(await screen.findByRole('button', { name: 'Run updater' }));
-    expect(await screen.findByText(
-      'The updater finished and the version is still v2026.07.20-8cc9c0b. Its output below says why.',
-    )).toBeTruthy();
+
   });
 
   it('says the hosting platform manages the CLI and offers no update there', async () => {

@@ -359,17 +359,6 @@ test('custom effort levels must be levels the provider supports', async () => {
       && error.code === 'INVALID_MODEL_EFFORT'
       && error.statusCode === 400,
   );
-
-  await assert.rejects(
-    () => service.createCustomModel('cursor', {
-      model: 'Cursor effort',
-      id: 'cursor-effort',
-      effort: { values: ['low'] },
-    }),
-    (error) => error instanceof AppError
-      && error.code === 'MODEL_EFFORT_NOT_SUPPORTED'
-      && error.statusCode === 400,
-  );
 });
 
 test('allowed effort levels come from the provider, not from the built-in models this machine sees', async () => {
@@ -390,7 +379,6 @@ test('allowed effort levels come from the provider, not from the built-in models
   const expectedLevels: Record<LLMProvider, string[]> = {
     claude: ['low', 'medium', 'high', 'xhigh', 'max', 'ultracode'],
     codex: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
-    cursor: [],
     opencode: ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'thinking'],
   };
   for (const [provider, levels] of Object.entries(expectedLevels) as Array<[LLMProvider, string[]]>) {
@@ -401,19 +389,19 @@ test('allowed effort levels come from the provider, not from the built-in models
 
 test('duplicate model ids are rejected within one provider', async () => {
   const { service } = createTestService();
-  await service.createCustomModel('cursor', { model: 'First', id: 'custom-id' });
+  await service.createCustomModel('claude', { model: 'First', id: 'custom-id' });
 
   await assert.rejects(
-    () => service.createCustomModel('cursor', { model: 'Second', id: 'custom-id' }),
+    () => service.createCustomModel('claude', { model: 'Second', id: 'custom-id' }),
     (error) => error instanceof AppError
       && error.code === 'MODEL_ID_ALREADY_EXISTS'
       && error.statusCode === 409,
   );
 
   await assert.rejects(
-    () => service.createCustomModel('cursor', {
+    () => service.createCustomModel('claude', {
       model: 'Duplicate built-in',
-      id: 'cursor-default',
+      id: 'claude-default',
     }),
     (error) => error instanceof AppError
       && error.code === 'MODEL_ID_ALREADY_EXISTS'
@@ -566,7 +554,7 @@ test('resolveResumeModel prefers the recorded session model over the requested o
     sessions: createSessionStore({ 'session-456': 'composer-2' }),
   });
 
-  const model = await service.resolveResumeModel('cursor', 'session-456', 'composer-2-fast');
+  const model = await service.resolveResumeModel('claude', 'session-456', 'composer-2-fast');
   assert.equal(model, 'composer-2');
 });
 

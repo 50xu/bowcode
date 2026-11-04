@@ -11,7 +11,7 @@ import path from 'node:path';
  * - Codex: paths become `local_image` input items.
  * - General files: verified paths are appended inside a `<files_input>` tag,
  *   which every provider history adapter strips back out for display.
- * - Cursor/OpenCode images: paths use the equivalent `<images_input>` tag.
+ * - OpenCode images: paths use the equivalent `<images_input>` tag.
  *
  * The chat UI loads them through dedicated `/api/assets/images/:filename` and
  * `/api/assets/files/:filename` routes, which serve only from this folder.
@@ -185,8 +185,8 @@ export type ParsedImagesInput = {
 };
 
 /**
- * Appends the `<images_input>` reference block used by the Cursor and
- * OpenCode CLIs. The block carries one numbered line per attachment with
+ * Appends the `<images_input>` reference block used by the
+ * OpenCode CLI. The block carries one numbered line per attachment with
  * the stored file path (quote-free on purpose — Windows .cmd shims mangle
  * quoted text) and the user's original filename, plus an explicit instruction
  * to read the files and keep the block out of the reply. The same block is
