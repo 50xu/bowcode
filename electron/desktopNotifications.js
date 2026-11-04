@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { Notification } from 'electron';
 import WebSocket from 'ws';
@@ -56,10 +57,7 @@ export class DesktopNotificationsController {
     settingsPath,
     appVersion,
     appName,
-    getDeviceId,
-    getAccountEmail,
     getRunningEnvironmentUrls,
-    getApiKey,
     getAuthToken,
     getIconPath,
     openNotificationTarget,
@@ -68,15 +66,12 @@ export class DesktopNotificationsController {
     this.settingsPath = settingsPath;
     this.appVersion = appVersion;
     this.appName = appName;
-    this.getDeviceId = getDeviceId;
-    this.getAccountEmail = getAccountEmail;
     this.getRunningEnvironmentUrls = getRunningEnvironmentUrls;
-    this.getApiKey = getApiKey;
     this.getAuthToken = getAuthToken;
     this.getIconPath = getIconPath;
     this.openNotificationTarget = openNotificationTarget;
     this.onChange = onChange;
-    this.settings = { enabled: false };
+    this.settings = { enabled: false, deviceId: crypto.randomUUID() };
     this.connections = new Map();
     this.lastEvent = null;
     this.lastError = null;
@@ -105,9 +100,9 @@ export class DesktopNotificationsController {
     try {
       const raw = await fs.readFile(this.settingsPath, 'utf8');
       const stored = JSON.parse(raw);
-      this.settings = { enabled: Boolean(stored.enabled) };
+      this.settings = { enabled: Boolean(stored.enabled), deviceId: stored.deviceId || crypto.randomUUID() };
     } catch {
-      this.settings = { enabled: false };
+      this.settings = { enabled: false, deviceId: crypto.randomUUID() };
     }
     return this.settings;
   }
@@ -117,7 +112,7 @@ export class DesktopNotificationsController {
     if (!enabled && this.settings.enabled) {
       await this.disableCurrentTargets();
     }
-    this.settings = { enabled };
+    this.settings = { ...this.settings, enabled };
     await fs.mkdir(path.dirname(this.settingsPath), { recursive: true });
     await fs.writeFile(this.settingsPath, JSON.stringify(this.settings, null, 2), 'utf8');
     await this.sync();
@@ -137,15 +132,6 @@ export class DesktopNotificationsController {
       this.stop();
       this.lastEvent = 'unsupported';
       this.lastError = 'Native notifications are not supported on this system.';
-      this.onChange?.();
-      return;
-    }
-
-    const deviceId = this.getDeviceId?.();
-    if (!deviceId) {
-      this.stop();
-      this.lastEvent = 'missing-device';
-      this.lastError = 'Connect a CloudCLI account before enabling desktop notifications.';
       this.onChange?.();
       return;
     }
@@ -207,8 +193,8 @@ export class DesktopNotificationsController {
         await this.registerTarget(target.httpUrl);
         ws.send(JSON.stringify({
           type: 'register',
-          deviceId: this.getDeviceId?.(),
-          label: this.getAccountEmail?.() || this.appName,
+          deviceId: this.settings.deviceId,
+          label: this.appName,
           platform: process.platform,
           appVersion: this.appVersion,
         }));
@@ -240,8 +226,8 @@ export class DesktopNotificationsController {
       headers: await this.getTargetAuthHeaders(httpUrl),
       body: {
         channel: 'desktop',
-        endpointId: this.getDeviceId?.(),
-        label: this.getAccountEmail?.() || this.appName,
+        endpointId: this.settings.deviceId,
+        label: this.appName,
         metadata: {
           platform: process.platform,
           appVersion: this.appVersion,
@@ -252,7 +238,7 @@ export class DesktopNotificationsController {
   }
 
   async disableCurrentTargets() {
-    const deviceId = this.getDeviceId?.();
+    const deviceId = this.settings.deviceId;
     if (!deviceId) return;
 
     const targets = new Set([
@@ -278,11 +264,6 @@ export class DesktopNotificationsController {
 
   async getTargetAuthHeaders(httpUrl) {
     const headers = {};
-    const apiKey = this.getApiKey?.();
-    if (apiKey) {
-      headers['X-API-Key'] = apiKey;
-    }
-
     const authToken = await Promise.resolve(this.getAuthToken?.(httpUrl)).catch(() => null);
     if (authToken) {
       headers.Authorization = `Bearer ${authToken}`;

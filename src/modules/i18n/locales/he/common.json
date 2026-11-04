@@ -290,43 +290,12 @@
     }
   },
   "versionUpdate": {
-    "title": "יש עדכון זמין",
-    "newVersionReady": "גרסה חדשה מוכנה",
-    "currentVersion": "הגרסה הנוכחית",
-    "latestVersion": "הגרסה האחרונה",
-    "whatsNew": "מה חדש:",
-    "viewFullRelease": "לפרטי הגרסה המלאים",
-    "updateProgress": "התקדמות העדכון:",
-    "manualUpgrade": "שדרוג ידני:",
-    "npmUpgradeCommand": "npm install -g @cloudcli-ai/cloudcli@latest",
-    "manualUpgradeHint": "או ללחוץ על \"עדכון עכשיו\" כדי להריץ את העדכון אוטומטית.",
-    "updateCompleted": "העדכון הושלם בהצלחה!",
-    "restartServer": "יש להפעיל מחדש את השרת כדי להחיל את השינויים.",
-    "updateFailed": "העדכון נכשל",
-    "buttons": {
-      "close": "סגירה",
-      "later": "אחר כך",
-      "copyCommand": "העתקת הפקודה",
-      "updateNow": "עדכון עכשיו",
-      "updating": "מעדכן…"
-    },
     "ariaLabels": {
-      "closeModal": "סגירת חלון שדרוג הגרסה",
       "showSidebar": "הצגת סרגל הצד",
       "settings": "הגדרות",
-      "updateAvailable": "יש עדכון זמין",
       "closeSidebar": "סגירת סרגל הצד",
       "resizeSidebar": "שינוי גודל סרגל הצד"
-    },
-    "startingUpdate": "מתחיל את העדכון…",
-    "updateStartedRestarting": "העדכון התחיל. נראה שהשרת מופעל מחדש כדי להחיל אותו.",
-    "unexpectedResponse": "נקודת הקצה של העדכון החזירה תגובה לא צפויה (HTTP {{status}}). אפשר לעדכן ידנית עם הפקודה שלמטה.",
-    "connectionInterrupted": "החיבור לשרת נקטע — כנראה הוא מופעל מחדש כדי להחיל את העדכון.",
-    "unknownError": "שגיאה לא ידועה",
-    "refreshNow": "מרענן את החלון עכשיו…",
-    "refreshIn_one": "החלון יתרענן בעוד שנייה. אם העדכון לא נכנס לתוקף, יש להפעיל מחדש (RESTART) את הסביבה.",
-    "refreshIn_two": "החלון יתרענן בעוד שתי שניות. אם העדכון לא נכנס לתוקף, יש להפעיל מחדש (RESTART) את הסביבה.",
-    "refreshIn_other": "החלון יתרענן בעוד {{count}} שניות. אם העדכון לא נכנס לתוקף, יש להפעיל מחדש (RESTART) את הסביבה."
+    }
   },
   "commandPalette": {
     "title": "לוח הפקודות",

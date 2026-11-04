@@ -323,10 +323,7 @@
       "description": "Zjistěte, jak pomocí externího API spouštět z vašich aplikací relace Claude/Codex.",
       "viewLink": "Zobrazit dokumentaci API →"
     },
-    "loading": "Načítání...",
-    "version": {
-      "updateAvailable": "K dispozici je aktualizace: v{{version}}"
-    }
+    "loading": "Načítání..."
   },
   "tasks": {
     "checking": "Kontrola instalace TaskMaster...",
@@ -378,7 +375,6 @@
       "updateAvailable": "K dispozici je aktualizace: v{{version}}",
       "upToDate": "Aktuální",
       "bundled": "Dodává se s CloudCLI a aktualizuje se spolu s ním.",
-      "platform": "Spravováno hostingovou platformou.",
       "updateTo": "Aktualizovat na v{{version}}",
       "runUpdater": "Spustit aktualizaci",
       "updating": "Aktualizace…",
@@ -570,7 +566,6 @@
     "toggleFailed": "Nepodařilo se přepnout plugin",
     "starterPluginLabel": "Startovací plugin",
     "starter": "Šablona",
-    "docs": "Dokumentace",
     "sections": {
       "officialTitle": "Oficiální pluginy",
       "officialDescription": "Spravuje je tým CloudCLI a jsou připravené k přímé instalaci.",
@@ -809,11 +804,6 @@
     "configCwd": "Cwd",
     "configEnvVars": "Proměnné prostředí"
   },
-  "mcpTeamCard": {
-    "title": "Týmové konfigurace MCP",
-    "description": "Sdílejte konfigurace MCP serverů v rámci týmu. Všichni budou mít vše automaticky synchronizované.",
-    "proLink": "K dispozici v CloudCLI Pro"
-  },
   "mcpServersAddErrors": {
     "loadFailedProvider": "Nepodařilo se načíst MCP servery pro {{provider}}",
     "deleteFailed": "Nepodařilo se smazat MCP server",
@@ -827,17 +817,6 @@
   },
   "about": {
     "tagline": "Open-source rozhraní pro AI asistenty programování",
-    "starOnGitHub": "Dát hvězdičku na GitHubu",
-    "docs": "Dokumentace",
-    "hostedTitle": "Vyzkoušejte CloudCLI Hosted",
-    "hostedDescription": "Týmová spolupráce, sdílené konfigurace MCP, synchronizace nastavení napříč prostředími a spravovaná infrastruktura.",
-    "learnMore": "Další informace",
-    "proFeaturesTitle": "Funkce CloudCLI Pro",
-    "syncSettingsTitle": "Synchronizace nastavení",
-    "syncSettingsDescription": "Mějte předvolby, konfigurace MCP a motiv synchronizované ve všech svých prostředích.",
-    "teamManagementTitle": "Správa týmu",
-    "teamManagementDescription": "Více uživatelů, přístup podle rolí a sdílené projekty pro váš tým.",
-    "licensed": "Šířeno pod licencí AGPL-3.0",
-    "proCta": "K dispozici v CloudCLI Pro"
+    "licensed": "Šířeno pod licencí AGPL-3.0"
   }
 }

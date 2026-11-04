@@ -307,10 +307,7 @@
       "description": "外部APIを使用してアプリケーションからClaude/Codexセッションを起動する方法を学びます。",
       "viewLink": "APIドキュメントを見る →"
     },
-    "loading": "読み込み中...",
-    "version": {
-      "updateAvailable": "アップデートあり: v{{version}}"
-    }
+    "loading": "読み込み中..."
   },
   "tasks": {
     "checking": "TaskMasterのインストールを確認しています...",
@@ -359,7 +356,6 @@
       "updateAvailable": "アップデートあり: v{{version}}",
       "upToDate": "最新です",
       "bundled": "CloudCLI に同梱されており、CloudCLI と一緒に更新されます。",
-      "platform": "ホスティングプラットフォームが管理しています。",
       "updateTo": "v{{version}} に更新",
       "runUpdater": "アップデーターを実行",
       "updating": "更新中…",
@@ -540,7 +536,6 @@
     "toggleFailed": "切り替えに失敗しました",
     "buildYourOwn": "プラグインを自作する",
     "starter": "スターター",
-    "docs": "ドキュメント",
     "starterPlugin": {
       "name": "プロジェクト統計",
       "badge": "スターター",

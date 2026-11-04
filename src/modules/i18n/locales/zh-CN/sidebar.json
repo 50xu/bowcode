@@ -41,7 +41,6 @@
     "deleteSelected_other": "删除 {{count}} 个会话"
   },
   "tooltips": {
-    "viewEnvironments": "查看环境",
     "hideSidebar": "隐藏侧边栏",
     "createProject": "创建新项目",
     "refresh": "刷新项目和会话 (Ctrl+R)",
@@ -73,10 +72,7 @@
     "cancel": "取消",
     "save": "保存",
     "delete": "删除",
-    "rename": "重命名",
-    "joinCommunity": "加入社区",
-    "reportIssue": "报告问题",
-    "starOnGithub": "在GitHub上加星"
+    "rename": "重命名"
   },
   "branding": {
     "openSource": "开源"
@@ -125,7 +121,6 @@
     "deleteSessionsPartialFailure_other": "{{total}} 个会话中有 {{count}} 个删除失败，请重试。"
   },
   "version": {
-    "updateAvailable": "有可用更新",
     "restartRequired": "已安装更新 — 请重启服务器以生效"
   },
   "search": {

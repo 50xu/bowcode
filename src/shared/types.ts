@@ -148,21 +148,6 @@ export type LoadingProgress = {
 
 // ---------------------------
 
-//----------------- RELEASES ------------
-
-/** The latest GitHub release for the app, rendered by the update prompt and the About tab. */
-export type ReleaseInfo = {
-  title: string;
-  body: string;
-  htmlUrl: string;
-  publishedAt: string;
-};
-
-/** How this CloudCLI install was obtained; decides whether the UI offers a self-update action. */
-export type InstallMode = 'git' | 'npm';
-
-// ---------------------------
-
 //----------------- SESSION PROCESSING STATE ------------
 
 /**
@@ -1359,7 +1344,7 @@ export type ProviderAuthStatusMap = Record<LLMProvider, ProviderAuthStatus>;
 
 //----------------- PROVIDER CLI VERSION ------------
 
-/** One provider CLI's version state from `GET /api/providers/:provider/cli`: the installed version, the newest npm release (null when the CLI is not on npm or the registry did not answer), the command the update action runs, or why there is none ('bundled': it ships with CloudCLI; 'platform': the hosting platform manages it), whether an update run is going on, and the most recent finished run since the server started. A page that sees `updateInProgress` polls until it turns false and then shows `lastUpdate` as that run's result. Loaded by useProviderCliVersion and rendered by the settings account view. */
+/** One provider CLI's version state from `GET /api/providers/:provider/cli`: the installed version, the newest npm release (null when the CLI is not on npm or the registry did not answer), the command the update action runs, or why there is none ('bundled': it ships with CloudCLI), whether an update run is going on, and the most recent finished run since the server started. A page that sees `updateInProgress` polls until it turns false and then shows `lastUpdate` as that run's result. Loaded by useProviderCliVersion and rendered by the settings account view. */
 export type ProviderCliStatus = {
   provider: LLMProvider;
   installed: boolean;
@@ -1367,7 +1352,7 @@ export type ProviderCliStatus = {
   latestVersion: string | null;
   updateAvailable: boolean;
   updateCommand: string | null;
-  updateUnavailableReason: 'bundled' | 'platform' | null;
+  updateUnavailableReason: 'bundled' | null;
   updateInProgress: boolean;
   lastUpdate: ProviderCliUpdateResult | null;
 };

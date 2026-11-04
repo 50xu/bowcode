@@ -242,41 +242,11 @@
     }
   },
   "versionUpdate": {
-    "title": "Pembaruan Tersedia",
-    "newVersionReady": "Versi baru siap digunakan",
-    "currentVersion": "Versi Saat Ini",
-    "latestVersion": "Versi Terbaru",
-    "whatsNew": "Yang Baru:",
-    "viewFullRelease": "Lihat rilis lengkap",
-    "updateProgress": "Progres Pembaruan:",
-    "manualUpgrade": "Pembaruan manual:",
-    "npmUpgradeCommand": "npm install -g @cloudcli-ai/cloudcli@latest",
-    "manualUpgradeHint": "Atau klik \"Perbarui Sekarang\" untuk menjalankan pembaruan secara otomatis.",
-    "updateCompleted": "Pembaruan berhasil diselesaikan!",
-    "restartServer": "Mulai ulang server untuk menerapkan perubahan.",
-    "updateFailed": "Pembaruan gagal",
-    "buttons": {
-      "close": "Tutup",
-      "later": "Nanti",
-      "copyCommand": "Salin Perintah",
-      "updateNow": "Perbarui Sekarang",
-      "updating": "Memperbarui..."
-    },
     "ariaLabels": {
-      "closeModal": "Tutup modal pembaruan versi",
       "showSidebar": "Tampilkan sidebar",
       "settings": "Pengaturan",
-      "updateAvailable": "Pembaruan tersedia",
       "closeSidebar": "Tutup sidebar"
-    },
-    "startingUpdate": "Memulai pembaruan...",
-    "updateStartedRestarting": "Pembaruan dimulai. Server tampaknya sedang dimulai ulang untuk menerapkannya.",
-    "unexpectedResponse": "Endpoint pembaruan mengembalikan respons yang tidak terduga (HTTP {{status}}). Perbarui secara manual dengan perintah di bawah.",
-    "connectionInterrupted": "Koneksi ke server terputus — kemungkinan server sedang dimulai ulang untuk menerapkan pembaruan.",
-    "unknownError": "Kesalahan tidak diketahui",
-    "refreshNow": "Menyegarkan jendela sekarang...",
-    "refreshIn_one": "Jendela akan disegarkan dalam {{count}} detik. Jika pembaruan tidak diterapkan, MULAI ULANG environment.",
-    "refreshIn_other": "Jendela akan disegarkan dalam {{count}} detik. Jika pembaruan tidak diterapkan, MULAI ULANG environment."
+    }
   },
   "commandPalette": {
     "title": "Palet perintah",

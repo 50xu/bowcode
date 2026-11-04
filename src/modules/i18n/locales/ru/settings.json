@@ -307,10 +307,7 @@
       "description": "Узнайте, как использовать внешний API для запуска сеансов Claude/Codex из ваших приложений.",
       "viewLink": "Просмотр документации API →"
     },
-    "loading": "Загрузка...",
-    "version": {
-      "updateAvailable": "Доступно обновление: v{{version}}"
-    }
+    "loading": "Загрузка..."
   },
   "tasks": {
     "checking": "Проверка установки TaskMaster...",
@@ -359,7 +356,6 @@
       "updateAvailable": "Доступно обновление: v{{version}}",
       "upToDate": "Актуальная версия",
       "bundled": "Поставляется вместе с CloudCLI и обновляется вместе с ним.",
-      "platform": "Управляется платформой хостинга.",
       "updateTo": "Обновить до v{{version}}",
       "runUpdater": "Запустить обновление",
       "updating": "Обновление…",
@@ -540,7 +536,6 @@
     "toggleFailed": "Ошибка переключения",
     "buildYourOwn": "Создайте свой плагин",
     "starter": "Шаблон",
-    "docs": "Документация",
     "starterPlugin": {
       "name": "Статистика проекта",
       "badge": "шаблон",

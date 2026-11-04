@@ -42,7 +42,6 @@
     "deleteSelected_many": "Eliminar {{count}} sesiones"
   },
   "tooltips": {
-    "viewEnvironments": "Ver entornos",
     "hideSidebar": "Ocultar barra lateral",
     "createProject": "Crear proyecto nuevo",
     "refresh": "Actualizar proyectos y sesiones (Ctrl+R)",
@@ -76,10 +75,7 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "delete": "Eliminar",
-    "rename": "Renombrar",
-    "joinCommunity": "Unirse a la comunidad",
-    "reportIssue": "Informar de un problema",
-    "starOnGithub": "Dar estrella en GitHub"
+    "rename": "Renombrar"
   },
   "branding": {
     "openSource": "Código abierto"
@@ -135,7 +131,6 @@
     "deleteSessionsPartialFailure_many": "No se pudieron eliminar {{count}} de {{total}} sesiones. Inténtalo de nuevo."
   },
   "version": {
-    "updateAvailable": "Actualización disponible",
     "restartRequired": "Actualización instalada — reinicia el servidor para aplicarla"
   },
   "search": {

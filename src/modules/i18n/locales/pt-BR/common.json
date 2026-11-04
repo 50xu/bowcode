@@ -244,43 +244,12 @@
     }
   },
   "versionUpdate": {
-    "title": "Atualização disponível",
-    "newVersionReady": "Uma nova versão está pronta",
-    "currentVersion": "Versão atual",
-    "latestVersion": "Versão mais recente",
-    "whatsNew": "O que há de novo:",
-    "viewFullRelease": "Ver release completo",
-    "updateProgress": "Progresso da atualização:",
-    "manualUpgrade": "Atualização manual:",
-    "npmUpgradeCommand": "npm install -g @cloudcli-ai/cloudcli@latest",
-    "manualUpgradeHint": "Ou clique em \"Atualizar agora\" para executar a atualização automaticamente.",
-    "updateCompleted": "Atualização concluída com sucesso!",
-    "restartServer": "Reinicie o servidor para aplicar as mudanças.",
-    "updateFailed": "Atualização falhou",
-    "buttons": {
-      "close": "Fechar",
-      "later": "Depois",
-      "copyCommand": "Copiar comando",
-      "updateNow": "Atualizar agora",
-      "updating": "Atualizando..."
-    },
     "ariaLabels": {
-      "closeModal": "Fechar modal de atualização de versão",
       "showSidebar": "Mostrar barra lateral",
       "settings": "Configurações",
-      "updateAvailable": "Atualização disponível",
       "closeSidebar": "Fechar barra lateral",
       "resizeSidebar": "Redimensionar barra lateral"
-    },
-    "startingUpdate": "Iniciando atualização...",
-    "updateStartedRestarting": "Atualização iniciada. O servidor parece estar reiniciando para aplicá-la.",
-    "unexpectedResponse": "O endpoint de atualização retornou uma resposta inesperada (HTTP {{status}}). Atualize manualmente com o comando abaixo.",
-    "connectionInterrupted": "A conexão com o servidor foi interrompida — ele provavelmente está reiniciando para aplicar a atualização.",
-    "unknownError": "Erro desconhecido",
-    "refreshNow": "Atualizando a janela agora...",
-    "refreshIn_one": "Isso atualizará a janela em {{count}} segundo. Se a atualização não for aplicada, REINICIE o ambiente.",
-    "refreshIn_other": "Isso atualizará a janela em {{count}} segundos. Se a atualização não for aplicada, REINICIE o ambiente.",
-    "refreshIn_many": "Isso atualizará a janela em {{count}} segundos. Se a atualização não for aplicada, REINICIE o ambiente."
+    }
   },
   "commandPalette": {
     "title": "Paleta de comandos",

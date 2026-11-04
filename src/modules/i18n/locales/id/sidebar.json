@@ -41,7 +41,6 @@
     "deleteSelected_other": "Hapus {{count}} sesi"
   },
   "tooltips": {
-    "viewEnvironments": "Lihat Lingkungan",
     "hideSidebar": "Sembunyikan sidebar",
     "createProject": "Buat proyek baru",
     "refresh": "Segarkan proyek dan sesi (Ctrl+R)",
@@ -73,10 +72,7 @@
     "cancel": "Batal",
     "save": "Simpan",
     "delete": "Hapus",
-    "rename": "Ganti Nama",
-    "joinCommunity": "Gabung Komunitas",
-    "reportIssue": "Laporkan Masalah",
-    "starOnGithub": "Beri Bintang di GitHub"
+    "rename": "Ganti Nama"
   },
   "branding": {
     "openSource": "Open Source"
@@ -125,7 +121,6 @@
     "deleteSessionsPartialFailure_other": "{{count}} dari {{total}} sesi gagal dihapus. Silakan coba lagi."
   },
   "version": {
-    "updateAvailable": "Pembaruan tersedia",
     "restartRequired": "Pembaruan terpasang — mulai ulang server untuk menerapkan"
   },
   "search": {

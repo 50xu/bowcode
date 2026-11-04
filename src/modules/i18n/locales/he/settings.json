@@ -351,10 +351,7 @@
       "description": "איך להשתמש ב-API החיצוני כדי להפעיל סשנים של Claude/Codex מאפליקציות אחרות.",
       "viewLink": "צפייה בתיעוד ה-API ←"
     },
-    "loading": "טוען…",
-    "version": {
-      "updateAvailable": "יש עדכון זמין: v{{version}}"
-    }
+    "loading": "טוען…"
   },
   "tasks": {
     "checking": "בודק את התקנת TaskMaster…",
@@ -406,7 +403,6 @@
       "updateAvailable": "עדכון זמין: v{{version}}",
       "upToDate": "מעודכנת",
       "bundled": "מגיעה עם CloudCLI ומתעדכנת יחד איתו.",
-      "platform": "מנוהלת על ידי פלטפורמת האירוח.",
       "updateTo": "עדכון ל-v{{version}}",
       "runUpdater": "הפעלת העדכון",
       "updating": "מעדכן…",
@@ -590,7 +586,6 @@
     "toggleFailed": "השינוי נכשל",
     "starterPluginLabel": "תוסף התחלתי",
     "starter": "התחלתי",
-    "docs": "תיעוד",
     "sections": {
       "officialTitle": "תוספים רשמיים",
       "officialDescription": "מתוחזקים על ידי צוות CloudCLI ומוכנים להתקנה ישירה.",
@@ -826,11 +821,6 @@
     "configCwd": "Cwd",
     "configEnvVars": "משתני סביבה"
   },
-  "mcpTeamCard": {
-    "title": "תצורות MCP לצוות",
-    "description": "שיתוף תצורות שרתי MCP עם כל הצוות. כולם נשארים מסונכרנים אוטומטית.",
-    "proLink": "זמין ב-CloudCLI Pro"
-  },
   "mcpServersAddErrors": {
     "loadFailedProvider": "טעינת שרתי ה-MCP של {{provider}} נכשלה",
     "deleteFailed": "מחיקת שרת ה-MCP נכשלה",
@@ -844,17 +834,6 @@
   },
   "about": {
     "tagline": "ממשק קוד פתוח לעוזר תכנות מבוסס AI",
-    "starOnGitHub": "כוכב ב-GitHub",
-    "docs": "תיעוד",
-    "hostedTitle": "לנסות את CloudCLI Hosted",
-    "hostedDescription": "שיתוף פעולה בצוות, תצורות MCP משותפות, סנכרון הגדרות בין סביבות ותשתית מנוהלת.",
-    "learnMore": "מידע נוסף",
-    "proFeaturesTitle": "יכולות CloudCLI Pro",
-    "syncSettingsTitle": "סנכרון הגדרות",
-    "syncSettingsDescription": "ההעדפות, תצורות ה-MCP וערכת הנושא נשארים מסונכרנים בכל הסביבות.",
-    "teamManagementTitle": "ניהול צוות",
-    "teamManagementDescription": "משתמשים מרובים, גישה מבוססת תפקידים ופרויקטים משותפים לצוות.",
-    "licensed": "ברישיון AGPL-3.0",
-    "proCta": "זמין ב-CloudCLI Pro"
+    "licensed": "ברישיון AGPL-3.0"
   }
 }

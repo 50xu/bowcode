@@ -351,10 +351,7 @@
       "description": "Aprende a usar la API externa para lanzar sesiones de Claude/Codex desde tus aplicaciones.",
       "viewLink": "Ver documentación de la API →"
     },
-    "loading": "Cargando...",
-    "version": {
-      "updateAvailable": "Actualización disponible: v{{version}}"
-    }
+    "loading": "Cargando..."
   },
   "tasks": {
     "checking": "Comprobando la instalación de TaskMaster...",
@@ -406,7 +403,6 @@
       "updateAvailable": "Actualización disponible: v{{version}}",
       "upToDate": "Actualizada",
       "bundled": "Se incluye con CloudCLI y se actualiza junto con él.",
-      "platform": "La gestiona la plataforma de alojamiento.",
       "updateTo": "Actualizar a v{{version}}",
       "runUpdater": "Ejecutar actualizador",
       "updating": "Actualizando…",
@@ -605,7 +601,6 @@
     "toggleFailed": "El cambio de estado falló",
     "starterPluginLabel": "Plugin de inicio",
     "starter": "Inicio",
-    "docs": "Docs",
     "sections": {
       "officialTitle": "Plugins oficiales",
       "officialDescription": "Mantenidos por el equipo de CloudCLI y listos para instalar directamente.",
@@ -847,11 +842,6 @@
     "configCwd": "Directorio",
     "configEnvVars": "Variables"
   },
-  "mcpTeamCard": {
-    "title": "Configuraciones MCP del equipo",
-    "description": "Comparte la configuración de los servidores MCP con tu equipo. Todos se mantienen sincronizados.",
-    "proLink": "Disponible con CloudCLI Pro"
-  },
   "mcpServersAddErrors": {
     "loadFailedProvider": "No se pudieron cargar los servidores MCP de {{provider}}",
     "deleteFailed": "No se pudo eliminar el servidor MCP",
@@ -865,17 +855,6 @@
   },
   "about": {
     "tagline": "Interfaz de código abierto para asistentes de programación con IA",
-    "starOnGitHub": "Dar estrella en GitHub",
-    "docs": "Docs",
-    "hostedTitle": "Prueba CloudCLI Hosted",
-    "hostedDescription": "Colaboración en equipo, configuraciones MCP compartidas, sincronización de ajustes entre entornos e infraestructura gestionada.",
-    "learnMore": "Más información",
-    "proFeaturesTitle": "Funciones de CloudCLI Pro",
-    "syncSettingsTitle": "Sincronizar ajustes",
-    "syncSettingsDescription": "Mantén tus preferencias, configuraciones MCP y el tema sincronizados en todos tus entornos.",
-    "teamManagementTitle": "Gestión del equipo",
-    "teamManagementDescription": "Varios usuarios, acceso por roles y proyectos compartidos para tu equipo.",
-    "licensed": "Con licencia AGPL-3.0",
-    "proCta": "Disponible con CloudCLI Pro"
+    "licensed": "Con licencia AGPL-3.0"
   }
 }

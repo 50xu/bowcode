@@ -4,17 +4,10 @@ import { ViewHost } from './viewHost.js';
 
 const TITLEBAR_HEIGHT = 44;
 const AUTH_TOKEN_STORAGE_KEY = 'auth-token';
-function isAllowedPermissionOrigin(sourceUrl, controlPlaneUrl) {
+function isAllowedPermissionOrigin(sourceUrl) {
   try {
     const source = new URL(sourceUrl);
-    if ((source.hostname === '127.0.0.1' || source.hostname === 'localhost') && source.protocol === 'http:') {
-      return true;
-    }
-    if (source.protocol !== 'https:') {
-      return false;
-    }
-    const controlPlane = new URL(controlPlaneUrl);
-    return source.origin === controlPlane.origin || source.hostname.endsWith('.cloudcli.ai');
+    return source.protocol === 'http:' && (source.hostname === '127.0.0.1' || source.hostname === 'localhost');
   } catch {
     return false;
   }
@@ -36,8 +29,6 @@ export class DesktopWindowManager {
     openExternalUrl,
     getDesktopState,
     getDisplayTargetName,
-    getRemoteEnvironmentMenuItems,
-    getCloudState,
     getLocalState,
     actions,
     tabs,
@@ -49,8 +40,6 @@ export class DesktopWindowManager {
     this.openExternalUrl = openExternalUrl;
     this.getDesktopState = getDesktopState;
     this.getDisplayTargetName = getDisplayTargetName;
-    this.getRemoteEnvironmentMenuItems = getRemoteEnvironmentMenuItems;
-    this.getCloudState = getCloudState;
     this.getLocalState = getLocalState;
     this.actions = actions;
     this.tabs = tabs;
@@ -337,86 +326,9 @@ export class DesktopWindowManager {
     return this.getDesktopState();
   }
 
-  buildEnvironmentActionsSubmenu(environment) {
-    const items = [];
-    const statusSuffix = environment.status === 'running' ? '' : ` (${environment.status})`;
-    items.push({
-      label: 'Open Environment',
-      click: () => void this.actions.openEnvironmentInDesktop(environment)
-        .catch((error) => this.actions.showError(`Could not open ${environment.name || environment.subdomain}${statusSuffix}`, error)),
-    });
-    items.push({
-      label: 'Open in Browser',
-      click: () => void this.actions.openEnvironmentInBrowser(environment)
-        .catch((error) => this.actions.showError('Could not open environment in browser', error)),
-    });
-    items.push({
-      label: 'Open in VS Code',
-      click: () => void this.actions.openEnvironmentInIde(environment, 'vscode')
-        .catch((error) => this.actions.showError('Could not open environment in VS Code', error)),
-    });
-    items.push({
-      label: 'Open in Cursor',
-      click: () => void this.actions.openEnvironmentInIde(environment, 'cursor')
-        .catch((error) => this.actions.showError('Could not open environment in Cursor', error)),
-    });
-    items.push({
-      label: 'Open SSH Terminal',
-      click: () => void this.actions.openEnvironmentInSsh(environment)
-        .catch((error) => this.actions.showError('Could not open SSH terminal', error)),
-    });
-    items.push({
-      label: 'Copy Mobile/Web URL',
-      click: () => this.actions.copyText(this.actions.getEnvironmentUrl(environment)),
-    });
-    if (environment.status !== 'running') {
-      items.unshift({
-        label: environment.status === 'paused' ? 'Resume' : 'Start',
-        click: () => void this.actions.startEnvironment(environment)
-          .catch((error) => this.actions.showError('Could not start environment', error)),
-      });
-    }
-    if (environment.status === 'running') {
-      items.push({
-        label: 'Stop',
-        click: () => void this.actions.stopEnvironment(environment)
-          .catch((error) => this.actions.showError('Could not stop environment', error)),
-      });
-    }
-    return items;
-  }
-
-  buildTrayEnvironmentSection() {
-    const cloudState = this.getCloudState();
-    if (!cloudState.account?.apiKey) {
-      return [
-        {
-          label: cloudState.account?.email ? `Reconnect ${cloudState.account.email}` : 'Login',
-          click: () => void this.actions.connectCloudAccount()
-            .catch((error) => this.actions.showError('Could not connect CloudCLI account', error)),
-        },
-      ];
-    }
-
-    if (!cloudState.environments.length) {
-      return [{ label: 'No environments found', enabled: false }];
-    }
-
-    return cloudState.environments.map((environment) => ({
-      label: `${environment.name || environment.subdomain} - ${environment.status}`,
-      submenu: this.buildEnvironmentActionsSubmenu(environment),
-    }));
-  }
-
   buildAppMenu() {
     if (!this.mainWindow) return;
-    const cloudState = this.getCloudState();
     const localState = this.getLocalState();
-    const remoteItems = this.getRemoteEnvironmentMenuItems();
-    const cloudAccountLabel = cloudState.account?.apiKey
-      ? (cloudState.account?.email ? `Connected: ${cloudState.account.email}` : 'CloudCLI Connected')
-      : (cloudState.account?.email ? `Reconnect: ${cloudState.account.email}` : 'Connect CloudCLI Account...');
-
     const template = [
       {
         label: this.appName,
@@ -427,11 +339,6 @@ export class DesktopWindowManager {
             label: 'Show Launcher',
             accelerator: 'CmdOrCtrl+Shift+L',
             click: () => void this.showLauncher().catch((error) => this.actions.showError('Could not show launcher', error)),
-          },
-          {
-            label: 'Switch Environment',
-            accelerator: 'CmdOrCtrl+Shift+E',
-            click: () => void this.actions.showEnvironmentPicker().catch((error) => this.actions.showError('Could not switch environment', error)),
           },
           {
             label: 'Diagnostics',
@@ -461,11 +368,6 @@ export class DesktopWindowManager {
             label: 'Show Launcher',
             accelerator: 'CmdOrCtrl+Shift+L',
             click: () => void this.showLauncher().catch((error) => this.actions.showError('Could not show launcher', error)),
-          },
-          {
-            label: 'Switch Environment',
-            accelerator: 'CmdOrCtrl+Shift+E',
-            click: () => void this.actions.showEnvironmentPicker().catch((error) => this.actions.showError('Could not switch environment', error)),
           },
           { type: 'separator' },
           {
@@ -497,31 +399,6 @@ export class DesktopWindowManager {
             checked: localState.desktopSettings.exposeLocalServerOnNetwork,
             click: (menuItem) => void this.actions.updateDesktopSetting('exposeLocalServerOnNetwork', menuItem.checked)
               .catch((error) => this.actions.showError('Could not update desktop setting', error)),
-          },
-        ],
-      },
-      {
-        label: 'Cloud',
-        submenu: [
-          {
-            label: cloudAccountLabel,
-            accelerator: 'CmdOrCtrl+Shift+C',
-            click: () => void this.actions.connectCloudAccount().catch((error) => this.actions.showError('Could not connect CloudCLI account', error)),
-          },
-          {
-            label: 'Refresh Cloud Environments',
-            click: () => void this.actions.refreshCloudEnvironments().catch((error) => this.actions.showError('Could not load CloudCLI environments', error)),
-            enabled: Boolean(cloudState.account?.apiKey),
-          },
-          {
-            label: 'Logout CloudCLI Account',
-            click: () => void this.actions.clearCloudAccount().catch((error) => this.actions.showError('Could not logout', error)),
-            enabled: Boolean(cloudState.account?.apiKey),
-          },
-          { type: 'separator' },
-          {
-            label: 'Remote Environments',
-            submenu: remoteItems,
           },
         ],
       },
@@ -578,10 +455,6 @@ export class DesktopWindowManager {
       {
         label: 'Help',
         submenu: [
-        {
-          label: 'Open cloudcli.ai',
-          click: () => void this.actions.openCloudDashboard(),
-        },
           {
             label: 'Copy Diagnostics',
             click: () => void this.actions.copyDiagnostics(),
@@ -596,7 +469,6 @@ export class DesktopWindowManager {
 
   buildTrayMenu() {
     if (!this.tray) return;
-    const cloudState = this.getCloudState();
     const localState = this.getLocalState();
 
     const template = [
@@ -617,21 +489,6 @@ export class DesktopWindowManager {
           },
         ],
       },
-      {
-        label: 'Cloud Environments',
-        submenu: this.buildTrayEnvironmentSection(),
-      },
-      { type: 'separator' },
-      {
-        label: cloudState.account?.email ? `Connected: ${cloudState.account.email}` : 'Login',
-        click: () => void this.actions.connectCloudAccount().catch((error) => this.actions.showError('Could not connect CloudCLI account', error)),
-      },
-      {
-        label: 'Logout CloudCLI Account',
-        click: () => void this.actions.clearCloudAccount().catch((error) => this.actions.showError('Could not logout', error)),
-        enabled: Boolean(cloudState.account?.apiKey),
-      },
-      { type: 'separator' },
       {
         label: `Quit ${this.appName}`,
         role: 'quit',
@@ -654,34 +511,11 @@ export class DesktopWindowManager {
     return this.getDesktopState();
   }
 
-  async showActiveEnvironmentActionsMenu() {
-    if (!this.mainWindow) return this.getDesktopState();
-    const activeTarget = this.actions.getActiveTarget();
-    if (activeTarget?.kind !== 'remote') return this.getDesktopState();
-
-    const environment = this.getCloudState().environments.find((item) => item.id === activeTarget.id);
-    if (!environment) return this.getDesktopState();
-
-    const menu = Menu.buildFromTemplate(this.buildEnvironmentActionsSubmenu(environment));
-    menu.popup({ window: this.mainWindow });
-    return this.getDesktopState();
-  }
-
-  async showEnvironmentActionsMenu(environmentId) {
-    if (!this.mainWindow) return this.getDesktopState();
-    const environment = this.getCloudState().environments.find((item) => item.id === environmentId);
-    if (!environment) return this.getDesktopState();
-
-    const menu = Menu.buildFromTemplate(this.buildEnvironmentActionsSubmenu(environment));
-    menu.popup({ window: this.mainWindow });
-    return this.getDesktopState();
-  }
-
   configurePermissions() {
     const isAllowedPermission = (webContents, permission) => {
       const sourceUrl = webContents.getURL();
       const allowedPermissions = new Set(['clipboard-read', 'media', 'notifications']);
-      return isAllowedPermissionOrigin(sourceUrl, this.getCloudState().controlPlaneUrl) && allowedPermissions.has(permission);
+      return isAllowedPermissionOrigin(sourceUrl) && allowedPermissions.has(permission);
     };
 
     session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {

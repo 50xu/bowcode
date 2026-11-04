@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 
-import { IS_PLATFORM } from '@/shared/utils';
 import { api, readApiErrorMessage } from '@/shared/api';
 import { AUTH_SESSION_EXPIRED_EVENT, AUTH_TOKEN_REFRESHED_EVENT, getAuthTokenRefreshDelay, isValidRefreshedToken, storeAuthToken } from '@/shared/authToken';
 import { hydrateChatDrafts, resetChatDrafts } from '@/shared/chatDrafts';
@@ -142,7 +141,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [checkOnboardingStatus]);
 
   const refreshSession = useCallback(async () => {
-    if (IS_PLATFORM || !token || !user) {
+    if (!token || !user) {
       return;
     }
 
@@ -240,20 +239,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [checkOnboardingStatus, clearSession]);
 
   useEffect(() => {
-    if (IS_PLATFORM) {
-      setUser({ username: 'platform-user' });
-      setNeedsSetup(false);
-      void checkOnboardingStatus().finally(() => {
-        setIsLoading(false);
-      });
-      return;
-    }
-
     void checkAuthStatus();
-  }, [checkAuthStatus, checkOnboardingStatus]);
+  }, [checkAuthStatus]);
 
   useEffect(() => {
-    if (IS_PLATFORM || !token || !user) {
+    if (!token || !user) {
       return undefined;
     }
 

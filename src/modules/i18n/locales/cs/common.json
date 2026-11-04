@@ -296,44 +296,12 @@
     }
   },
   "versionUpdate": {
-    "title": "Je dostupná aktualizace",
-    "newVersionReady": "Nová verze je připravena",
-    "currentVersion": "Aktuální verze",
-    "latestVersion": "Nejnovější verze",
-    "whatsNew": "Novinky:",
-    "viewFullRelease": "Zobrazit celé vydání",
-    "updateProgress": "Průběh aktualizace:",
-    "manualUpgrade": "Ruční aktualizace:",
-    "npmUpgradeCommand": "npm install -g @cloudcli-ai/cloudcli@latest",
-    "manualUpgradeHint": "Nebo klikněte na „Aktualizovat nyní“ a aktualizace proběhne automaticky.",
-    "updateCompleted": "Aktualizace dokončena.",
-    "restartServer": "Restartujte prosím server, aby se změny projevily.",
-    "updateFailed": "Aktualizace se nezdařila",
-    "buttons": {
-      "close": "Zavřít",
-      "later": "Později",
-      "copyCommand": "Kopírovat příkaz",
-      "updateNow": "Aktualizovat nyní",
-      "updating": "Aktualizace..."
-    },
     "ariaLabels": {
-      "closeModal": "Zavřít okno aktualizace verze",
       "showSidebar": "Zobrazit postranní panel",
       "settings": "Nastavení",
-      "updateAvailable": "Je dostupná aktualizace",
       "closeSidebar": "Zavřít postranní panel",
       "resizeSidebar": "Změnit šířku postranního panelu"
-    },
-    "startingUpdate": "Spouštění aktualizace...",
-    "updateStartedRestarting": "Aktualizace byla spuštěna. Server se zřejmě restartuje, aby ji použil.",
-    "unexpectedResponse": "Koncový bod aktualizace vrátil neočekávanou odpověď (HTTP {{status}}). Aktualizujte ručně pomocí příkazu níže.",
-    "connectionInterrupted": "Spojení se serverem bylo přerušeno – pravděpodobně se restartuje, aby aktualizaci použil.",
-    "unknownError": "Neznámá chyba",
-    "refreshNow": "Okno se nyní obnovuje...",
-    "refreshIn_one": "Okno se obnoví za {{count}} sekundu. Pokud se aktualizace neprojeví, RESTARTUJTE prostředí.",
-    "refreshIn_few": "Okno se obnoví za {{count}} sekundy. Pokud se aktualizace neprojeví, RESTARTUJTE prostředí.",
-    "refreshIn_many": "Okno se obnoví za {{count}} sekundy. Pokud se aktualizace neprojeví, RESTARTUJTE prostředí.",
-    "refreshIn_other": "Okno se obnoví za {{count}} sekund. Pokud se aktualizace neprojeví, RESTARTUJTE prostředí."
+    }
   },
   "commandPalette": {
     "title": "Paleta příkazů",

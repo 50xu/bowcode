@@ -42,7 +42,6 @@
     "deleteSelected_other": "מחיקת {{count}} סשנים"
   },
   "tooltips": {
-    "viewEnvironments": "הצגת סביבות",
     "hideSidebar": "הסתרת סרגל הצד",
     "createProject": "יצירת פרויקט חדש",
     "refresh": "רענון פרויקטים וסשנים (Ctrl+R)",
@@ -76,10 +75,7 @@
     "cancel": "ביטול",
     "save": "שמירה",
     "delete": "מחיקה",
-    "rename": "שינוי שם",
-    "joinCommunity": "הצטרפות לקהילה",
-    "reportIssue": "דיווח על בעיה",
-    "starOnGithub": "כוכב ב-GitHub"
+    "rename": "שינוי שם"
   },
   "branding": {
     "openSource": "קוד פתוח"
@@ -135,7 +131,6 @@
     "deleteSessionsPartialFailure_other": "{{count}} מתוך {{total}} סשנים לא נמחקו. יש לנסות שוב."
   },
   "version": {
-    "updateAvailable": "יש עדכון זמין",
     "restartRequired": "העדכון הותקן — יש להפעיל מחדש את השרת כדי להחיל אותו"
   },
   "search": {

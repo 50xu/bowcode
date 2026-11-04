@@ -41,7 +41,6 @@
     "deleteSelected_other": "{{count}} Sitzungen löschen"
   },
   "tooltips": {
-    "viewEnvironments": "Umgebungen anzeigen",
     "hideSidebar": "Seitenleiste ausblenden",
     "createProject": "Neues Projekt erstellen",
     "refresh": "Projekte und Sitzungen aktualisieren (Strg+R)",
@@ -73,10 +72,7 @@
     "cancel": "Abbrechen",
     "save": "Speichern",
     "delete": "Löschen",
-    "rename": "Umbenennen",
-    "joinCommunity": "Community beitreten",
-    "reportIssue": "Problem melden",
-    "starOnGithub": "Stern auf GitHub"
+    "rename": "Umbenennen"
   },
   "branding": {
     "openSource": "Open Source"
@@ -125,7 +121,6 @@
     "deleteSessionsPartialFailure_other": "{{count}} von {{total}} Sitzungen konnten nicht gelöscht werden. Bitte erneut versuchen."
   },
   "version": {
-    "updateAvailable": "Update verfügbar",
     "restartRequired": "Update installiert – zum Anwenden Server neu starten"
   },
   "search": {

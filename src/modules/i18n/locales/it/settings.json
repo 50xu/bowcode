@@ -307,10 +307,7 @@
       "description": "Scopri come usare l'API esterna per avviare sessioni Claude/Codex dalle tue applicazioni.",
       "viewLink": "Vedi documentazione API →"
     },
-    "loading": "Caricamento...",
-    "version": {
-      "updateAvailable": "Aggiornamento disponibile: v{{version}}"
-    }
+    "loading": "Caricamento..."
   },
   "tasks": {
     "checking": "Verifica installazione TaskMaster...",
@@ -359,7 +356,6 @@
       "updateAvailable": "Aggiornamento disponibile: v{{version}}",
       "upToDate": "Aggiornata",
       "bundled": "Inclusa in CloudCLI e aggiornata insieme a esso.",
-      "platform": "Gestita dalla piattaforma di hosting.",
       "updateTo": "Aggiorna a v{{version}}",
       "runUpdater": "Esegui aggiornamento",
       "updating": "Aggiornamento…",
@@ -540,7 +536,6 @@
     "toggleFailed": "Attivazione/disattivazione fallita",
     "starterPluginLabel": "Plugin iniziale",
     "starter": "Iniziale",
-    "docs": "Documentazione",
     "starterPlugin": {
       "name": "Statistiche progetto",
       "badge": "iniziale",

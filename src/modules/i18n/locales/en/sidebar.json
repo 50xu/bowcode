@@ -41,7 +41,6 @@
     "deleteSelected_other": "Delete {{count}} sessions"
   },
   "tooltips": {
-    "viewEnvironments": "View Environments",
     "hideSidebar": "Hide sidebar",
     "createProject": "Create new project",
     "refresh": "Refresh projects and sessions (Ctrl+R)",
@@ -74,10 +73,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "delete": "Delete",
-    "rename": "Rename",
-    "joinCommunity": "Join Community",
-    "reportIssue": "Report Issue",
-    "starOnGithub": "Star on GitHub"
+    "rename": "Rename"
   },
   "branding": {
     "openSource": "Open Source"
@@ -126,7 +122,6 @@
     "deleteSessionsPartialFailure_other": "{{count}} of {{total}} sessions could not be deleted. Please try again."
   },
   "version": {
-    "updateAvailable": "Update available",
     "restartRequired": "Update installed — restart the server to apply"
   },
   "search": {

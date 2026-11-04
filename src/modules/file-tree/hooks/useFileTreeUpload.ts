@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 
-import { IS_PLATFORM } from '@/shared/utils';
 import type { FileTreeUploadProgressState, Project } from '@/shared/types';
 import { api } from '@/shared/api';
 import { expireAuthSession, getStoredAuthToken, storeAuthToken } from '@/shared/authToken';
@@ -106,7 +105,7 @@ const uploadFormDataWithProgress = (
     xhr.open('POST', api.uploadFilesUrl(projectId));
 
     const token = getStoredAuthToken();
-    if (!IS_PLATFORM && token) {
+    if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
 

@@ -1,8 +1,6 @@
 // @ts-nocheck -- JWT request augmentation is narrowed by Auth route contracts.
 import jwt from 'jsonwebtoken';
 
-import { IS_PLATFORM } from '@/shared/utils.js';
-
 import { userDb, appConfigDb } from '../database/index.js';
 
 // Use env var if set, otherwise auto-generate a unique secret per installation
@@ -24,22 +22,6 @@ const validateApiKey = (req, res, next) => {
 
 // JWT authentication middleware
 const authenticateToken = async (req, res, next) => {
-  // Platform mode:  use single database user
-  if (IS_PLATFORM) {
-    try {
-      const user = userDb.getFirstUser();
-      if (!user) {
-        return res.status(500).json({ error: 'Platform mode: No user found in database' });
-      }
-      req.user = user;
-      return next();
-    } catch (error) {
-      console.error('Platform mode error:', error);
-      return res.status(500).json({ error: 'Platform mode: Failed to fetch user' });
-    }
-  }
-
-  // Normal OSS JWT validation
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -116,21 +98,6 @@ const generateToken = (user) => {
 
 // WebSocket authentication function
 const authenticateWebSocket = (token) => {
-  // Platform mode: bypass token validation, return first user
-  if (IS_PLATFORM) {
-    try {
-      const user = userDb.getFirstUser();
-      if (user) {
-        return { id: user.id, userId: user.id, username: user.username };
-      }
-      return null;
-    } catch (error) {
-      console.error('Platform mode WebSocket error:', error);
-      return null;
-    }
-  }
-
-  // Normal OSS JWT validation
   if (!token) {
     return null;
   }

@@ -308,10 +308,7 @@
       "description": "Uygulamalarından Claude/Codex oturumları tetiklemek için harici API'nin nasıl kullanılacağını öğren.",
       "viewLink": "API Dokümantasyonunu Görüntüle →"
     },
-    "loading": "Yükleniyor...",
-    "version": {
-      "updateAvailable": "Güncelleme mevcut: v{{version}}"
-    }
+    "loading": "Yükleniyor..."
   },
   "tasks": {
     "checking": "TaskMaster kurulumu kontrol ediliyor...",
@@ -360,7 +357,6 @@
       "updateAvailable": "Güncelleme var: v{{version}}",
       "upToDate": "Güncel",
       "bundled": "CloudCLI ile birlikte gelir ve onunla birlikte güncellenir.",
-      "platform": "Barındırma platformu tarafından yönetilir.",
       "updateTo": "v{{version}} sürümüne güncelle",
       "runUpdater": "Güncelleyiciyi çalıştır",
       "updating": "Güncelleniyor…",
@@ -541,7 +537,6 @@
     "toggleFailed": "Açıp kapama başarısız",
     "starterPluginLabel": "Başlangıç Eklentisi",
     "starter": "Başlangıç",
-    "docs": "Dokümanlar",
     "starterPlugin": {
       "name": "Proje İstatistikleri",
       "badge": "başlangıç",

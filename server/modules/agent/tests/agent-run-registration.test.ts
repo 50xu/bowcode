@@ -56,9 +56,7 @@ function createDependencies(queryClaude: RunFunction): AgentDependencies {
     crypto: nodeCrypto,
     homeDirectory: () => '/home/test',
     spawnProcess: (() => { throw new Error('spawn should not run'); }) as unknown as AgentDependencies['spawnProcess'],
-    platformMode: true,
-    users: { getFirstUser: () => ({ id: 1, username: 'test-user' }) },
-    apiKeys: { validateApiKey: () => undefined },
+    apiKeys: { validateApiKey: () => ({ id: 1, username: 'test-user' }) },
     githubTokens: { getActiveGithubToken: () => null },
     projects: { createProjectPath: () => ({ outcome: 'created' }) },
     models: { getProviderModels: async () => ({ OPTIONS: [], DEFAULT: 'default-model' }) } as unknown as AgentDependencies['models'],
@@ -94,7 +92,7 @@ async function withAgentServer(dependencies: AgentDependencies, run: (baseUrl: s
 }
 
 const post = (baseUrl: string, body: Record<string, unknown>) =>
-  fetch(`${baseUrl}/api/agent`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  fetch(`${baseUrl}/api/agent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': 'test-key' }, body: JSON.stringify(body) });
 
 const readEvents = async (response: Response): Promise<Array<Record<string, unknown>>> =>
   (await response.text())

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 
-import { IS_PLATFORM } from '@/shared/utils';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { Onboarding } from '@/modules/onboarding';
 import AuthLoadingScreen from '@/modules/auth/AuthLoadingScreen';
@@ -17,14 +16,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (isLoading) {
     return <AuthLoadingScreen />;
-  }
-
-  if (IS_PLATFORM) {
-    if (!hasCompletedOnboarding) {
-      return <Onboarding onComplete={refreshOnboardingStatus} />;
-    }
-
-    return <>{children}</>;
   }
 
   if (needsSetup) {

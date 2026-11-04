@@ -5,7 +5,7 @@ import { sessionsService } from '@/modules/providers/services/sessions.service.j
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import type { IProvider } from '@/shared/interfaces.js';
 import type { CliVersionProbe, LLMProvider } from '@/shared/types.js';
-import { AppError, IS_PLATFORM, stripAnsiSequences } from '@/shared/utils.js';
+import { AppError, stripAnsiSequences } from '@/shared/utils.js';
 
 /** How long the registry's answer is reused before it is asked again. */
 const LATEST_VERSION_TTL_MS = 60 * 60 * 1000;
@@ -59,8 +59,8 @@ const CLI_UPDATERS: Partial<Record<LLMProvider, CliUpdater>> = {
   },
 };
 
-/** Why the settings page offers no update: the CLI ships with CloudCLI, or the hosting platform manages the CLIs. */
-type CliUpdateUnavailableReason = 'bundled' | 'platform';
+/** Why the settings page offers no update: the CLI ships with CloudCLI. */
+type CliUpdateUnavailableReason = 'bundled';
 
 /** Why an update run went wrong, as read from its exit code and output. */
 type CliUpdateFailure = 'permission_denied' | 'timed_out' | 'failed';
@@ -122,7 +122,6 @@ type ProviderCliServiceDependencies = {
   /** Providers with a chat run, background work or a busy Claude CLI session right now. */
   listBusyProviders(): Promise<LLMProvider[]>;
   fetch: typeof fetch;
-  platformMode: boolean;
   now(): number;
   latestVersionTimeoutMs: number;
   updateTimeoutMs: number;
@@ -133,7 +132,6 @@ const defaultDependencies: ProviderCliServiceDependencies = {
   resolveProvider: (provider) => providerRegistry.resolveProvider(provider),
   listBusyProviders: async () => (await sessionsService.listRunningSessions()).map((session) => session.provider),
   fetch: (input, init) => fetch(input, init),
-  platformMode: IS_PLATFORM,
   now: () => Date.now(),
   latestVersionTimeoutMs: LATEST_VERSION_TIMEOUT_MS,
   updateTimeoutMs: UPDATE_TIMEOUT_MS,
@@ -394,9 +392,7 @@ export function createProviderCliService(dependencyOverrides: Partial<ProviderCl
       const running = updatesInProgress.get(provider.id);
       let { installed, version: installedVersion } = running?.before ?? provider.auth.checkInstalled();
       const update = resolveUpdateCommand(provider.id);
-      const updateUnavailableReason: CliUpdateUnavailableReason | null = dependencies.platformMode
-        ? 'platform'
-        : update ? null : 'bundled';
+      const updateUnavailableReason: CliUpdateUnavailableReason | null = update ? null : 'bundled';
 
       // The registry is only worth asking when the answer can lead to an update
       // of a CLI that is there.
@@ -434,13 +430,6 @@ export function createProviderCliService(dependencyOverrides: Partial<ProviderCl
      * starting another updater over the first.
      */
     async updateCli(providerName: LLMProvider): Promise<ProviderCliUpdateResult> {
-      if (dependencies.platformMode) {
-        throw new AppError('The hosting platform manages the CLIs on this server.', {
-          code: 'PROVIDER_CLI_UPDATE_UNAVAILABLE',
-          statusCode: 403,
-        });
-      }
-
       const provider = dependencies.resolveProvider(providerName);
       const update = resolveUpdateCommand(provider.id);
       if (!update) {

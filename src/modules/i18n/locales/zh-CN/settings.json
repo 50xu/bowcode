@@ -333,10 +333,7 @@
       "description": "了解如何使用外部 API 从您的应用程序触发 Claude/Codex 会话。",
       "viewLink": "查看 API 文档 →"
     },
-    "loading": "加载中...",
-    "version": {
-      "updateAvailable": "有可用更新：v{{version}}"
-    }
+    "loading": "加载中..."
   },
   "tasks": {
     "checking": "正在检查 TaskMaster 安装...",
@@ -388,7 +385,6 @@
       "updateAvailable": "有可用更新：v{{version}}",
       "upToDate": "已是最新",
       "bundled": "随 CloudCLI 一起提供，并随其一起更新。",
-      "platform": "由托管平台管理。",
       "updateTo": "更新到 v{{version}}",
       "runUpdater": "运行更新程序",
       "updating": "正在更新…",
@@ -574,7 +570,6 @@
     "toggleFailed": "切换失败",
     "starterPluginLabel": "入门插件",
     "starter": "入门模板",
-    "docs": "文档",
     "sections": {
       "officialTitle": "官方插件",
       "officialDescription": "由 CloudCLI 团队维护，可直接安装。",

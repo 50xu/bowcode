@@ -165,7 +165,6 @@ afterEach(() => {
 
 const createService = (overrides: Parameters<typeof createProviderCliService>[0] = {}) => createProviderCliService({
   listBusyProviders: async () => [],
-  platformMode: false,
   fetch: (async (input: string | URL | Request) => {
     unexpectedRegistryCalls.push(String(input));
     throw new Error('the registry must not be contacted in this test');
@@ -418,8 +417,8 @@ test('getCliStatus does not ask the registry about a CLI that is not installed',
   });
 });
 
-test('Codex ships with CloudCLI; platform mode offers no update', async () => {
-  await withIsolatedCliEnv(async (binDir) => {
+test('Codex ships with CloudCLI and offers no separate update', async () => {
+  await withIsolatedCliEnv(async () => {
     const service = createService();
 
     const codexStatus = await service.getCliStatus('codex');
@@ -427,21 +426,6 @@ test('Codex ships with CloudCLI; platform mode offers no update', async () => {
     assert.equal(codexStatus.updateCommand, null);
     assert.equal(codexStatus.updateUnavailableReason, 'bundled');
     await rejectsWithAppError(service.updateCli('codex'), 'PROVIDER_CLI_UPDATE_UNAVAILABLE', 400);
-
-    const platformService = createService({ platformMode: true });
-    const platformStatus = await platformService.getCliStatus('claude');
-    assert.equal(platformStatus.updateCommand, null);
-    assert.equal(platformStatus.updateUnavailableReason, 'platform');
-    await rejectsWithAppError(platformService.updateCli('claude'), 'PROVIDER_CLI_UPDATE_UNAVAILABLE', 403);
-
-    // A CLI that is on npm is not looked up either: the platform, not this server, updates it.
-    // (createService's default registry fails the test when it is asked.)
-    const claude = await createFakeCli(binDir, 'claude');
-    await claude.set('version', '2.1.200 (Claude Code)\n');
-    const platformClaude = await platformService.getCliStatus('claude');
-    assert.equal(platformClaude.installedVersion, '2.1.200');
-    assert.equal(platformClaude.latestVersion, null);
-    assert.equal(platformClaude.updateAvailable, false);
   });
 });
 

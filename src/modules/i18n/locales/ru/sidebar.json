@@ -43,7 +43,6 @@
     "deleteSelected_other": "Удалить {{count}} сеансов"
   },
   "tooltips": {
-    "viewEnvironments": "Просмотр окружений",
     "hideSidebar": "Скрыть боковую панель",
     "createProject": "Создать новый проект",
     "refresh": "Обновить проекты и сеансы (Ctrl+R)",
@@ -75,10 +74,7 @@
     "cancel": "Отмена",
     "save": "Сохранить",
     "delete": "Удалить",
-    "rename": "Переименовать",
-    "joinCommunity": "Присоединиться к сообществу",
-    "reportIssue": "Сообщить о проблеме",
-    "starOnGithub": "Звезда на GitHub"
+    "rename": "Переименовать"
   },
   "branding": {
     "openSource": "Открытый исходный код"
@@ -129,7 +125,6 @@
     "deleteSessionsPartialFailure_other": "Не удалось удалить {{count}} сеансов из {{total}}. Попробуйте снова."
   },
   "version": {
-    "updateAvailable": "Доступно обновление",
     "restartRequired": "Обновление установлено — перезапустите сервер для применения"
   },
   "search": {

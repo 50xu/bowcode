@@ -26,6 +26,9 @@ type GitStatusFileGroup = 'modified' | 'added' | 'deleted' | 'untracked';
 export const CLOUDCLI_WORDMARK_FONT_FAMILY =
   'ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji';
 
+/** Repository of this fork; use it for neutral Source links and release information. */
+export const PROJECT_REPO_URL = 'https://github.com/vantran-se/claudecodeui';
+
 // ---------------------------
 
 //----------------- APPLICATION VERSION ------------

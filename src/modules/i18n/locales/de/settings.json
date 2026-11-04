@@ -307,10 +307,7 @@
       "description": "Erfahre, wie du die externe API nutzen kannst, um Claude/Codex-Sitzungen aus deinen Anwendungen heraus zu starten.",
       "viewLink": "API-Dokumentation anzeigen →"
     },
-    "loading": "Lädt...",
-    "version": {
-      "updateAvailable": "Update verfügbar: v{{version}}"
-    }
+    "loading": "Lädt..."
   },
   "tasks": {
     "checking": "TaskMaster-Installation wird überprüft...",
@@ -359,7 +356,6 @@
       "updateAvailable": "Update verfügbar: v{{version}}",
       "upToDate": "Aktuell",
       "bundled": "Wird mit CloudCLI ausgeliefert und zusammen damit aktualisiert.",
-      "platform": "Wird von der Hosting-Plattform verwaltet.",
       "updateTo": "Auf v{{version}} aktualisieren",
       "runUpdater": "Updater ausführen",
       "updating": "Wird aktualisiert…",
@@ -540,7 +536,6 @@
     "toggleFailed": "Umschalten fehlgeschlagen",
     "buildYourOwn": "Eigenes Plugin erstellen",
     "starter": "Starter",
-    "docs": "Dokumentation",
     "starterPlugin": {
       "name": "Projektstatistiken",
       "badge": "starter",

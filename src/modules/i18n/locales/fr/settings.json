@@ -312,10 +312,7 @@
       "description": "Apprenez à utiliser l'API externe pour déclencher des sessions Claude/Codex depuis vos applications.",
       "viewLink": "Voir la documentation API →"
     },
-    "loading": "Chargement...",
-    "version": {
-      "updateAvailable": "Mise à jour disponible : v{{version}}"
-    }
+    "loading": "Chargement..."
   },
   "tasks": {
     "checking": "Vérification de l'installation TaskMaster...",
@@ -367,7 +364,6 @@
       "updateAvailable": "Mise à jour disponible : v{{version}}",
       "upToDate": "À jour",
       "bundled": "Fournie avec CloudCLI et mise à jour en même temps que lui.",
-      "platform": "Gérée par la plateforme d'hébergement.",
       "updateTo": "Mettre à jour vers v{{version}}",
       "runUpdater": "Lancer la mise à jour",
       "updating": "Mise à jour…",
@@ -549,7 +545,6 @@
     "toggleFailed": "Échec du basculement",
     "starterPluginLabel": "Plugin de démarrage",
     "starter": "Démarrage",
-    "docs": "Docs",
     "sections": {
       "officialTitle": "Plugins officiels",
       "officialDescription": "Maintenus par l'équipe CloudCLI et prêts à être installés directement.",

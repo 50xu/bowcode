@@ -3,16 +3,6 @@ import { twMerge } from 'tailwind-merge';
 
 import type { Project, ProjectSession, QuickSettingsTab, SlashCommand } from '@/shared/types';
 
-//----------------- DEPLOYMENT MODE ------------
-
-/**
- * Indicates whether the app runs in Platform mode (hosted) or OSS mode (self-hosted).
- * Read it to hide or gate features that only exist in one of the two deployments.
- */
-export const IS_PLATFORM = import.meta.env?.VITE_IS_PLATFORM === 'true';
-
-// ---------------------------
-
 //----------------- TAILWIND CLASS COMPOSITION ------------
 
 /**

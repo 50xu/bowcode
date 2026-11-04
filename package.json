@@ -82,14 +82,6 @@
       "package.json",
       "!**/node_modules/@anthropic-ai/claude-agent-sdk-{darwin,linux,win32}-*/**"
     ],
-    "protocols": [
-      {
-        "name": "CloudCLI",
-        "schemes": [
-          "cloudcli"
-        ]
-      }
-    ],
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "electron/assets/logo-macos.icns",
@@ -99,15 +91,7 @@
       ],
       "extendInfo": {
         "CFBundleName": "CloudCLI",
-        "CFBundleDisplayName": "CloudCLI",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLName": "CloudCLI",
-            "CFBundleURLSchemes": [
-              "cloudcli"
-            ]
-          }
-        ]
+        "CFBundleDisplayName": "CloudCLI"
       }
     },
     "win": {

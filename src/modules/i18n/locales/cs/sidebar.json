@@ -35,7 +35,6 @@
     "showMore": "Zobrazit další relace"
   },
   "tooltips": {
-    "viewEnvironments": "Zobrazit prostředí",
     "hideSidebar": "Skrýt postranní panel",
     "createProject": "Vytvořit nový projekt",
     "refresh": "Obnovit projekty a relace (Ctrl+R)",
@@ -69,10 +68,7 @@
     "cancel": "Zrušit",
     "save": "Uložit",
     "delete": "Smazat",
-    "rename": "Přejmenovat",
-    "joinCommunity": "Připojit se ke komunitě",
-    "reportIssue": "Nahlásit problém",
-    "starOnGithub": "Dát hvězdičku na GitHubu"
+    "rename": "Přejmenovat"
   },
   "branding": {
     "openSource": "Open source"
@@ -128,7 +124,6 @@
     "forkSessionError": "Tuto relaci se nepodařilo forknout. Zkuste to prosím znovu."
   },
   "version": {
-    "updateAvailable": "Je dostupná aktualizace",
     "restartRequired": "Aktualizace nainstalována – restartujte server, aby se projevila"
   },
   "search": {

@@ -40,7 +40,6 @@
     "deleteSelected": "{{count}}件のセッションを削除"
   },
   "tooltips": {
-    "viewEnvironments": "環境を表示",
     "hideSidebar": "サイドバーを隠す",
     "createProject": "新しいプロジェクトを作成",
     "refresh": "プロジェクトとセッションを更新 (Ctrl+R)",
@@ -71,10 +70,7 @@
     "cancel": "キャンセル",
     "save": "保存",
     "delete": "削除",
-    "rename": "名前の変更",
-    "joinCommunity": "コミュニティに参加",
-    "reportIssue": "問題を報告",
-    "starOnGithub": "GitHubでスター"
+    "rename": "名前の変更"
   },
   "branding": {
     "openSource": "オープンソース"
@@ -122,7 +118,6 @@
     "deleteSessionsPartialFailure": "{{total}}件中{{count}}件のセッションを削除できませんでした。もう一度お試しください。"
   },
   "version": {
-    "updateAvailable": "アップデートあり",
     "restartRequired": "更新が適用されていません。サーバーを再起動してください"
   },
   "search": {

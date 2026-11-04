@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/modules/auth';
-import { IS_PLATFORM } from '@/shared/utils';
 import { expireAuthSession, isAuthTokenExpired } from '@/shared/authToken';
 import type { ServerEvent } from '@/shared/types';
 
@@ -51,13 +50,12 @@ export const useWebSocket = () => {
 
 const buildWebSocketUrl = (token: string | null) => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  if (IS_PLATFORM) return `${protocol}//${window.location.host}/ws`; // Platform mode: Use same domain as the page (goes through proxy)
   if (!token) return null;
   if (isAuthTokenExpired(token)) {
     expireAuthSession();
     return null;
   }
-  return `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`; // OSS mode: Use same host:port that served the page
+  return `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`; // Use the host and port that served the page
 };
 
 const useWebSocketProviderState = (): WebSocketContextType => {
@@ -91,7 +89,7 @@ const useWebSocketProviderState = (): WebSocketContextType => {
   // without reading the `connect` binding while it is still initializing.
   const connect = useCallback(function connect() {
     if (unmountedRef.current) return; // Prevent connection if unmounted
-    if (!IS_PLATFORM && (isAuthLoading || !user)) return;
+    if (isAuthLoading || !user) return;
     try {
       // Construct WebSocket URL
       const wsUrl = buildWebSocketUrl(token);
@@ -156,7 +154,7 @@ const useWebSocketProviderState = (): WebSocketContextType => {
     // re-run of the effect (e.g. on token refresh) would short-circuit connect()
     // at its unmounted guard and leave the socket permanently disconnected.
     unmountedRef.current = false;
-    if (!IS_PLATFORM && (isAuthLoading || !user)) {
+    if (isAuthLoading || !user) {
       return undefined;
     }
     connect();

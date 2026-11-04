@@ -8,7 +8,7 @@ type ProviderCliUpdateResponse = { data: ProviderCliUpdateResult };
 
 /**
  * Why an update request left no run result. `refused`: the server answered
- * and did not start the updater (busy session, platform mode). `unconfirmed`:
+ * and did not start the updater (busy session). `unconfirmed`:
  * no readable answer came back (the connection dropped, a proxy gave up on the
  * long request), so the updater may still have run.
  */
@@ -117,7 +117,7 @@ export function useProviderCliVersion(provider: AgentProvider) {
   // The last finished run (output, versions, failure), shown under the row
   // until the user switches agents.
   const [updateResult, setUpdateResult] = useState<ProviderCliUpdateResult | null>(null);
-  // A request the server refused (busy session, platform mode) or whose answer
+  // A request the server refused (busy session) or whose answer
   // was lost; kept apart from updateResult because there is no run output.
   const [updateError, setUpdateError] = useState<ProviderCliUpdateRequestError | null>(null);
   // False once the row has unmounted: an update request or a poll can outlive

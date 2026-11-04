@@ -41,7 +41,6 @@
     "deleteSelected_other": "刪除 {{count}} 個工作階段"
   },
   "tooltips": {
-    "viewEnvironments": "查看環境",
     "hideSidebar": "隱藏側邊欄",
     "createProject": "建立新專案",
     "refresh": "重新整理專案和工作階段 (Ctrl+R)",
@@ -72,10 +71,7 @@
     "cancel": "取消",
     "save": "儲存",
     "delete": "刪除",
-    "rename": "重新命名",
-    "joinCommunity": "加入社群",
-    "reportIssue": "回報問題",
-    "starOnGithub": "在 GitHub 上加星"
+    "rename": "重新命名"
   },
   "branding": {
     "openSource": "開源"
@@ -124,7 +120,6 @@
     "deleteSessionsPartialFailure_other": "{{total}} 個工作階段中有 {{count}} 個刪除失敗，請重試。"
   },
   "version": {
-    "updateAvailable": "有可用更新",
     "restartRequired": "已安裝更新 — 請重新啟動伺服器以套用"
   },
   "search": {

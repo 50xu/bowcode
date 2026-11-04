@@ -244,42 +244,12 @@
     }
   },
   "versionUpdate": {
-    "title": "Update Available",
-    "newVersionReady": "A new version is ready",
-    "currentVersion": "Current Version",
-    "latestVersion": "Latest Version",
-    "whatsNew": "What's New:",
-    "viewFullRelease": "View full release",
-    "updateProgress": "Update Progress:",
-    "manualUpgrade": "Manual upgrade:",
-    "npmUpgradeCommand": "npm install -g @cloudcli-ai/cloudcli@latest",
-    "manualUpgradeHint": "Or click \"Update Now\" to run the update automatically.",
-    "updateCompleted": "Update completed successfully!",
-    "restartServer": "Please restart the server to apply changes.",
-    "updateFailed": "Update failed",
-    "buttons": {
-      "close": "Close",
-      "later": "Later",
-      "copyCommand": "Copy Command",
-      "updateNow": "Update Now",
-      "updating": "Updating..."
-    },
     "ariaLabels": {
-      "closeModal": "Close version upgrade modal",
       "showSidebar": "Show sidebar",
       "settings": "Settings",
-      "updateAvailable": "Update available",
       "closeSidebar": "Close sidebar",
       "resizeSidebar": "Resize sidebar"
-    },
-    "startingUpdate": "Starting update...",
-    "updateStartedRestarting": "Update started. The server appears to be restarting to apply it.",
-    "unexpectedResponse": "The update endpoint returned an unexpected response (HTTP {{status}}). Update manually with the command below.",
-    "connectionInterrupted": "Connection to the server was interrupted — it is likely restarting to apply the update.",
-    "unknownError": "Unknown error",
-    "refreshNow": "Refreshing the window now...",
-    "refreshIn_one": "This will refresh the window in {{count}} second. If the update doesn't apply, RESTART the environment.",
-    "refreshIn_other": "This will refresh the window in {{count}} seconds. If the update doesn't apply, RESTART the environment."
+    }
   },
   "commandPalette": {
     "title": "Command palette",

@@ -5,7 +5,7 @@ import { TerminalAccessories } from '@/modules/terminal/components/TerminalAcces
 import { useXterm } from '@/modules/terminal/hooks/useXterm';
 import { terminalInput, toggleModifier } from '@/modules/terminal/utils/terminalInput';
 import type { Modifiers } from '@/modules/terminal/utils/terminalInput';
-import { IS_PLATFORM, copyTextToClipboard } from '@/shared/utils';
+import { copyTextToClipboard } from '@/shared/utils';
 import { getStoredAuthToken } from '@/shared/authToken';
 
 type Props = { projectPath: string; terminalId: string; active: boolean; searchOpen: boolean; fontSize: number; onFontSize: (update: (size: number) => number) => void; onCloseSearch: () => void; onTitle: (title: string) => void; onStatus: (status: 'connected' | 'reconnecting' | 'closed') => void; onKillReady: (kill: () => void) => void; onInputReady: (input: (data: string) => void) => void };
@@ -54,8 +54,8 @@ export function TerminalSession({ projectPath, terminalId, active, searchOpen, f
     let timer: ReturnType<typeof setTimeout> | undefined;
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const token = IS_PLATFORM ? null : getStoredAuthToken();
-      if (!IS_PLATFORM && !token) {
+      const token = getStoredAuthToken();
+      if (!token) {
         setStatus('closed');
         terminalRef.current?.writeln('Authentication token unavailable');
         return;

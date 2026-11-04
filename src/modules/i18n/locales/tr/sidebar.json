@@ -41,7 +41,6 @@
     "deleteSelected_other": "{{count}} oturumu sil"
   },
   "tooltips": {
-    "viewEnvironments": "Ortamları Görüntüle",
     "hideSidebar": "Kenar çubuğunu gizle",
     "createProject": "Yeni proje oluştur",
     "refresh": "Projeleri ve oturumları yenile (Ctrl+R)",
@@ -73,10 +72,7 @@
     "cancel": "İptal",
     "save": "Kaydet",
     "delete": "Sil",
-    "rename": "Yeniden Adlandır",
-    "joinCommunity": "Topluluğa Katıl",
-    "reportIssue": "Sorun Bildir",
-    "starOnGithub": "GitHub'da Yıldızla"
+    "rename": "Yeniden Adlandır"
   },
   "branding": {
     "openSource": "Açık Kaynak"
@@ -125,7 +121,6 @@
     "deleteSessionsPartialFailure_other": "{{total}} oturumdan {{count}} tanesi silinemedi. Lütfen tekrar dene."
   },
   "version": {
-    "updateAvailable": "Güncelleme mevcut",
     "restartRequired": "Güncelleme yüklendi — uygulamak için sunucuyu yeniden başlatın"
   },
   "search": {

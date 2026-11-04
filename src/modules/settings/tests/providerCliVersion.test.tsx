@@ -205,18 +205,6 @@ describe('ProviderCliVersion', () => {
 
   });
 
-  it('says the hosting platform manages the CLI and offers no update there', async () => {
-    responses.status = [claudeStatus({
-      latestVersion: null,
-      updateAvailable: false,
-      updateCommand: null,
-      updateUnavailableReason: 'platform',
-    })];
-    renderRow();
-    expect(await screen.findByText('Managed by the hosting platform.')).toBeTruthy();
-    expect(screen.queryByRole('button')).toBeNull();
-  });
-
   it('stops saying it is checking when the version cannot be loaded', async () => {
     responses.status = [json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'boom' } }, 500)];
     vi.spyOn(console, 'error').mockImplementation(() => {});
