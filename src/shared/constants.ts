@@ -8,6 +8,7 @@ import {
   MonitorPlay,
   Palette,
   Plug,
+  RefreshCw,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
@@ -63,8 +64,45 @@ export const SETTINGS_MAIN_TABS: SettingsMainTabMeta[] = [
   { id: 'browser', label: 'Browser', keywords: 'browser playwright chromium automation', icon: MonitorPlay },
   { id: 'notifications', label: 'Notifications', keywords: 'notifications alerts push', icon: Bell },
   { id: 'plugins', label: 'Plugins', keywords: 'plugins extensions integrations', icon: Plug },
+  { id: 'sync', label: 'Sync', keywords: 'settings sync github repository', icon: RefreshCw },
   { id: 'about', label: 'About', keywords: 'about version info', icon: Info },
 ];
+
+// ---------------------------
+
+//----------------- SETTINGS SYNC ------------
+
+/** Browser preference keys explicitly eligible for settings sync; never include authentication tokens or chat data. Values remain raw localStorage strings. */
+export const SETTINGS_SYNC_LOCAL_STORAGE_KEYS = [
+  'user-preferences',
+  'theme',
+  'userLanguage',
+  'tasks-enabled',
+  'claude-settings',
+  'codex-settings',
+  'opencode-settings',
+  'uiPreferences',
+  'selected-provider',
+  'codeEditorWordWrap',
+  'codeEditorShowMinimap',
+  'codeEditorLineNumbers',
+  'codeEditorFontSize',
+  'notificationSoundEnabled',
+  'claude-model',
+  'codex-model',
+  'opencode-model',
+  'claude-effort',
+  'codex-effort',
+  'opencode-effort',
+  'permissionMode-last-claude',
+  'permissionMode-last-codex',
+  'permissionMode-last-opencode',
+  'sidebar-width',
+  'file-tree-view-mode',
+  'model-groups-collapsed',
+  'quickSettingsPanel',
+  'quickSettingsHandlePosition',
+] as const;
 
 // ---------------------------
 

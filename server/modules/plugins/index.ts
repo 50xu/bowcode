@@ -1,3 +1,6 @@
+// getPluginsConfig/savePluginsConfig: used by Settings Sync to transfer installed plugin enablement through the Plugins module.
+export { getPluginsConfig, savePluginsConfig, scanPlugins } from './plugin-registry.service.js';
+
 // pluginsRoutes: used by the server entrypoint to mount protected plugin-management endpoints.
 export { pluginsRoutes } from './plugins.module.js';
 
