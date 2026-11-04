@@ -1,3 +1,5 @@
+import { createRandomId } from '@/shared/utils';
+
 export type TerminalTab = { id: string; title: string };
 export type TerminalTabsState = { tabs: TerminalTab[]; activeId: string };
 type Storage = Pick<globalThis.Storage, 'getItem' | 'setItem'>;
@@ -17,7 +19,7 @@ export function restoreTabs(projectPath: string, storage: Storage): TerminalTabs
       }
     }
   } catch { /* Storage may be unavailable or contain stale data. */ }
-  const id = crypto.randomUUID();
+  const id = createRandomId();
   return { tabs: [{ id, title: 'Terminal 1' }], activeId: id };
 }
 
@@ -29,7 +31,7 @@ export function saveTabs(projectPath: string, state: TerminalTabsState, storage:
 /** Adds a fresh independent PTY tab, selecting it immediately. */
 export function addTab(state: TerminalTabsState): TerminalTabsState {
   const numbers = state.tabs.map((tab) => /^Terminal (\d+)$/.exec(tab.title)?.[1]).map(Number).filter(Number.isFinite);
-  const id = crypto.randomUUID();
+  const id = createRandomId();
   return { tabs: [...state.tabs, { id, title: `Terminal ${Math.max(0, ...numbers) + 1}` }], activeId: id };
 }
 

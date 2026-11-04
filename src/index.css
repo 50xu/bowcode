@@ -623,18 +623,27 @@
 
   .chat-message {
     contain: layout style paint;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 180px;
   }
 
-  .chat-message.assistant {
-    contain-intrinsic-size: auto 240px;
-  }
+  /* Off-screen skipping swaps placeholder heights for real ones as messages
+     scroll into view. Browsers with scroll anchoring absorb that; Safari/iOS
+     has none, so scrolling up through history jumped on every message. Only
+     opt in where the browser can keep the viewport anchored. */
+  @supports (overflow-anchor: auto) {
+    .chat-message {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 180px;
+    }
 
-  .chat-message.user,
-  .chat-message.tool,
-  .chat-message.error {
-    contain-intrinsic-size: auto 96px;
+    .chat-message.assistant {
+      contain-intrinsic-size: auto 240px;
+    }
+
+    .chat-message.user,
+    .chat-message.tool,
+    .chat-message.error {
+      contain-intrinsic-size: auto 96px;
+    }
   }
 
   /* Mobile touch optimization and safe areas */

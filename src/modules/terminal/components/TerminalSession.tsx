@@ -5,7 +5,7 @@ import { TerminalAccessories } from '@/modules/terminal/components/TerminalAcces
 import { useXterm } from '@/modules/terminal/hooks/useXterm';
 import { terminalInput, toggleModifier } from '@/modules/terminal/utils/terminalInput';
 import type { Modifiers } from '@/modules/terminal/utils/terminalInput';
-import { IS_PLATFORM } from '@/shared/utils';
+import { IS_PLATFORM, copyTextToClipboard } from '@/shared/utils';
 import { getStoredAuthToken } from '@/shared/authToken';
 
 type Props = { projectPath: string; terminalId: string; active: boolean; searchOpen: boolean; fontSize: number; onFontSize: (update: (size: number) => number) => void; onCloseSearch: () => void; onTitle: (title: string) => void; onStatus: (status: 'connected' | 'reconnecting' | 'closed') => void; onKillReady: (kill: () => void) => void; onInputReady: (input: (data: string) => void) => void };
@@ -127,7 +127,7 @@ export function TerminalSession({ projectPath, terminalId, active, searchOpen, f
         const next = { ...current, [key]: toggleModifier(current[key]) };
         modifiersRef.current = next;
         return next;
-      })} onKey={sendKey} onCopy={() => { const selection = terminalRef.current?.getSelection(); if (selection) void navigator.clipboard?.writeText(selection); }} onPaste={() => { void navigator.clipboard?.readText().then((text) => { if (text) send(text); }).catch(() => undefined); }} onHide={hideKeyboard} onFontSize={(delta) => onFontSize((size) => Math.max(10, Math.min(22, size + delta)))} />
+      })} onKey={sendKey} onCopy={() => { const selection = terminalRef.current?.getSelection(); if (selection) void copyTextToClipboard(selection); }} onPaste={() => { void navigator.clipboard?.readText().then((text) => { if (text) send(text); }).catch(() => undefined); }} onHide={hideKeyboard} onFontSize={(delta) => onFontSize((size) => Math.max(10, Math.min(22, size + delta)))} />
       <span className="sr-only" data-terminal-status={terminalId}>{status}</span>
     </div>
   );

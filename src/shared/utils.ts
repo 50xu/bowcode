@@ -60,6 +60,31 @@ function fallbackCopyToClipboard(text: string): boolean {
 }
 
 /**
+ * Random id for client-side records (terminal tabs, snippets, ...).
+ *
+ * `crypto.randomUUID` only exists in secure contexts (HTTPS or localhost); the
+ * app is often opened over plain http on the LAN (e.g. the iOS PWA), where it
+ * is undefined and calling it crashes the page. `crypto.getRandomValues` works
+ * in every context.
+ */
+export function createRandomId(): string {
+  const cryptoApi = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined;
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+    cryptoApi.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/**
  * Copies text to the clipboard, falling back to a hidden textarea when the Clipboard API
  * is blocked. Resolves to whether the copy succeeded so callers can show copied feedback.
  */

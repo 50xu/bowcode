@@ -563,13 +563,18 @@ export function useChatSessionState({
     }
 
     if (!allMessagesLoadedRef.current) {
-      if (!scrolledNearTop) { topLoadLockRef.current = false; return; }
-      if (topLoadLockRef.current) {
-        if (container.scrollTop > 20) topLoadLockRef.current = false;
-        return;
-      }
+      // Prefetch older pages well before the top: prepending (and re-anchoring
+      // the scroll position) right at the edge interrupts iOS momentum scrolling.
+      const nearTopForPrefetch = container.scrollTop < 600;
+      if (!nearTopForPrefetch) { topLoadLockRef.current = false; return; }
+      if (topLoadLockRef.current) return;
       const didLoad = await loadOlderMessages(container);
-      if (didLoad) topLoadLockRef.current = true;
+      if (didLoad) {
+        // Debounce the next page instead of waiting for the user to leave the
+        // prefetch zone: a short page may leave them still near the top.
+        topLoadLockRef.current = true;
+        setTimeout(() => { topLoadLockRef.current = false; }, 400);
+      }
     }
   }, [hasMoreMessages, isActive, isNearBottom, loadOlderMessages]);
 

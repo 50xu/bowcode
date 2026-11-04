@@ -1,3 +1,5 @@
+import { createRandomId } from '@/shared/utils';
+
 export type Snippet = { id: string; name: string; command: string };
 type Storage = Pick<globalThis.Storage, 'getItem' | 'setItem'>;
 const KEY = 'terminal:snippets';
@@ -23,7 +25,7 @@ export function saveSnippets(snippets: Snippet[], storage: Storage): void {
 
 /** Creates a command with an independent identity. */
 export function addSnippet(snippets: Snippet[], name: string, command: string): Snippet[] {
-  return [...snippets, { id: crypto.randomUUID(), name: name.trim(), command: command.trim() }];
+  return [...snippets, { id: createRandomId(), name: name.trim(), command: command.trim() }];
 }
 
 /** Updates the named command without changing its identity. */

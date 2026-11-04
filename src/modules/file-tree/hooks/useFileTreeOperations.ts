@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import JSZip from 'jszip';
 
 import { api } from '@/shared/api';
+import { copyTextToClipboard } from '@/shared/utils';
 import type { FileTreeNode,Project } from '@/shared/types';
 
 // Invalid filename characters
@@ -239,12 +240,14 @@ export function useFileTreeOperations({
 
   // Copy path to clipboard
   const handleCopyPath = useCallback((item: FileTreeNode) => {
-    navigator.clipboard.writeText(item.path).catch(() => {
-      // Clipboard API may fail in some contexts (e.g., non-HTTPS)
-      showToast(t('fileTree.toast.copyFailed', 'Failed to copy path'), 'error');
-      return;
+    // copyTextToClipboard falls back to execCommand where the async Clipboard
+    // API is missing (plain-http LAN access), instead of throwing.
+    void copyTextToClipboard(item.path).then((copied) => {
+      showToast(
+        copied ? t('fileTree.toast.pathCopied', 'Path copied to clipboard') : t('fileTree.toast.copyFailed', 'Failed to copy path'),
+        copied ? 'success' : 'error',
+      );
     });
-    showToast(t('fileTree.toast.pathCopied', 'Path copied to clipboard'), 'success');
   }, [showToast, t]);
 
   const triggerBrowserDownload = useCallback((blob: Blob, fileName: string) => {
