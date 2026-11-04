@@ -5,7 +5,6 @@ import { Button, Input } from '@/shared/ui';
 import { CLOUDCLI_WORDMARK_FONT_FAMILY } from '@/shared/constants';
 import { IS_PLATFORM } from '@/shared/utils';
 import type { SidebarSearchMode } from '@/shared/types';
-import GitHubStarBadge from '@/modules/sidebar/GitHubStarBadge';
 import SidebarModeTabs from '@/modules/sidebar/SidebarModeTabs';
 
 const MOD_KEY =
@@ -83,7 +82,7 @@ export default function SidebarHeader({
     <div className="flex-shrink-0">
       {/* Desktop header */}
       <div
-        className="hidden px-3 pb-2 pt-3 md:block"
+        className="hidden px-3 pb-3 pt-3 md:block"
         style={{}}
       >
         <div className="flex items-center justify-between gap-2">
@@ -103,7 +102,7 @@ export default function SidebarHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+              className="h-9 w-9 rounded-[10px] p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={onRefresh}
               disabled={isRefreshing}
               title={t('tooltips.refresh')}
@@ -117,7 +116,7 @@ export default function SidebarHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+              className="h-9 w-9 rounded-[10px] p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={onCreateProject}
               title={t('tooltips.createProject')}
             >
@@ -126,7 +125,7 @@ export default function SidebarHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+              className="h-9 w-9 rounded-[10px] p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={onCollapseSidebar}
               title={t('tooltips.hideSidebar')}
             >
@@ -134,8 +133,6 @@ export default function SidebarHeader({
             </Button>
           </div>
         </div>
-
-        <GitHubStarBadge />
 
         {/* Search bar */}
         {showSearchTools && (
@@ -154,7 +151,7 @@ export default function SidebarHeader({
                 placeholder={searchPlaceholder}
                 value={searchFilter}
                 onChange={(event) => onSearchFilterChange(event.target.value)}
-                className="nav-search-input h-9 rounded-xl border-0 pl-9 pr-14 text-sm transition-all duration-200 placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-10 rounded-[10px] border border-input bg-card pl-9 pr-14 text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
               />
               {searchFilter ? (
                 <button
@@ -202,17 +199,20 @@ export default function SidebarHeader({
 
           <div className="flex flex-shrink-0 gap-1.5">
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 transition-all active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-card text-muted-foreground transition-all active:scale-95"
               onClick={onRefresh}
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-4 w-4 text-muted-foreground ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/90 text-primary-foreground transition-all active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-card text-primary transition-all active:scale-95"
               onClick={onCreateProject}
             >
               <FolderPlus className="h-4 w-4" />
+            </button>
+            <button className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-card text-muted-foreground active:scale-95" onClick={onCollapseSidebar} aria-label={t('tooltips.hideSidebar')}>
+              <PanelLeftClose className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function SidebarHeader({
                 placeholder={searchPlaceholder}
                 value={searchFilter}
                 onChange={(event) => onSearchFilterChange(event.target.value)}
-                className="nav-search-input h-10 rounded-xl border-0 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-11 rounded-[10px] border border-input bg-card pl-10 pr-9 text-base placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
               />
               {searchFilter && (
                 <button

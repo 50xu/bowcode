@@ -1,12 +1,10 @@
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
 import { useProjectSlashCommands } from '@/shared/hooks/useProjectSlashCommands';
 import { useSelectedProvider } from '@/shared/hooks/useSelectedProvider';
 import { useUiPreferences, useSetUiPreference } from '@/shared/context/UiPreferencesContext';
 import { useTheme } from '@/shared/context/ThemeContext';
-import { useQuickSettingsDrag } from '@/modules/quick-settings-panel/hooks/useQuickSettingsDrag';
 import { useQuickSettingsPanelState } from '@/modules/quick-settings-panel/hooks/useQuickSettingsPanelState';
 import type {
   PreferenceToggleKey,
@@ -17,7 +15,6 @@ import type {
 import { getQuickSettingsTabId, getQuickSettingsTabPanelId } from '@/shared/utils';
 import QuickSettingsCommandsTab from '@/modules/quick-settings-panel/QuickSettingsCommandsTab';
 import QuickSettingsContent from '@/modules/quick-settings-panel/QuickSettingsContent';
-import QuickSettingsHandle from '@/modules/quick-settings-panel/QuickSettingsHandle';
 import QuickSettingsPanelHeader from '@/modules/quick-settings-panel/QuickSettingsPanelHeader';
 import QuickSettingsTabs from '@/modules/quick-settings-panel/QuickSettingsTabs';
 
@@ -54,13 +51,6 @@ function QuickSettingsPanelView({ selectedProject, onInsertCommand }: QuickSetti
     // for a second request while the Commands tab is actually showing.
     enabled: isOpen && activeTab === 'commands',
   });
-  const {
-    isDragging,
-    handleStyle,
-    startDrag,
-    consumeSuppressedClick,
-  } = useQuickSettingsDrag({ isMobile });
-
   const quickSettingsPreferences = useMemo<QuickSettingsPreferences>(() => ({
     showRawParameters: preferences.showRawParameters,
     showThinking: preferences.showThinking,
@@ -80,18 +70,11 @@ function QuickSettingsPanelView({ selectedProject, onInsertCommand }: QuickSetti
     [setPreference],
   );
 
-  const handleToggleFromHandle = useCallback(
-    (event: ReactMouseEvent<HTMLButtonElement>) => {
-      // A drag releases a click event as well; this guard prevents accidental toggles.
-      if (consumeSuppressedClick()) {
-        event.preventDefault();
-        return;
-      }
-
-      toggle();
-    },
-    [consumeSuppressedClick, toggle],
-  );
+  // The workspace header replaces the draggable edge handle as the panel's navigation control.
+  useEffect(() => {
+    window.addEventListener('workspace:toggle-quick-settings', toggle);
+    return () => window.removeEventListener('workspace:toggle-quick-settings', toggle);
+  }, [toggle]);
 
   const handleInsertCommand = useCallback(
     (command: SlashCommand) => {
@@ -166,25 +149,18 @@ function QuickSettingsPanelView({ selectedProject, onInsertCommand }: QuickSetti
 
   return (
     <>
-      <QuickSettingsHandle
-        isOpen={isOpen}
-        isDragging={isDragging}
-        style={handleStyle}
-        onClick={handleToggleFromHandle}
-        onMouseDown={startDrag}
-        onTouchStart={startDrag}
-      />
-
-      {/* Docked: a layout column while open, gone while collapsed via the handle (the pin is kept). */}
+      {/* Docked: a layout column while open; the header button collapses it without clearing the pin. */}
       {isPinned ? (
         isOpen && (
-          <div className="relative h-full w-64 flex-shrink-0 border-l border-border bg-background">
+          <div className="relative h-full w-64 flex-shrink-0 border-l border-border bg-card">
             {panelBody}
           </div>
         )
       ) : (
         <div
-          className={`fixed right-0 top-0 z-[9999] h-full w-64 transform border-l border-border bg-background shadow-xl transition-transform duration-150 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} ${isMobile ? 'h-screen' : ''}`}
+          className={`fixed right-0 top-0 z-[9999] h-full w-64 transform border-l border-border bg-card shadow-xl transition-transform duration-150 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} ${isMobile ? 'h-screen' : ''}`}
+          // Fixed to the viewport, so it does not inherit #root's safe-area padding (PWA notch / home bar).
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           {panelBody}
         </div>

@@ -78,7 +78,7 @@ export default function WorkspaceTitle({
   });
 
   return (
-    <div className="scrollbar-hide flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+    <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
       {showSessionIcon && (
         <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
           <LLMProviderLogo provider={selectedSession?.__provider} className="h-4 w-4" />
@@ -108,7 +108,7 @@ export default function WorkspaceTitle({
               <h2
                 title={t('mainContent.renameSessionHint', { title: sessionTitle })}
                 onDoubleClick={startRenaming}
-                className="cursor-text truncate text-sm font-semibold leading-tight text-foreground"
+                className="cursor-text truncate text-[15px] font-semibold leading-tight text-foreground"
               >
                 {sessionTitle}
               </h2>
@@ -117,12 +117,12 @@ export default function WorkspaceTitle({
           </div>
         ) : showChatNewSession ? (
           <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold leading-tight text-foreground">{t('mainContent.newSession')}</h2>
+            <h2 className="truncate text-[15px] font-semibold leading-tight text-foreground">{t('mainContent.newSession')}</h2>
             <div className="truncate text-xs leading-tight text-muted-foreground">{selectedProject.displayName}</div>
           </div>
         ) : (
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold leading-tight text-foreground">
+            <h2 className="truncate text-[15px] font-semibold leading-tight text-foreground">
               {getTabTitle(activeTab, shouldShowTasksTab, t, pluginDisplayName)}
             </h2>
             <div className="truncate text-[11px] leading-tight text-muted-foreground">{selectedProject.displayName}</div>

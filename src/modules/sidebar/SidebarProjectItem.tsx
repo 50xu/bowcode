@@ -155,13 +155,13 @@ function SidebarProjectItem({
   };
 
   return (
-    <div className={cn('md:space-y-1', isDeleting && 'opacity-50 pointer-events-none')}>
+    <div className={cn('overflow-hidden rounded-xl bg-card hairline', isDeleting && 'opacity-50 pointer-events-none')}>
       <div className="sticky top-0 z-10 md:group group">
         {isCompact && (
-        <div className="bg-background">
+        <div className="bg-card">
           <div
             className={cn(
-              'p-3 mx-3 my-1 rounded-lg bg-card border border-border/50 active:scale-[0.98] transition-all duration-150',
+              'min-h-11 p-2 bg-card active:scale-[0.98] transition-all duration-150',
               isSelected && 'bg-primary/5 border-primary/20',
               isStarred &&
                 !isSelected &&
@@ -173,7 +173,7 @@ function SidebarProjectItem({
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <button
                   className={cn(
-                    'w-8 h-8 rounded-lg flex items-center justify-center active:scale-90 transition-all duration-150 border',
+                    'w-9 h-9 rounded-lg flex items-center justify-center active:scale-90 transition-all duration-150 border',
                     isStarred
                       ? 'bg-yellow-500/10 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'
                       : 'bg-gray-500/10 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800',
@@ -226,7 +226,7 @@ function SidebarProjectItem({
                   ) : (
                     <>
                       <div className="flex min-w-0 flex-1 items-center justify-between">
-                        <h3 className="truncate text-sm font-normal text-foreground">{project.displayName}</h3>
+                        <h3 className="truncate text-[17px] font-normal text-foreground">{project.displayName}</h3>
                         {tasksEnabled && (
                           <TaskIndicator
                             status={taskStatus}
@@ -235,17 +235,17 @@ function SidebarProjectItem({
                           />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{sessionCountLabel}</p>
+                      <p className="text-[13px] text-muted-foreground">{sessionCountLabel}</p>
                     </>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex flex-shrink-0 items-center gap-1">
                 {isEditing ? (
                   <>
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500 shadow-sm transition-all duration-150 active:scale-90 active:shadow-none dark:bg-green-600"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500 shadow-sm transition-all duration-150 active:scale-90 active:shadow-none dark:bg-green-600"
                       onClick={(event) => {
                         event.stopPropagation();
                         saveProjectName();
@@ -254,7 +254,7 @@ function SidebarProjectItem({
                       <Check className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-500 shadow-sm transition-all duration-150 active:scale-90 active:shadow-none dark:bg-gray-600"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-500 shadow-sm transition-all duration-150 active:scale-90 active:shadow-none dark:bg-gray-600"
                       onClick={(event) => {
                         event.stopPropagation();
                         onCancelEditingProject();
@@ -266,7 +266,7 @@ function SidebarProjectItem({
                 ) : (
                   <>
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-500/10 active:scale-90 dark:border-red-800 dark:bg-red-900/30"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-500/10 active:scale-90 dark:border-red-800 dark:bg-red-900/30"
                       onClick={(event) => {
                         event.stopPropagation();
                         onDeleteProject(project);
@@ -276,7 +276,7 @@ function SidebarProjectItem({
                     </button>
 
                     <button
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 active:scale-90 dark:border-primary/30 dark:bg-primary/20"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 active:scale-90 dark:border-primary/30 dark:bg-primary/20"
                       onClick={(event) => {
                         event.stopPropagation();
                         onStartEditingProject(project);
@@ -285,7 +285,7 @@ function SidebarProjectItem({
                       <Edit3 className="h-4 w-4 text-primary" />
                     </button>
 
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted/30">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-muted/30">
                       {isExpanded ? (
                         <ChevronDown className="h-3 w-3 text-muted-foreground" />
                       ) : (
@@ -304,12 +304,12 @@ function SidebarProjectItem({
         <Button
           variant="ghost"
           className={cn(
-            'sticky top-0 z-10 flex w-full justify-between p-2 h-auto font-normal hover:bg-accent/50',
+            'sticky top-0 z-10 flex min-h-11 w-full justify-between rounded-none p-2 h-auto font-normal hover:bg-accent/50',
             isSelected
               ? 'bg-accent text-accent-foreground'
               : isStarred
-                ? 'bg-background hover:bg-accent/50'
-                : 'bg-background',
+                ? 'bg-card hover:bg-accent/50'
+                : 'bg-card',
             isStarred &&
               !isSelected &&
               'bg-yellow-50/50 dark:bg-yellow-900/10 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20',
@@ -366,10 +366,10 @@ function SidebarProjectItem({
                 </div>
               ) : (
                 <div>
-                  <div className="truncate text-sm font-normal text-foreground" title={project.displayName}>
+                  <div className="truncate text-[17px] font-normal text-foreground" title={project.displayName}>
                     {project.displayName}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-[13px] text-muted-foreground">
                     {sessionCountDisplay}
                     {project.fullPath !== project.displayName && (
                       <span className="ml-1 opacity-60" title={project.fullPath}>

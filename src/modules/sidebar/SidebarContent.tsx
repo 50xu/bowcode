@@ -186,7 +186,7 @@ export default function SidebarContent({
 
   return (
     <div
-      className="flex h-full flex-col bg-background/80 backdrop-blur-sm md:w-full md:select-none"
+      className="flex h-full flex-col bg-background md:w-full md:select-none"
       style={{}}
     >
       <SidebarHeader
@@ -209,7 +209,7 @@ export default function SidebarContent({
         t={t}
       />
 
-      <ScrollArea className="flex-1 overflow-y-auto overscroll-contain md:px-1.5 md:py-2">
+      <ScrollArea className="flex-1 overflow-y-auto overscroll-contain px-3 py-2">
         {showConversationSearch ? (
           isSearching && !conversationResults ? (
             <div className="px-4 py-12 text-center md:py-8">
