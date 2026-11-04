@@ -111,16 +111,7 @@ createWebSocketServer(server, {
         runtime: providerRuntimeService,
         dispatchQueuedMessageNow,
     },
-    shell: {
-        resolveProviderSessionId: (sessionId, provider) => {
-            const dbSession = sessionsDb.getSessionById(sessionId);
-            if (dbSession) {
-                return dbSession.provider_session_id ?? null;
-            }
-
-            return null;
-        },
-    },
+    shell: {},
     getPluginPort,
 });
 

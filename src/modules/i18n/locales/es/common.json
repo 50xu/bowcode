@@ -19,7 +19,7 @@
   },
   "tabs": {
     "chat": "Chat",
-    "shell": "Shell",
+    "shell": "Terminal",
     "files": "Archivos",
     "git": "Control de versiones",
     "tasks": "Tareas",
@@ -393,7 +393,6 @@
     "projectFallback": "Proyecto",
     "openMenu": "Abrir menú",
     "noProjectSelected": "Ningún proyecto seleccionado",
-    "projectRequiredForShell": "Hace falta un proyecto para abrir una shell",
     "completedBadge": "(Completado)",
     "close": "Cerrar",
     "hideToken": "Ocultar token",
