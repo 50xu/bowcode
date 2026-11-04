@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -66,6 +66,23 @@ test('growing the transcript file invalidates the cached load', async () => {
 
     assert.equal(loads, 2);
     assert.equal(afterAppend?.messages[0]?.id, 'load-2');
+  });
+});
+
+test('a changing subagent transcript invalidates the cached parent history', async () => {
+  await withTranscriptFile(async (transcriptPath) => {
+    const directory = path.join(path.dirname(transcriptPath), 'session', 'subagents');
+    await mkdir(directory, { recursive: true });
+    const agentPath = path.join(directory, 'agent-1.jsonl');
+    await writeFile(agentPath, 'first\n');
+    const cache = createSessionHistoryCache();
+    let loads = 0;
+    const loadFull = async () => historyResult(`load-${++loads}`);
+    await cache.getFullHistory({ sessionId: 's1', transcriptPath, loadFull });
+    await appendFile(agentPath, 'second\n');
+    const refreshed = await cache.getFullHistory({ sessionId: 's1', transcriptPath, loadFull });
+    assert.equal(loads, 2);
+    assert.equal(refreshed?.messages[0]?.id, 'load-2');
   });
 });
 

@@ -218,6 +218,52 @@ test('Claude history attaches a subagent transcript stored under the session dir
   }
 });
 
+test('Claude history shows a foreground agent before its result while an external CLI holds it', { concurrency: false }, async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'claude-foreground-'));
+  try {
+    const parentPath = await writeClaudeSubagentSession(tempRoot);
+    const lines = (await readFile(parentPath, 'utf8')).trim().split('\n');
+    await writeFile(parentPath, `${lines[0]}\n`);
+    const metaPath = path.join(tempRoot, SESSION_ID, 'subagents', `agent-${AGENT_ID}.meta.json`);
+    await writeFile(metaPath, JSON.stringify({ toolUseId: AGENT_TOOL_USE_ID, agentType: 'Explore', finished: false, requestShape: 'foreground' }));
+    await withIsolatedDatabase(async () => {
+      const now = new Date().toISOString();
+      sessionsDb.createSession(SESSION_ID, 'claude', tempRoot, 'Foreground agent', now, now, parentPath);
+      const history = await new ClaudeSessionsProvider({
+        getLiveRunStartTime: () => null,
+        findExternalSession: async () => ({ providerSessionId: SESSION_ID, pid: 42, status: 'busy', startedAt: 1, cwd: tempRoot }),
+      }).fetchHistory(SESSION_ID, { providerSessionId: SESSION_ID });
+      const agent = history.messages.find((message) => message.toolId === AGENT_TOOL_USE_ID);
+      assert.equal(agent?.subagent?.status, 'running');
+      assert.equal(agent?.subagent?.id, AGENT_ID);
+      assert.equal(agent?.subagentTools?.[0].content, 'Starting the survey.');
+      assert.equal(agent?.subagentTools?.[1].toolName, 'Read');
+    });
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('Claude history ignores malformed agent sidecars before a result exists', { concurrency: false }, async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'claude-malformed-meta-'));
+  try {
+    const parentPath = await writeClaudeSubagentSession(tempRoot);
+    const firstLine = (await readFile(parentPath, 'utf8')).split('\n')[0];
+    await writeFile(parentPath, `${firstLine}\n`);
+    await writeFile(path.join(tempRoot, SESSION_ID, 'subagents', `agent-${AGENT_ID}.meta.json`), '{broken');
+    await withIsolatedDatabase(async () => {
+      const now = new Date().toISOString();
+      sessionsDb.createSession(SESSION_ID, 'claude', tempRoot, 'Malformed agent', now, now, parentPath);
+      const history = await new ClaudeSessionsProvider({ findExternalSession: async () => null }).fetchHistory(SESSION_ID);
+      const agent = history.messages.find((message) => message.toolId === AGENT_TOOL_USE_ID);
+      assert.equal(agent?.subagent, undefined);
+      assert.equal(agent?.subagentTools, undefined);
+    });
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('Claude history folds an agent task notification into the call that spawned it', { concurrency: false }, async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'claude-notification-'));
 

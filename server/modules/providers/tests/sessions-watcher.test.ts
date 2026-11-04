@@ -6,14 +6,20 @@ import test from 'node:test';
 
 import chokidar from 'chokidar';
 
-import { createWatcherIgnoredMatcher } from '@/modules/providers/services/sessions-watcher.service.js';
+import { claudeSubagentParentSessionId, createWatcherIgnoredMatcher } from '@/modules/providers/services/sessions-watcher.service.js';
 
-test('the ignored matcher skips build output, VCS data, subagents and tool results', () => {
+test('the ignored matcher watches Claude sidecars but skips build output, VCS data and tool results', () => {
   const root = path.join(os.tmpdir(), 'watch-root');
   const isIgnored = createWatcherIgnoredMatcher(root);
 
   assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc.jsonl')), false);
-  assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.jsonl')), true);
+  assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.jsonl')), false);
+  assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.meta.json')), false);
+  assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'subagents', 'workflows', 'run', 'agent-1.jsonl')), true);
+  assert.equal(createWatcherIgnoredMatcher(root, 'cursor')(path.join(root, '-home-me-app', 'abc', 'subagents')), true);
+  assert.equal(claudeSubagentParentSessionId(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.jsonl')), 'abc');
+  assert.equal(claudeSubagentParentSessionId(path.join(root, '-home-me-app', 'abc', 'subagents', 'agent-1.meta.json')), 'abc');
+  assert.equal(claudeSubagentParentSessionId(path.join(root, '-home-me-app', 'abc.jsonl')), null);
   assert.equal(isIgnored(path.join(root, '-home-me-app', 'abc', 'tool-results', 'out.txt')), true);
   assert.equal(isIgnored(path.join(root, 'pkg', 'node_modules', 'dep', 'index.js')), true);
   assert.equal(isIgnored(path.join(root, 'repo', '.git', 'HEAD')), true);
@@ -45,6 +51,7 @@ test('chokidar reports only session files through the matcher (#1156)', async ()
   const files = [
     path.join('-home-me-app', 'abc.jsonl'),
     path.join('-home-me-app', 'abc', 'subagents', 'agent-1.jsonl'),
+    path.join('-home-me-app', 'abc', 'subagents', 'agent-1.meta.json'),
     path.join('-home-me-app', 'abc', 'tool-results', 'out.txt'),
     path.join('pkg', 'node_modules', 'dep', 'index.js'),
   ];
@@ -68,7 +75,11 @@ test('chokidar reports only session files through the matcher (#1156)', async ()
       watcher.once('ready', () => resolve());
       watcher.once('error', reject);
     });
-    assert.deepEqual(added, [path.join('-home-me-app', 'abc.jsonl')]);
+    assert.deepEqual(added.sort(), [
+      path.join('-home-me-app', 'abc.jsonl'),
+      path.join('-home-me-app', 'abc', 'subagents', 'agent-1.jsonl'),
+      path.join('-home-me-app', 'abc', 'subagents', 'agent-1.meta.json'),
+    ].sort());
   } finally {
     await watcher.close();
     await rm(root, { recursive: true, force: true });

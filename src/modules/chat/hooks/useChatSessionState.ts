@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { MutableRefObject } from 'react';
 
 import { api } from '@/shared/api';
+import { useExternalSessionHolders } from '@/shared/context/SessionProtectionContext';
 import type { MarkSessionIdle, SessionActivityMap,Project,ProjectSession,LLMProvider,NormalizedMessage,ChatMessage,DiffCalculator } from '@/shared/types';
 import type { SessionStore } from '@/modules/chat/hooks/useSessionStore';
 import { SESSION_MESSAGES_PAGE_SIZE } from '@/modules/chat/utils/sessionMessagePagination';
@@ -204,6 +205,7 @@ export function useChatSessionState({
   lastSeqRef,
   sessionStore,
 }: UseChatSessionStateArgs) {
+  const externalHolders = useExternalSessionHolders();
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(selectedSession?.id || null);
   const [isLoadingSessionMessages, setIsLoadingSessionMessages] = useState(false);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
@@ -819,8 +821,9 @@ export function useChatSessionState({
 
     const reloadExternalMessages = async () => {
       try {
-        // Skip store refresh during active streaming
-        if (!isProcessing) {
+        // Server-driven streams already deliver their own frames; external CLI
+        // turns only reach this view through the on-disk upsert signal.
+        if (!isProcessing || (externalHolders.has(selectedSession.id) && sessionActivity?.canInterrupt === false)) {
           const shouldStickToBottom = isActiveRef.current && isNearBottom();
           await requestLatestMessages(selectedSession.id);
 
@@ -840,11 +843,13 @@ export function useChatSessionState({
     reloadExternalMessages();
   }, [
     externalMessageUpdate,
+    externalHolders,
     requestLatestMessages,
     scrollToBottom,
     selectedProject,
     selectedSession,
     isProcessing,
+    sessionActivity?.canInterrupt,
   ]);
 
   // Search navigation target

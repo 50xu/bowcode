@@ -32,6 +32,7 @@ import {
 } from '@/shared/utils.js';
 import { sessionsDb } from '@/modules/database/index.js';
 import { getClaudeSDKSessionStartTime } from '@/modules/providers/list/claude/claude-runtime.provider.js';
+import { findExternalClaudeCliSession } from '@/modules/providers/services/claude-cli-liveness.service.js';
 import {
   getReportedClaudeContextWindow,
   summarizeClaudeTokenUsage,
@@ -197,21 +198,50 @@ async function readClaudeSubagentTranscript(filePath: string): Promise<ClaudeSub
 }
 
 type ClaudeSubagentMeta = {
+  toolUseId: string;
   agentType?: string;
   description?: string;
+  finished?: boolean;
+  requestShape?: string;
 };
 
-/** Reads the sidecar `.meta.json` Claude writes next to a subagent transcript. */
-async function readClaudeSubagentMeta(metaPath: string): Promise<ClaudeSubagentMeta> {
+type ClaudeSubagentSidecar = { agentId: string; meta: ClaudeSubagentMeta; transcriptPath: string };
+
+/** Reads only well-formed sidecars; a partial write must not claim an agent. */
+async function readClaudeSubagentMeta(metaPath: string): Promise<ClaudeSubagentMeta | null> {
   try {
-    const parsed = JSON.parse(await fsp.readFile(metaPath, 'utf8')) as AnyRecord;
+    const parsed = readObjectRecord(JSON.parse(await fsp.readFile(metaPath, 'utf8')));
+    if (typeof parsed?.toolUseId !== 'string' || !parsed.toolUseId) return null;
     return {
+      toolUseId: parsed.toolUseId,
       agentType: typeof parsed.agentType === 'string' ? parsed.agentType : undefined,
       description: typeof parsed.description === 'string' ? parsed.description : undefined,
+      finished: parsed.finished === true,
+      requestShape: typeof parsed.requestShape === 'string' ? parsed.requestShape : undefined,
     };
   } catch {
-    return {};
+    return null;
   }
+}
+
+async function readClaudeSubagentSidecars(projectDir: string, sessionId: string): Promise<Map<string, ClaudeSubagentSidecar>> {
+  const directory = path.join(projectDir, sessionId, 'subagents');
+  const byToolUseId = new Map<string, ClaudeSubagentSidecar>();
+  let names: string[];
+  try {
+    names = await fsp.readdir(directory);
+  } catch {
+    return byToolUseId;
+  }
+  await Promise.all(names.filter((name) => /^agent-.+\.meta\.json$/.test(name)).map(async (name) => {
+    const meta = await readClaudeSubagentMeta(path.join(directory, name));
+    if (!meta) return;
+    const agentId = name.slice('agent-'.length, -'.meta.json'.length);
+    byToolUseId.set(meta.toolUseId, {
+      agentId, meta, transcriptPath: path.join(directory, `agent-${agentId}.jsonl`),
+    });
+  }));
+  return byToolUseId;
 }
 
 /**
@@ -701,6 +731,7 @@ async function getSessionMessages(
   limit: number | null,
   offset: number,
   getLiveRunStartTime: LiveRunStartTimeProbe,
+  findExternalSession: typeof findExternalClaudeCliSession,
 ): Promise<ClaudeHistoryMessagesResult> {
   try {
     // The DB row is keyed by the app-facing session id, while the JSONL rows
@@ -717,6 +748,7 @@ async function getSessionMessages(
       await readTranscriptRows(jsonLPath, providerSessionId),
     );
 
+    const sidecarsByToolUseId = await readClaudeSubagentSidecars(projectDir, providerSessionId);
     const agentIds = new Set<string>();
     for (const message of messages) {
       const agentId = message.toolUseResult?.agentId;
@@ -732,15 +764,19 @@ async function getSessionMessages(
       activity: SubagentActivity[];
       info: Omit<SubagentInfo, 'status'>;
     }>();
+    for (const sidecar of sidecarsByToolUseId.values()) agentIds.add(sidecar.agentId);
     for (const agentId of agentIds) {
-      const located = await findClaudeSubagentTranscript(projectDir, providerSessionId, agentId);
+      const sidecar = [...sidecarsByToolUseId.values()].find((entry) => entry.agentId === agentId);
+      const located = sidecar
+        ? { transcriptPath: sidecar.transcriptPath, metaPath: '' }
+        : await findClaudeSubagentTranscript(projectDir, providerSessionId, agentId);
       if (!located) {
         continue;
       }
 
       const [transcript, meta] = await Promise.all([
         readClaudeSubagentTranscript(located.transcriptPath),
-        readClaudeSubagentMeta(located.metaPath),
+        sidecar ? Promise.resolve(sidecar.meta) : readClaudeSubagentMeta(located.metaPath),
       ]);
 
       subagentsById.set(agentId, {
@@ -749,9 +785,9 @@ async function getSessionMessages(
           .map(truncateSubagentActivity),
         info: {
           id: agentId,
-          name: meta.agentType,
-          type: meta.agentType,
-          description: meta.description,
+          name: meta?.agentType,
+          type: meta?.agentType,
+          description: meta?.description,
           model: transcript.model,
           activityCount: transcript.activity.length,
         },
@@ -794,8 +830,28 @@ async function getSessionMessages(
     // starts a run and by the provider-native id when the agent API does, so
     // both are asked.
     const liveRunStartedAt = getLiveRunStartTime(sessionId) ?? getLiveRunStartTime(providerSessionId);
+    const externalHolder = await findExternalSession(providerSessionId);
     const launchedByLiveRun = (message: AnyRecord): boolean =>
       liveRunStartedAt !== null && Date.parse(String(message.timestamp ?? '')) >= liveRunStartedAt;
+
+    // Foreground calls have no tool-result row until they finish. Attach the
+    // sidecar's timeline to the tool-use row directly while the CLI owns it.
+    for (const message of messages) {
+      if (message.message?.role !== 'assistant' || !Array.isArray(message.message.content)) continue;
+      for (const part of message.message.content) {
+        if (part?.type !== 'tool_use' || !['Agent', 'Task'].includes(part.name)) continue;
+        const sidecar = sidecarsByToolUseId.get(String(part.id ?? ''));
+        if (!sidecar) continue;
+        const subagent = subagentsById.get(sidecar.agentId);
+        const running = !sidecar.meta.finished && (launchedByLiveRun(message) || !!externalHolder);
+        part.subagent = {
+          id: sidecar.agentId, ...subagent?.info,
+          description: subagent?.info.description ?? (typeof part.input?.description === 'string' ? part.input.description : undefined),
+          status: sidecar.meta.finished ? 'completed' : running ? 'running' : 'stopped',
+        };
+        if (subagent?.activity.length) part.subagentTools = subagent.activity;
+      }
+    }
 
     for (const message of messages) {
       const launch = readBackgroundLaunch(message.toolUseResult);
@@ -831,8 +887,11 @@ async function getSessionMessages(
       //
       // A synchronous agent hands its answer back inline on its own tool
       // result, so its status never depends on a notification or the process.
+      const sidecar = toolUseId ? sidecarsByToolUseId.get(toolUseId) : undefined;
       const unreportedStatus = isAsyncLaunch
-        ? launchedByLiveRun(message) ? 'running' : 'stopped'
+        ? sidecar?.meta.finished ? 'completed'
+          : sidecar && (launchedByLiveRun(message) || externalHolder)
+            ? 'running' : launchedByLiveRun(message) ? 'running' : 'stopped'
         : 'completed';
 
       if (launch === 'agent') {
@@ -840,7 +899,8 @@ async function getSessionMessages(
         const subagent = subagentsById.get(agentId);
         const status: SubagentInfo['status'] = notification
           ? notification.status === 'completed' ? 'completed' : 'failed'
-          : unreportedStatus;
+          : sidecar && !sidecar.meta.finished && (launchedByLiveRun(message) || externalHolder)
+            ? 'running' : unreportedStatus;
 
         if (subagent && subagent.activity.length > 0) {
           message.subagentTools = subagent.activity;
@@ -1218,13 +1278,16 @@ type ClaudeSessionsProviderOptions = {
    * driving a real SDK run.
    */
   getLiveRunStartTime?: LiveRunStartTimeProbe;
+  findExternalSession?: typeof findExternalClaudeCliSession;
 };
 
 export class ClaudeSessionsProvider implements IProviderSessions {
   private readonly getLiveRunStartTime: LiveRunStartTimeProbe;
+  private readonly findExternalSession: typeof findExternalClaudeCliSession;
 
-  constructor({ getLiveRunStartTime = getClaudeSDKSessionStartTime }: ClaudeSessionsProviderOptions = {}) {
+  constructor({ getLiveRunStartTime = getClaudeSDKSessionStartTime, findExternalSession = findExternalClaudeCliSession }: ClaudeSessionsProviderOptions = {}) {
     this.getLiveRunStartTime = getLiveRunStartTime;
+    this.findExternalSession = findExternalSession;
   }
 
   /**
@@ -1778,7 +1841,7 @@ export class ClaudeSessionsProvider implements IProviderSessions {
     try {
       // Load full history first so `total` reflects frontend-normalized messages,
       // not raw JSONL records.
-      result = await getSessionMessages(sessionId, providerSessionId, null, 0, this.getLiveRunStartTime);
+      result = await getSessionMessages(sessionId, providerSessionId, null, 0, this.getLiveRunStartTime, this.findExternalSession);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`[ClaudeProvider] Failed to load session ${sessionId}:`, message);
@@ -1788,7 +1851,15 @@ export class ClaudeSessionsProvider implements IProviderSessions {
     const rawMessages = Array.isArray(result) ? result : (result.messages || []);
 
     const toolResultMap = new Map<string, ClaudeToolResult>();
+    const pendingAgents = new Map<string, { subagent: SubagentInfo; subagentTools?: SubagentActivity[] }>();
     for (const raw of rawMessages) {
+      if (raw.message?.role === 'assistant' && Array.isArray(raw.message.content)) {
+        for (const part of raw.message.content) {
+          if (part.type === 'tool_use' && typeof part.id === 'string' && part.subagent) {
+            pendingAgents.set(part.id, { subagent: part.subagent, subagentTools: part.subagentTools });
+          }
+        }
+      }
       if (raw.message?.role === 'user' && Array.isArray(raw.message?.content)) {
         for (const part of raw.message.content) {
           if (part.type === 'tool_result' && part.tool_use_id) {
@@ -1811,6 +1882,13 @@ export class ClaudeSessionsProvider implements IProviderSessions {
     }
 
     for (const msg of normalized) {
+      if (msg.kind === 'tool_use' && msg.toolId && !toolResultMap.has(msg.toolId)) {
+        const pending = pendingAgents.get(msg.toolId);
+        if (pending) {
+          msg.subagent = pending.subagent;
+          msg.subagentTools = pending.subagentTools;
+        }
+      }
       if (msg.kind === 'tool_use' && msg.toolId && toolResultMap.has(msg.toolId)) {
         const toolResult = toolResultMap.get(msg.toolId);
         if (!toolResult) {

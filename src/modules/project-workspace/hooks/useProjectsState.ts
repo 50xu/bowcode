@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 
 import { api } from '@/shared/api';
+import { useExternalSessionHolders, useProcessingSessions } from '@/shared/context/SessionProtectionContext';
 import type { ServerEvent,
   AppTab,
   LLMProvider,
@@ -386,6 +387,11 @@ export function useProjectsState({
   isMobile,
   isSessionProcessing,
 }: UseProjectsStateArgs) {
+  const externalHolders = useExternalSessionHolders();
+  const processingSessions = useProcessingSessions();
+  // Read through a ref so the 5s running-sessions poll does not resubscribe the socket listener.
+  const externalCliTurnRef = useRef({ externalHolders, processingSessions });
+  externalCliTurnRef.current = { externalHolders, processingSessions };
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedSession, setSelectedSession] = useState<ProjectSession | null>(null);
@@ -788,7 +794,9 @@ export function useProjectsState({
       if (
         currentSelectedSession
         && upsert.sessionId === currentSelectedSession.id
-        && !isSessionProcessing(upsert.sessionId)
+        && (!isSessionProcessing(upsert.sessionId)
+          || (externalCliTurnRef.current.externalHolders.has(upsert.sessionId)
+            && externalCliTurnRef.current.processingSessions.get(upsert.sessionId)?.canInterrupt === false))
       ) {
         setExternalMessageUpdate((prev) => prev + 1);
       } else {

@@ -40,10 +40,8 @@ const IGNORED_DIRECTORY_NAMES = new Set([
   '.git',
   'dist',
   'build',
-  // Claude writes a subagent's transcript and large tool outputs here. The
-  // synchronizer skips them already (#880); ignoring them here keeps the
-  // watcher from walking them at all.
-  'subagents',
+  // Large tool outputs still need no watcher events. Claude subagent files
+  // are watched, but never passed to the session synchronizer.
   'tool-results',
 ]);
 const IGNORED_FILE_NAMES = new Set(['.DS_Store']);
@@ -58,7 +56,7 @@ const IGNORED_FILE_SUFFIXES = ['.tmp', '.swp'];
  * Exported for the providers module's tests, which run it against chokidar on
  * a real directory tree.
  */
-export function createWatcherIgnoredMatcher(rootPath: string): (filePath: string) => boolean {
+export function createWatcherIgnoredMatcher(rootPath: string, provider: LLMProvider = 'claude'): (filePath: string) => boolean {
   return (filePath: string) => {
     const relativePath = path.relative(rootPath, filePath);
     // Outside the root is `..` as a whole component, or an absolute result
@@ -76,7 +74,14 @@ export function createWatcherIgnoredMatcher(rootPath: string): (filePath: string
       return true;
     }
 
-    return segments.some((segment) => IGNORED_DIRECTORY_NAMES.has(segment));
+    if (segments.some((segment) => IGNORED_DIRECTORY_NAMES.has(segment))) return true;
+    const subagentsIndex = segments.indexOf('subagents');
+    if (subagentsIndex === -1) return false;
+    // Only Claude's immediate sidecar files under <project>/<session>/subagents
+    // are useful here; never poll nested workflow output or other providers.
+    if (provider !== 'claude' || subagentsIndex !== 2) return true;
+    return segments.length > 4 || (segments.length === 4
+      && !/^agent-.+\.(?:jsonl|meta\.json)$/.test(baseName));
   };
 }
 
@@ -105,6 +110,13 @@ let watcherRescheduleAfterRefresh = false;
 /**
  * Filters watcher events to provider-specific session artifact file types.
  */
+/** Used by the watcher and its tests to route sidecar changes to their parent session. */
+export function claudeSubagentParentSessionId(filePath: string): string | null {
+  if (path.basename(path.dirname(filePath)) !== 'subagents'
+    || !/^agent-.+\.(?:jsonl|meta\.json)$/.test(path.basename(filePath))) return null;
+  return path.basename(path.dirname(path.dirname(filePath))) || null;
+}
+
 function isWatcherTargetFile(provider: LLMProvider, filePath: string): boolean {
   if (provider === 'opencode') {
     return path.basename(filePath) === 'opencode.db';
@@ -205,6 +217,13 @@ async function onUpdate(
   filePath: string,
   provider: LLMProvider
 ): Promise<void> {
+  if (provider === 'claude') {
+    const parentSessionId = claudeSubagentParentSessionId(filePath);
+    if (parentSessionId) {
+      queuePendingWatcherUpdate(eventType, provider, parentSessionId);
+      return;
+    }
+  }
   if (!isWatcherTargetFile(provider, filePath)) {
     return;
   }
@@ -248,7 +267,7 @@ export async function initializeSessionsWatcher(): Promise<void> {
       await fsPromises.mkdir(rootPath, { recursive: true });
 
       const watcher = chokidar.watch(rootPath, {
-        ignored: createWatcherIgnoredMatcher(rootPath),
+        ignored: createWatcherIgnoredMatcher(rootPath, provider),
         persistent: true,
         ignoreInitial: true,
         followSymlinks: false,

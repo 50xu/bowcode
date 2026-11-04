@@ -1,4 +1,5 @@
 import fsp from 'node:fs/promises';
+import path from 'node:path';
 
 import type { FetchHistoryResult } from '@/shared/types.js';
 
@@ -34,6 +35,7 @@ import type { FetchHistoryResult } from '@/shared/types.js';
 type CacheEntry = {
   transcriptPath: string;
   mtimeMs: number;
+  subagentVersion: string;
   /** File size in bytes; doubles as the entry's cost against the byte budget. */
   size: number;
   full: FetchHistoryResult;
@@ -55,6 +57,24 @@ type GetFullHistoryArgs = {
  */
 const MAX_CACHED_TRANSCRIPT_FILE_BYTES = 256 * 1024 * 1024;
 const MAX_CACHE_ENTRIES = 8;
+
+async function subagentFileVersion(transcriptPath: string): Promise<string> {
+  const directory = path.join(path.dirname(transcriptPath), path.basename(transcriptPath, '.jsonl'), 'subagents');
+  try {
+    const files = (await fsp.readdir(directory)).filter((name) => /^agent-.+\.(?:jsonl|meta\.json)$/.test(name)).sort();
+    const stats = await Promise.all(files.map(async (name) => {
+      try {
+        const stat = await fsp.stat(path.join(directory, name));
+        return stat.isFile() ? `${name}:${stat.mtimeMs}:${stat.size}` : '';
+      } catch {
+        return '';
+      }
+    }));
+    return stats.join('|');
+  } catch {
+    return '';
+  }
+}
 
 export function createSessionHistoryCache(
   maxTotalFileBytes = MAX_CACHED_TRANSCRIPT_FILE_BYTES,
@@ -100,11 +120,13 @@ export function createSessionHistoryCache(
         return null;
       }
 
+      const subagentVersion = await subagentFileVersion(transcriptPath);
       const cached = entries.get(sessionId);
       if (
         cached
         && cached.transcriptPath === transcriptPath
         && cached.mtimeMs === stat.mtimeMs
+        && cached.subagentVersion === subagentVersion
         && cached.size === stat.size
       ) {
         // Re-insert to mark as most recently used.
@@ -126,6 +148,7 @@ export function createSessionHistoryCache(
         entries.set(sessionId, {
           transcriptPath,
           mtimeMs: stat.mtimeMs,
+          subagentVersion,
           size: stat.size,
           full,
         });
