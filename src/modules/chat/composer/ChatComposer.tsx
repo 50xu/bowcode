@@ -330,18 +330,6 @@ export default function ChatComposer({
         onResolve={onResolveBackgroundSendPrompt}
       />
 
-      {queuedDraft && (
-        <QueuedMessageCard
-          content={queuedDraft.content}
-          attachmentCount={
-            queuedDraft.uploadedAttachments?.length ?? queuedDraft.attachments.length
-          }
-          onEdit={onEditQueuedDraft}
-          onDelete={onDeleteQueuedDraft}
-          onSendNow={onSendNowQueuedDraft}
-        />
-      )}
-
       {!hasQuestionPanel && <div className="relative mx-auto w-full min-w-0 max-w-[54.25rem]">
         {showFileDropdown && filteredFiles.length > 0 && (
           <div
@@ -384,14 +372,6 @@ export default function ChatComposer({
           frequentCommands={frequentCommands}
         />
 
-        {externallyHeld && (
-          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 rounded-xl hairline bg-card px-3 py-2 text-xs">
-            <span className="min-w-0 flex-1 break-words">{takeoverError || t('composer.externalHold.message')}</span>
-            <button type="button" onClick={onTakeOver} className="min-h-9 shrink-0 rounded-lg px-2 font-medium text-primary hover:bg-accent">
-              {t('composer.externalHold.takeOver')}
-            </button>
-          </div>
-        )}
         <PromptInput
           onSubmit={onSubmit as (event: FormEvent<HTMLFormElement>) => void}
           status={isLoading ? 'streaming' : 'ready'}
@@ -401,6 +381,28 @@ export default function ChatComposer({
           ].filter(Boolean).join(' ')}
           {...getRootProps()}
         >
+          {/* Queued message and external-hold notice are stacked sections of
+              the composer card, so the activity strip above stays attached. */}
+          {queuedDraft && (
+            <QueuedMessageCard
+              stacked
+              content={queuedDraft.content}
+              attachmentCount={
+                queuedDraft.uploadedAttachments?.length ?? queuedDraft.attachments.length
+              }
+              onEdit={onEditQueuedDraft}
+              onDelete={onDeleteQueuedDraft}
+              onSendNow={onSendNowQueuedDraft}
+            />
+          )}
+          {externallyHeld && (
+            <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2 text-xs">
+              <span className="min-w-0 flex-1 break-words">{takeoverError || t('composer.externalHold.message')}</span>
+              <button type="button" onClick={onTakeOver} className="min-h-9 shrink-0 rounded-lg px-2 font-medium text-primary hover:bg-accent">
+                {t('composer.externalHold.takeOver')}
+              </button>
+            </div>
+          )}
           {isDragActive && (
             <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-primary/15">
               <div className="rounded-xl border border-border/30 bg-card p-4 shadow-lg">
