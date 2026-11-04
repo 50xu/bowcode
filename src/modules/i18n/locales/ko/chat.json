@@ -145,6 +145,7 @@
     "clearInput": "입력 지우기",
     "scrollToBottom": "맨 아래로 스크롤",
     "queue": {
+      "sendNow": "Send now",
       "sendNext": "다음 메시지 대기열에 추가",
       "append": "대기 중인 메시지에 추가",
       "notCombinable": "메시지를 대기열에 추가하지 못했습니다: 슬래시 명령어는 단독으로 실행되므로 대기 중인 메시지와 합칠 수 없습니다. 대기 중인 메시지가 전송된 후에 보내세요.",

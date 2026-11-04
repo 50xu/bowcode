@@ -88,6 +88,7 @@ type ChatComposerProps = {
   onCancelScheduledMessage: (id: string) => void;
   onEditQueuedDraft: () => void;
   onDeleteQueuedDraft: () => void;
+  onSendNowQueuedDraft: () => void;
   attachedFiles: File[];
   onRemoveAttachment: (index: number) => void;
   fileErrors: Map<string, string>;
@@ -167,6 +168,7 @@ export default function ChatComposer({
   onCancelScheduledMessage,
   onEditQueuedDraft,
   onDeleteQueuedDraft,
+  onSendNowQueuedDraft,
   attachedFiles,
   onRemoveAttachment,
   fileErrors,
@@ -336,6 +338,7 @@ export default function ChatComposer({
           }
           onEdit={onEditQueuedDraft}
           onDelete={onDeleteQueuedDraft}
+          onSendNow={onSendNowQueuedDraft}
         />
       )}
 

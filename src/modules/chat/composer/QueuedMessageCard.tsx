@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import { PencilIcon, XIcon } from 'lucide-react';
+import { PencilIcon, SendIcon, XIcon } from 'lucide-react';
 
 type QueuedMessageCardProps = {
   content: string;
   attachmentCount?: number;
   onEdit: () => void;
   onDelete: () => void;
+  onSendNow: () => void;
 };
 
 /**
@@ -18,6 +19,7 @@ export default function QueuedMessageCard({
   attachmentCount = 0,
   onEdit,
   onDelete,
+  onSendNow,
 }: QueuedMessageCardProps) {
   const { t } = useTranslation('chat');
 
@@ -51,6 +53,15 @@ export default function QueuedMessageCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onSendNow}
+            aria-label={t('input.queue.sendNow', { defaultValue: 'Send now' })}
+            title={t('input.queue.sendNow', { defaultValue: 'Send now' })}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <SendIcon className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             onClick={onEdit}

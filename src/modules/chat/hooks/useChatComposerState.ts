@@ -1199,11 +1199,10 @@ export function useChatComposerState({
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
 
-  // The VPS dispatcher owns sending. While the card is visible, periodically
-  // reconcile it with the server, so the UI notices when the server claims it
-  // or another tab adds to it.
+  // The VPS dispatcher owns sending. Reconcile even after an optimistic hide:
+  // a refused send must restore the card from the persisted queue.
   useEffect(() => {
-    if (!sessionKey || !queuedDraft) {
+    if (!sessionKey) {
       return;
     }
     let cancelled = false;
@@ -1219,7 +1218,7 @@ export function useChatComposerState({
       if (stored) {
         setQueuedDraft((card) => {
           if (!card || showsQueuedMessage(card, stored)) {
-            return card;
+            return card ?? stored;
           }
           // This tab's browser files stay with its part of the message, so
           // editing the card still brings them back into the composer.
@@ -1241,7 +1240,7 @@ export function useChatComposerState({
       clearInterval(timer);
       document.removeEventListener('visibilitychange', reconcileWhenShown);
     };
-  }, [queuedDraft, sessionKey]);
+  }, [sessionKey]);
 
   // Editing or deleting the card takes the message off the server's queue at
   // once, before the dispatcher's next poll can send it.
@@ -1258,6 +1257,20 @@ export function useChatComposerState({
     setAttachedFiles(queuedDraft.attachments);
     textareaRef.current?.focus();
   }, [queuedDraft]);
+
+  const sendQueuedDraftNow = useCallback(() => {
+    const targetSessionId = queuedDraftSessionRef.current;
+    if (!queuedDraft || !targetSessionId) return;
+    sendMessage({ type: 'chat.send-queued-now', sessionId: targetSessionId });
+    setQueuedDraft(null);
+  }, [queuedDraft, sendMessage]);
+
+  const restoreQueuedDraftAfterFailure = useCallback((failedSessionId: string) => {
+    if (sessionKeyRef.current === failedSessionId) {
+      queuedDraftSessionRef.current = failedSessionId;
+      setQueuedDraft(restoreQueuedDraft(failedSessionId));
+    }
+  }, []);
 
   const deleteQueuedDraft = useCallback(() => {
     if (queuedDraftSessionRef.current) {
@@ -1575,6 +1588,8 @@ export function useChatComposerState({
     queuedDraft,
     editQueuedDraft,
     deleteQueuedDraft,
+    sendQueuedDraftNow,
+    restoreQueuedDraftAfterFailure,
     handleVoiceTranscript,
     handleInputChange,
     handleKeyDown,

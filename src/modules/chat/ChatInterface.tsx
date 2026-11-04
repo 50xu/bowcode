@@ -229,6 +229,8 @@ function ChatInterface({
     queuedDraft,
     editQueuedDraft,
     deleteQueuedDraft,
+    sendQueuedDraftNow,
+    restoreQueuedDraftAfterFailure,
     handleVoiceTranscript,
     handleInputChange,
     handleKeyDown,
@@ -309,6 +311,7 @@ function ChatInterface({
     onSessionIdle,
     onSessionBackground,
     getSessionActivity,
+    onSendNowFailed: restoreQueuedDraftAfterFailure,
     onExternalHoldError: (sessionId, message) => setExternalError({ sessionId, message, poll: externalHolders }),
     onWebSocketReconnect: handleWebSocketReconnect,
     requestLatestMessages,
@@ -585,6 +588,7 @@ function ChatInterface({
           onResolveBackgroundSendPrompt={resolveBackgroundSendPrompt}
           onEditQueuedDraft={editQueuedDraft}
           onDeleteQueuedDraft={deleteQueuedDraft}
+          onSendNowQueuedDraft={sendQueuedDraftNow}
           attachedFiles={attachedFiles}
           onRemoveAttachment={(index) =>
             setAttachedFiles((previous) =>

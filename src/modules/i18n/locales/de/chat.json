@@ -141,6 +141,7 @@
     "clearInput": "Eingabe leeren",
     "scrollToBottom": "Nach unten scrollen",
     "queue": {
+      "sendNow": "Send now",
       "append": "An Nachricht in der Warteschlange anhängen",
       "notCombinable": "Nachricht konnte nicht in die Warteschlange gestellt werden: Ein Slash-Befehl läuft für sich allein und kann daher nicht mit der Nachricht in der Warteschlange kombiniert werden. Sende ihn, nachdem die Nachricht in der Warteschlange gesendet wurde."
     }

@@ -178,6 +178,7 @@
     "clearInput": "Vymazat vstup",
     "scrollToBottom": "Posunout na konec",
     "queue": {
+      "sendNow": "Send now",
       "sendNext": "Zařadit další zprávu do fronty",
       "append": "Přidat ke zprávě ve frontě",
       "notCombinable": "Zprávu se nepodařilo zařadit do fronty: Příkaz s lomítkem se spouští samostatně, takže ho nelze spojit se zprávou ve frontě. Odešlete ho, až bude zpráva ve frontě odeslána.",

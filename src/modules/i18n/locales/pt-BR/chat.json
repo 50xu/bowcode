@@ -164,6 +164,7 @@
     "clearInput": "Limpar entrada",
     "scrollToBottom": "Rolar para o final",
     "queue": {
+      "sendNow": "Send now",
       "sendNext": "Enfileirar próxima mensagem",
       "append": "Adicionar à mensagem enfileirada",
       "notCombinable": "Falha ao enfileirar a mensagem: um slash command é executado sozinho, então não pode ser combinado com a mensagem enfileirada. Envie-o depois que a mensagem enfileirada for enviada.",

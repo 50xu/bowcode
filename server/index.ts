@@ -45,6 +45,7 @@ import providerRoutes from './modules/providers/provider.routes.js';
 import { voiceRoutes } from './modules/voice/index.js';
 import {
     closeScheduledMessageDispatcher,
+    dispatchQueuedMessageNow,
     initializeScheduledMessageDispatcher,
     scheduledMessagesRoutes,
 } from './modules/scheduled-messages/index.js';
@@ -111,6 +112,7 @@ createWebSocketServer(server, {
     },
     chat: {
         runtime: providerRuntimeService,
+        dispatchQueuedMessageNow,
     },
     shell: {
         resolveProviderSessionId: (sessionId, provider) => {

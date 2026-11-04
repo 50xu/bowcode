@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
 import type { ServerEvent,MarkSessionIdle,MarkSessionProcessing,PendingPermissionRequest,ProjectSession,LLMProvider,NormalizedMessage,GetSessionActivity,MarkSessionBackground } from '@/shared/types';
+import { hydrateChatDrafts } from '@/shared/chatDrafts';
 import { showCompletionTitleIndicator } from '@/modules/chat/utils/pageTitleNotification';
 import { playChatCompletionSound, playNotificationSound } from '@/shared/utils';
 import type { SessionStore } from '@/modules/chat/hooks/useSessionStore';
@@ -42,6 +43,7 @@ type UseChatRealtimeHandlersArgs = {
   onSessionBackground?: MarkSessionBackground;
   getSessionActivity?: GetSessionActivity;
   onExternalHoldError?: (sessionId: string, message: string | null) => void;
+  onSendNowFailed?: (sessionId: string) => void;
   onWebSocketReconnect?: () => void;
   requestLatestMessages: (sessionId: string, allowNetwork?: boolean) => Promise<void>;
   sessionStore: SessionStore;
@@ -78,6 +80,7 @@ export function useChatRealtimeHandlers({
   onSessionBackground,
   getSessionActivity,
   onExternalHoldError,
+  onSendNowFailed,
   onWebSocketReconnect,
   requestLatestMessages,
   sessionStore,
@@ -173,6 +176,12 @@ export function useChatRealtimeHandlers({
 
         case 'protocol_error': {
           console.error('[Chat] Protocol error:', msg.code, msg.error);
+          if (sid && msg.code === 'SEND_NOW_FAILED') {
+            void hydrateChatDrafts()
+              .then(() => onSendNowFailed?.(sid))
+              .catch((error: unknown) => console.error('[Chat] Could not restore queued draft:', error));
+            return;
+          }
           if (sid && (msg.code === 'SESSION_HELD_EXTERNALLY' || msg.code === 'TAKEOVER_FAILED')) {
             onSessionIdle?.(sid);
             onExternalHoldError?.(sid, msg.code === 'TAKEOVER_FAILED' ? String(msg.error || 'Takeover failed') : null);
@@ -459,6 +468,7 @@ export function useChatRealtimeHandlers({
     getSessionActivity,
     onWebSocketReconnect,
     onExternalHoldError,
+    onSendNowFailed,
     requestLatestMessages,
     sessionStore,
   ]);

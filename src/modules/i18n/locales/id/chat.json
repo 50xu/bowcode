@@ -152,6 +152,7 @@
     "clearInput": "Kosongkan input",
     "scrollToBottom": "Gulir ke bawah",
     "queue": {
+      "sendNow": "Send now",
       "sendNext": "Antrekan pesan berikutnya",
       "append": "Tambahkan ke pesan antrean",
       "notCombinable": "Gagal mengantrekan pesan: slash command dijalankan tersendiri, jadi tidak dapat digabungkan dengan pesan antrean. Kirim setelah pesan antrean terkirim.",

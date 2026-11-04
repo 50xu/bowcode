@@ -32,11 +32,12 @@ function readOptions(raw: string): Record<string, unknown> {
 async function sendClaimedQueuedMessage(
   candidate: QueuedSessionMessageRecord,
   runtime: ProviderRuntimeGateway,
-): Promise<void> {
+  restoreOnAnyFailure = false,
+): Promise<boolean> {
   const message = readQueuedChatMessage(candidate.queuedMessage);
   if (!message) {
     sessionDraftsDb.deleteEmptyDraft(candidate.userId, candidate.sessionId);
-    return;
+    return false;
   }
 
   const result = await runDetachedChatTurn(
@@ -51,11 +52,14 @@ async function sendClaimedQueuedMessage(
 
   // The registry check and run reservation are separate operations. If a run
   // wins that tiny race, put the turn back so the next poll tries again.
-  if (!result.started && result.error === 'A run was already in progress for this session.') {
+  // An explicit "send now" keeps the message on any refusal so the card can
+  // come back; the poll only retries the race and never loops on a hard error.
+  if (!result.started && (restoreOnAnyFailure || result.error === 'A run was already in progress for this session.')) {
     sessionDraftsDb.restoreQueuedMessage(candidate);
-    return;
+    return false;
   }
   sessionDraftsDb.deleteEmptyDraft(candidate.userId, candidate.sessionId);
+  return result.started;
 }
 
 /**
@@ -75,6 +79,13 @@ async function isSessionBusy(
   const session = sessionsDb.getSessionById(sessionId);
   return session?.provider === 'claude' && !!session.provider_session_id &&
     !!(await findHolder(session.provider_session_id));
+}
+
+/** Used by the websocket module to claim and start one queued turn on demand, even over background work. */
+export async function dispatchQueuedMessageNow(sessionId: string, runtime: ProviderRuntimeGateway): Promise<boolean> {
+  const candidate = sessionDraftsDb.listQueuedMessages().find((row) => row.sessionId === sessionId);
+  if (!candidate || !sessionDraftsDb.claimQueuedMessage(candidate)) return false;
+  return sendClaimedQueuedMessage(candidate, runtime, true);
 }
 
 /** Sends every persisted queued turn whose session is currently idle. */

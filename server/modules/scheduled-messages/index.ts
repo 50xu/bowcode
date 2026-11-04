@@ -5,4 +5,5 @@ export { default as scheduledMessagesRoutes } from './scheduled-messages.routes.
 export {
   initializeScheduledMessageDispatcher,
   closeScheduledMessageDispatcher,
+  dispatchQueuedMessageNow,
 } from './services/scheduled-message-dispatcher.service.js';

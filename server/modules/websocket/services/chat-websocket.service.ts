@@ -83,6 +83,8 @@ export type ProviderRuntimeGateway = {
 type ChatWebSocketDependencies = {
   /** Central dispatcher for every provider SDK/CLI runtime. */
   runtime: ProviderRuntimeGateway;
+  /** Injected by server startup from scheduled-messages to avoid a module import cycle. */
+  dispatchQueuedMessageNow?: (sessionId: string, runtime: ProviderRuntimeGateway) => Promise<boolean>;
   /** Optional test seams for external CLI detection and takeover. */
   findExternalSession?: typeof findExternalClaudeCliSession;
   terminateExternalSession?: typeof terminateExternalClaudeCliSession;
@@ -460,14 +462,62 @@ async function handleChatAbort(
     return;
   }
 
-  const success = await dependencies.runtime.abort(run.provider, sessionId);
+  await abortActiveRun(run, sessionId, dependencies.runtime);
+}
 
-  // Scoped to the run that was stopped: a stop can take a round trip, and a
-  // new run of the session may have started by the time it returns.
-  chatRunRegistry.completeRunIfCurrent(run, {
-    exitCode: success ? 0 : 1,
-    aborted: true,
+function abortActiveRun(
+  run: NonNullable<ReturnType<typeof chatRunRegistry.getRun>>,
+  sessionId: string,
+  runtime: ProviderRuntimeGateway,
+): Promise<void> {
+  return runtime.abort(run.provider, sessionId).then((success) => {
+    // Scoped to this run: another turn may begin while the provider stops.
+    chatRunRegistry.completeRunIfCurrent(run, { exitCode: success ? 0 : 1, aborted: true });
   });
+}
+
+/** Sends the persisted queued turn immediately after stopping this server's active run, if any. */
+async function handleSendQueuedNow(
+  ws: WebSocket,
+  data: AnyRecord,
+  dependencies: ChatWebSocketDependencies,
+): Promise<void> {
+  const resolved = resolveSendTarget(ws, data, dependencies, 'chat.send-queued-now');
+  if (!resolved) return;
+  const { sessionId, session, provider } = resolved;
+
+  // Refuse before aborting or claiming: a provider-native session owned elsewhere
+  // cannot be resumed here without an explicit takeover.
+  if (provider === 'claude' && session.provider_session_id) {
+    const holder = await (dependencies.findExternalSession ?? findExternalClaudeCliSession)(session.provider_session_id);
+    if (holder) {
+      sendProtocolError(ws, 'SESSION_HELD_EXTERNALLY',
+        `This session is open in another Claude process (pid ${holder.pid}). Take over to continue here.`,
+        sessionId, { pid: holder.pid });
+      return;
+    }
+  }
+
+  try {
+    const activeRun = chatRunRegistry.getRun(sessionId);
+    if (activeRun?.status === 'running') {
+      await abortActiveRun(activeRun, sessionId, dependencies.runtime);
+    }
+    const deadline = Date.now() + 10_000;
+    while (chatRunRegistry.isProcessing(sessionId) && Date.now() < deadline) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    }
+    if (chatRunRegistry.isProcessing(sessionId)) {
+      sendProtocolError(ws, 'SEND_NOW_FAILED', 'The active run did not stop in time.', sessionId);
+      return;
+    }
+    if (!dependencies.dispatchQueuedMessageNow ||
+        !await dependencies.dispatchQueuedMessageNow(sessionId, dependencies.runtime)) {
+      sendProtocolError(ws, 'SEND_NOW_FAILED', 'Nothing queued', sessionId);
+    }
+  } catch (error) {
+    sendProtocolError(ws, 'SEND_NOW_FAILED', error instanceof Error ? error.message : String(error), sessionId);
+  }
 }
 
 /**
@@ -612,6 +662,7 @@ function handlePermissionResponse(data: AnyRecord, dependencies: ChatWebSocketDe
  * Inbound protocol (client to server):
  * - `chat.send`                { sessionId, content, options? }
  * - `chat.abort`               { sessionId }
+ * - `chat.send-queued-now`     { sessionId }
  * - `chat.stop-task`           { sessionId, taskId }
  * - `chat.subscribe`           { sessions: [{ sessionId, lastSeq? }] }
  * - `chat.permission-response` { requestId, allow, updatedInput?, message?, rememberEntry? }
@@ -712,6 +763,9 @@ export function handleChatConnection(
           return;
         case 'chat.send':
           await handleChatSend(ws, userId, data, dependencies);
+          return;
+        case 'chat.send-queued-now':
+          await handleSendQueuedNow(ws, data, dependencies);
           return;
         case 'chat.abort':
           await handleChatAbort(ws, data, dependencies);
