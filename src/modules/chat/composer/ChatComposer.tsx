@@ -438,7 +438,7 @@ export default function ChatComposer({
 
           <PromptInputBody>
             <div ref={inputHighlightRef} aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-              <div className="chat-input-placeholder block w-full whitespace-pre-wrap break-words px-4 py-2 text-base leading-6 text-transparent sm:text-sm">
+              <div className={`chat-input-placeholder block w-full whitespace-pre-wrap break-words py-2 pl-4 text-base leading-6 text-transparent sm:text-sm ${hasInput ? 'pr-10' : 'pr-4'}`}>
                 {renderInputWithMentions(input)}
               </div>
             </div>
@@ -456,7 +456,21 @@ export default function ChatComposer({
               onBlur={() => onInputFocusChange?.(false)}
               onInput={onTextareaInput}
               placeholder={placeholder}
+              className={hasInput ? 'pr-10' : undefined}
             />
+
+            {/* iOS-style clear button pinned to the input's top-right corner. */}
+            {hasInput && (
+              <button
+                type="button"
+                onClick={onClearInput}
+                aria-label={t('input.clearInput', { defaultValue: 'Clear input' })}
+                title={t('input.clearInput', { defaultValue: 'Clear input' })}
+                className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground/40 text-white transition-colors hover:bg-muted-foreground/60 active:scale-90"
+              >
+                <XIcon className="h-3.5 w-3.5" strokeWidth={3} />
+              </button>
+            )}
         </PromptInputBody>
 
         <PromptInputFooter>
@@ -489,16 +503,6 @@ export default function ChatComposer({
                 </span>
               )}
             </PromptInputButton>
-
-            {hasInput && (
-              <PromptInputButton
-                tooltip={{ content: t('input.clearInput', { defaultValue: 'Clear input' }) }}
-                onClick={onClearInput}
-                aria-label={t('input.clearInput', { defaultValue: 'Clear input' })}
-              >
-                <XIcon />
-              </PromptInputButton>
-            )}
 
           </PromptInputTools>
 

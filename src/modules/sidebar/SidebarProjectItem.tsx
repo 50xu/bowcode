@@ -285,14 +285,6 @@ function SidebarProjectItem({
                       <Edit3 className="h-4 w-4 text-primary" />
                     </button>
 
-                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-muted/30">
-                      {isExpanded ? (
-                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                      )}
-                    </div>
-
                     <button
                       className="flex h-9 w-9 items-center justify-center rounded-lg text-primary active:scale-90 active:bg-primary/10"
                       onClick={(event) => {
@@ -305,6 +297,14 @@ function SidebarProjectItem({
                     >
                       <Plus className="h-5 w-5" />
                     </button>
+
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-muted/30">
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -431,6 +431,18 @@ function SidebarProjectItem({
                   <Edit3 className="h-3 w-3" />
                 </div>
                 <div
+                  role="button"
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onNewSession(project);
+                  }}
+                  aria-label={t('sessions.newSession')}
+                  title={t('sessions.newSession')}
+                >
+                  <Plus className="h-4 w-4" />
+                </div>
+                <div
                   className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-red-50 group-hover:opacity-100 dark:hover:bg-red-900/20"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -445,18 +457,6 @@ function SidebarProjectItem({
                 ) : (
                   <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
                 )}
-                <div
-                  role="button"
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onNewSession(project);
-                  }}
-                  aria-label={t('sessions.newSession')}
-                  title={t('sessions.newSession')}
-                >
-                  <Plus className="h-4 w-4" />
-                </div>
               </>
             )}
           </div>
