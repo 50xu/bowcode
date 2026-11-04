@@ -352,11 +352,30 @@ test('running sessions report a turn driven by the Claude CLI', { concurrency: f
             startedAt: 4_000,
             lastSeq: 0,
             canInterrupt: false,
+            externallyHeld: true,
+            pid: process.pid,
             statusText: 'Running in the Claude CLI',
           }]);
         },
       ),
     );
+  });
+});
+
+test('idle external holders are listed without processing', { concurrency: false }, async () => {
+  await withIsolatedDatabase(async () => {
+    sessionsDb.createAppSession('idle-cli', 'claude', '/tmp/running-project');
+    sessionsDb.assignProviderSessionId('idle-cli', 'native-idle');
+    await withClaudeCliRegistry([
+      { pid: process.pid, sessionId: 'native-idle', status: 'idle', entrypoint: 'cli', startedAt: 2_000 },
+    ], async () => await withProviders(
+      { claude: { run: async () => undefined, abort: () => false } },
+      async () => assert.deepEqual(await sessionsService.listRunningSessions(), [{
+        sessionId: 'idle-cli', provider: 'claude', startedAt: 2_000, lastSeq: 0,
+        canInterrupt: false, externallyHeld: true, pid: process.pid,
+        processing: false, statusText: 'Open in Claude CLI',
+      }]),
+    ));
   });
 });
 
@@ -399,6 +418,8 @@ test('a CLI turn does not duplicate a session already running a chat run', { con
           const sessions = await sessionsService.listRunningSessions();
           assert.equal(sessions.length, 1, 'the chat run already covers this session');
           assert.equal(sessions[0].canInterrupt, undefined, 'the interruptible chat run entry wins');
+          assert.equal(sessions[0].externallyHeld, true, 'the holder still protects the session');
+          assert.equal(sessions[0].pid, process.pid);
         },
       ),
     );

@@ -52,6 +52,10 @@ type ChatComposerProps = {
   handleGrantToolPermission: (suggestion: { entry: string; toolName: string }) => { success: boolean };
   activity: SessionActivity | null;
   isLoading: boolean;
+  externallyHeld?: boolean;
+  takeOverNextSend?: boolean;
+  takeoverError?: string | null;
+  onTakeOver?: () => void;
   onAbortSession: () => void;
   permissionMode: PermissionMode;
   availablePermissionModes: PermissionMode[];
@@ -129,6 +133,10 @@ export default function ChatComposer({
   handleGrantToolPermission,
   activity,
   isLoading,
+  externallyHeld = false,
+  takeOverNextSend = false,
+  takeoverError,
+  onTakeOver,
   onAbortSession,
   permissionMode,
   availablePermissionModes,
@@ -373,6 +381,14 @@ export default function ChatComposer({
           frequentCommands={frequentCommands}
         />
 
+        {externallyHeld && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
+            <span className="flex-1">{takeoverError || t('composer.externalHold.message')}</span>
+            <button type="button" onClick={onTakeOver} className="shrink-0 rounded-md px-2 py-1 font-medium hover:bg-amber-500/20">
+              {t('composer.externalHold.takeOver')}
+            </button>
+          </div>
+        )}
         <PromptInput
           onSubmit={onSubmit as (event: FormEvent<HTMLFormElement>) => void}
           status={isLoading ? 'streaming' : 'ready'}
@@ -523,13 +539,13 @@ export default function ChatComposer({
                       : undefined
               }
               disabled={
-                isLoading
+                (externallyHeld && !takeOverNextSend) || (isLoading
                   ? false
                   : isRecording
                     ? false
                     : isTranscribing
                       ? true
-                      : !input.trim() && attachedFiles.length === 0
+                      : !input.trim() && attachedFiles.length === 0)
               }
               aria-label={submitAriaLabel}
               title={submitAriaLabel}

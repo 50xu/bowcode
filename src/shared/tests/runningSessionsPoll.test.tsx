@@ -55,6 +55,22 @@ test('the poll carries each task through whole, nested flag included', async () 
   assert.deepEqual(activity?.tasks?.map((task) => [task.taskId, task.nested ?? false]), [['w1', false], ['b1', true]]);
 });
 
+test('idle external holders are exposed without becoming processing sessions', async () => {
+  runningSessions.mockResolvedValue({
+    ok: true,
+    json: async () => ({ data: { sessions: [{
+      sessionId: 'external', externallyHeld: true, pid: 123, processing: false,
+      statusText: 'Open in Claude CLI',
+    }] } }),
+  });
+  const { SessionProtectionProvider, useProcessingSessions, useExternalSessionHolders } = await import('@/shared/context/SessionProtectionContext');
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(SessionProtectionProvider, null, children);
+  const { result } = renderHook(() => ({ activity: useProcessingSessions(), holders: useExternalSessionHolders() }), { wrapper });
+  await waitFor(() => assert.equal(result.current.holders.get('external'), 123));
+  assert.equal(result.current.activity.has('external'), false);
+});
+
 test('one task entry in a shape the client does not read hides only itself', async () => {
   // A newer server may list a task kind this client never learned; the
   // session's other work must still show.

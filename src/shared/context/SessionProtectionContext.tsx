@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
 import type { ReactNode } from 'react';
 
@@ -20,6 +21,9 @@ type RunningSessionApiItem = {
   canInterrupt?: unknown;
   background?: unknown;
   tasks?: unknown;
+  externallyHeld?: unknown;
+  pid?: unknown;
+  processing?: unknown;
 };
 
 type RunningSessionsApiPayload = {
@@ -41,6 +45,7 @@ const SessionProtectionStateContext = createContext<SessionActivityMap | null>(n
 const SessionProtectionActionsContext = createContext<SessionProtectionActions | null>(null);
 const BusySessionIdsContext = createContext<ReadonlySet<string> | null>(null);
 const BackgroundSessionIdsContext = createContext<ReadonlySet<string> | null>(null);
+const ExternalHoldersContext = createContext<ReadonlyMap<string, number | undefined> | null>(null);
 
 /**
  * The set of session ids whose activity passes `include`, with a stable
@@ -132,6 +137,9 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
     getSessionActivity,
   } = useSessionProtection();
 
+  // Kept separate from processing activity so an idle CLI holder never lights a spinner.
+  const [externalHolders, setExternalHolders] = useState<ReadonlyMap<string, number | undefined>>(() => new Map());
+
   const refreshRunningSessions = useCallback(async () => {
     try {
       const response = await api.runningSessions();
@@ -142,8 +150,17 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
       const payload = (await response.json()) as RunningSessionsApiPayload;
       const sessions = Array.isArray(payload.data?.sessions) ? payload.data.sessions : [];
 
+      const holders = new Map<string, number | undefined>();
+      for (const session of sessions) {
+        if (typeof session.sessionId === 'string' && session.externallyHeld === true) {
+          holders.set(session.sessionId, typeof session.pid === 'number' ? session.pid : undefined);
+        }
+      }
+      // A fresh poll also clears websocket-only refusals when no holder remains.
+      setExternalHolders(holders);
+
       syncProcessingSessions(
-        sessions
+        sessions.filter((session) => session.processing !== false)
           .map((session) => {
             if (typeof session.sessionId !== 'string' || !session.sessionId) {
               return null;
@@ -201,6 +218,7 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
 
   return (
     <SessionProtectionActionsContext.Provider value={actions}>
+      <ExternalHoldersContext.Provider value={externalHolders}>
       <BusySessionIdsContext.Provider value={busySessionIds}>
         <BackgroundSessionIdsContext.Provider value={backgroundSessionIds}>
           <SessionProtectionStateContext.Provider value={processingSessions}>
@@ -208,6 +226,7 @@ export function SessionProtectionProvider({ children }: { children: ReactNode })
           </SessionProtectionStateContext.Provider>
         </BackgroundSessionIdsContext.Provider>
       </BusySessionIdsContext.Provider>
+      </ExternalHoldersContext.Provider>
     </SessionProtectionActionsContext.Provider>
   );
 }
@@ -236,6 +255,13 @@ export function useBackgroundSessionIdSet(): ReadonlySet<string> {
     throw new Error('useBackgroundSessionIdSet must be used within SessionProtectionProvider');
   }
   return backgroundSessionIds;
+}
+
+/** Used by chat to protect sessions currently open in another Claude process. */
+export function useExternalSessionHolders(): ReadonlyMap<string, number | undefined> {
+  const holders = useContext(ExternalHoldersContext);
+  if (!holders) throw new Error('useExternalSessionHolders must be used within SessionProtectionProvider');
+  return holders;
 }
 
 export function useProcessingSessions(): SessionActivityMap {

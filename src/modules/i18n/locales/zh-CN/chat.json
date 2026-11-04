@@ -264,6 +264,10 @@
     "answeredBy": "由 {{model}} 回答"
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "permissionHeading": "如何批准 {{provider}} 的操作？",
     "permissionCycleHint": "在输入框中按 Tab 切换模式",
     "permissionTriggerLabel": "{{mode}}：{{heading}}",

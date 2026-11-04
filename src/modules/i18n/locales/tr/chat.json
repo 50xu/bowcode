@@ -253,6 +253,10 @@
     "answeredBy": "{{model}} tarafından yanıtlandı"
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "permissionHeading": "{{provider}} eylemleri nasıl onaylansın?",
     "permissionCycleHint": "Modu değiştirmek için giriş alanında Tab tuşuna bas",
     "permissionTriggerLabel": "{{mode}}: {{heading}}",

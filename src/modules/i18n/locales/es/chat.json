@@ -179,6 +179,10 @@
     }
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "reasoning": "Razonamiento",
     "model": "Modelo",
     "effortDefault": "Por defecto",

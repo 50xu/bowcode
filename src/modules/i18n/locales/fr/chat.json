@@ -255,6 +255,10 @@
     "answeredBy": "Répondu par {{model}}"
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "permissionHeading": "Comment approuver les actions de {{provider}} ?",
     "permissionCycleHint": "Appuyez sur Tab dans la zone de saisie pour changer de mode",
     "permissionTriggerLabel": "{{mode}} : {{heading}}",

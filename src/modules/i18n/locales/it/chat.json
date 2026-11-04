@@ -253,6 +253,10 @@
     "answeredBy": "Risposto da {{model}}"
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "permissionHeading": "Come approvare le azioni di {{provider}}?",
     "permissionCycleHint": "Premi Tab nel campo di testo per cambiare modalità",
     "permissionTriggerLabel": "{{mode}}: {{heading}}",

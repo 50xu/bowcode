@@ -152,6 +152,10 @@
     }
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "reasoning": "חשיבה",
     "model": "מודל",
     "effortDefault": "ברירת מחדל",

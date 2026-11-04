@@ -265,6 +265,10 @@
     "answeredBy": "Ответил {{model}}"
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "permissionHeading": "Как подтверждать действия {{provider}}?",
     "permissionCycleHint": "Нажмите Tab в поле ввода, чтобы переключить режим",
     "permissionTriggerLabel": "{{mode}}: {{heading}}",

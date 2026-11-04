@@ -5,7 +5,7 @@ import path from 'node:path';
 import { projectsDb, sessionsDb } from '@/modules/database/index.js';
 import { broadcastSessionUpserted, chatRunRegistry } from '@/modules/websocket/index.js';
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
-import { listBusyClaudeCliSessions } from '@/modules/providers/services/claude-cli-liveness.service.js';
+import { listExternalClaudeCliSessions } from '@/modules/providers/services/claude-cli-liveness.service.js';
 import { sessionHistoryCache } from '@/modules/providers/services/session-history-cache.service.js';
 import type {
   BackgroundTaskSummary,
@@ -27,10 +27,8 @@ import { AppError, sliceTailPage } from '@/shared/utils.js';
  * abort — a task is stopped by id through `chat.stop-task` instead. `tasks`
  * rides along on both kinds whenever the session has any.
  *
- * A turn driven outside CloudCLI — the Claude CLI in the Shell view, or a
- * terminal the user opened themselves — is listed the same way, with
- * `canInterrupt: false` because there is no run here to abort, and a
- * `statusText` saying where the work is happening.
+ * An external Claude CLI holder is listed even when idle; only busy holders
+ * represent processing, and neither can be interrupted through the chat run.
  */
 type RunningSessionEntry = {
   sessionId: string;
@@ -40,6 +38,10 @@ type RunningSessionEntry = {
   background?: true;
   canInterrupt?: false;
   statusText?: string;
+  externallyHeld?: true;
+  pid?: number;
+  /** Idle external holders are listed for protection, not processing indicators. */
+  processing?: false;
   tasks?: BackgroundTaskSummary[];
 };
 
@@ -154,8 +156,8 @@ export const sessionsService = {
   },
 
   /**
-   * Returns app-facing ids for provider runs that are currently processing,
-   * plus every session whose background work outlived its turn.
+   * Returns app-facing ids for processing runs, background work, and external
+   * Claude CLI holders (including idle ones).
    *
    * This is intentionally status-only: callers that only need sidebar activity
    * indicators should not attach to chat streams or request replayed messages.
@@ -185,13 +187,15 @@ export const sessionsService = {
       }
     }
 
-    // The chat-run registry only knows about turns CloudCLI drives itself, so
-    // without this a session working under the Claude CLI — including one
-    // CloudCLI spawned for its own Shell view — looks idle. A session already
-    // listed above keeps its richer entry.
-    for (const live of await listBusyClaudeCliSessions()) {
+    // External CLI holders are listed even while idle so the composer can
+    // protect their session; only busy holders count as processing.
+    for (const live of await listExternalClaudeCliSessions()) {
       const session = sessionsDb.getSessionByProviderSessionId(live.providerSessionId);
-      if (!session || runningById.has(session.session_id)) {
+      if (!session) continue;
+      const existing = runningById.get(session.session_id) ?? entries.find((entry) => entry.sessionId === session.session_id);
+      if (existing) {
+        existing.externallyHeld = true;
+        existing.pid = live.pid;
         continue;
       }
 
@@ -200,10 +204,11 @@ export const sessionsService = {
         provider: session.provider as LLMProvider,
         startedAt: live.startedAt,
         lastSeq: chatRunRegistry.getRun(session.session_id)?.lastSeq ?? 0,
-        // There is no run here to abort: the turn belongs to a CLI process
-        // CloudCLI does not own, so it can be reported but not interrupted.
         canInterrupt: false,
-        statusText: 'Running in the Claude CLI',
+        externallyHeld: true,
+        pid: live.pid,
+        ...(live.status === 'idle' ? { processing: false as const } : {}),
+        statusText: live.status === 'busy' ? 'Running in the Claude CLI' : 'Open in Claude CLI',
       });
       runningById.set(session.session_id, entries[entries.length - 1]);
     }

@@ -168,6 +168,10 @@
     }
   },
   "composer": {
+    "externalHold": {
+      "message": "Open in another Claude process (e.g. the TUI). Read-only here.",
+      "takeOver": "Take over"
+    },
     "reasoning": "Reasoning",
     "model": "Model",
     "effortDefault": "Default",

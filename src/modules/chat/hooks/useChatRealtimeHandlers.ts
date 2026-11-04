@@ -41,6 +41,7 @@ type UseChatRealtimeHandlersArgs = {
   /** Reports the tasks a session still runs once its turn ends, so it reads as background work rather than idle. */
   onSessionBackground?: MarkSessionBackground;
   getSessionActivity?: GetSessionActivity;
+  onExternalHoldError?: (sessionId: string, message: string | null) => void;
   onWebSocketReconnect?: () => void;
   requestLatestMessages: (sessionId: string, allowNetwork?: boolean) => Promise<void>;
   sessionStore: SessionStore;
@@ -76,6 +77,7 @@ export function useChatRealtimeHandlers({
   onSessionIdle,
   onSessionBackground,
   getSessionActivity,
+  onExternalHoldError,
   onWebSocketReconnect,
   requestLatestMessages,
   sessionStore,
@@ -171,6 +173,11 @@ export function useChatRealtimeHandlers({
 
         case 'protocol_error': {
           console.error('[Chat] Protocol error:', msg.code, msg.error);
+          if (sid && (msg.code === 'SESSION_HELD_EXTERNALLY' || msg.code === 'TAKEOVER_FAILED')) {
+            onSessionIdle?.(sid);
+            onExternalHoldError?.(sid, msg.code === 'TAKEOVER_FAILED' ? String(msg.error || 'Takeover failed') : null);
+            return;
+          }
           // The ✕ on a task whose end never reached this client (its process
           // went away, say): settle its card and chip instead of reporting a
           // failure the user can do nothing about.
@@ -451,6 +458,7 @@ export function useChatRealtimeHandlers({
     onSessionBackground,
     getSessionActivity,
     onWebSocketReconnect,
+    onExternalHoldError,
     requestLatestMessages,
     sessionStore,
   ]);

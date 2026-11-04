@@ -250,6 +250,12 @@ export type SessionActivitySnapshot = {
   startedAt?: number;
   /** True when the server lists the session for its background tasks alone, with no chat run. */
   background?: boolean;
+  /** An idle external holder is visible for takeover but must not show processing indicators. */
+  processing?: boolean;
+  /** This session is held by a live external Claude CLI process. */
+  externallyHeld?: boolean;
+  /** Process id of the external holder, when available. */
+  pid?: number;
   tasks?: BackgroundTaskSummary[];
 };
 

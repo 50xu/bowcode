@@ -47,6 +47,7 @@ type UseChatComposerStateArgs = {
   currentProviderModel: string;
   currentProviderEffort: string;
   isLoading: boolean;
+  externallyHeld?: boolean;
   processingSessions?: SessionActivityMap;
   canAbortSession: boolean;
   tokenBudget: Record<string, unknown> | null;
@@ -96,6 +97,7 @@ type SubmitOptions = {
    * run that command instead of being sent.
    */
   skipCommandInterception?: boolean;
+  takeOver?: boolean;
 };
 
 const createFakeSubmitEvent = () => {
@@ -221,6 +223,7 @@ export function useChatComposerState({
   currentProviderModel,
   currentProviderEffort,
   isLoading,
+  externallyHeld = false,
   processingSessions,
   canAbortSession,
   tokenBudget,
@@ -267,6 +270,8 @@ export function useChatComposerState({
     };
   });
   const input = inputState.value;
+  // Arms exactly one future send if Take over was clicked with an empty composer.
+  const [takeOverNextSend, setTakeOverNextSend] = useState<{ scope: string | null } | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [fileErrors, setFileErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
@@ -879,6 +884,8 @@ export function useChatComposerState({
         return;
       }
 
+      if (externallyHeld && !submitOptions?.takeOver && takeOverNextSend?.scope !== sessionKey) return;
+
       // A turn is already in flight: stash this message instead of sending it.
       // Upload attached files now so the queued record contains durable image
       // descriptors that can be sent even if another session is open later.
@@ -1092,6 +1099,7 @@ export function useChatComposerState({
         // report why it was refused.
         type: editingAnchorId ? 'chat.edit-send' : 'chat.send',
         sessionId: targetSessionId,
+        ...((submitOptions?.takeOver || takeOverNextSend?.scope === sessionKey) ? { takeOver: true } : {}),
         ...(editingAnchorId ? { anchorId: editingAnchorId } : {}),
         content: messageContent,
         options: {
@@ -1099,6 +1107,7 @@ export function useChatComposerState({
           attachments: uploadedAttachments,
         },
       });
+      setTakeOverNextSend(null);
       setEditingAnchorId(null);
 
       // Recorded under the (possibly just-allocated) session id, so the first
@@ -1129,6 +1138,7 @@ export function useChatComposerState({
       currentSessionId,
       editingAnchorId,
       executeCommand,
+      externallyHeld,
       isLoading,
       onSessionProcessing,
       onSessionEstablished,
@@ -1143,6 +1153,7 @@ export function useChatComposerState({
       addMessage,
       setIsUserScrolledUp,
       slashCommands,
+      takeOverNextSend,
       t,
     ],
   );
@@ -1175,6 +1186,14 @@ export function useChatComposerState({
     },
     [submitMessage],
   );
+
+  const handleTakeOver = useCallback(() => {
+    if (!inputValueRef.current.trim() && attachedFiles.length === 0) {
+      setTakeOverNextSend({ scope: sessionKey });
+      return;
+    }
+    void handleSubmit(createFakeSubmitEvent(), undefined, { takeOver: true });
+  }, [attachedFiles.length, handleSubmit, sessionKey]);
 
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
@@ -1549,6 +1568,8 @@ export function useChatComposerState({
     isDragActive,
     openAttachmentPicker: open,
     handleSubmit,
+    handleTakeOver,
+    takeOverNextSend: takeOverNextSend?.scope === sessionKey,
     backgroundSendPrompt,
     resolveBackgroundSendPrompt,
     queuedDraft,

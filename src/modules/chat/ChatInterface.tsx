@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDownIcon } from 'lucide-react';
 
@@ -24,6 +24,7 @@ import { useChatComposerState } from '@/modules/chat/hooks/useChatComposerState'
 import { useSessionStore } from '@/modules/chat/hooks/useSessionStore';
 import {
   useProcessingSessions,
+  useExternalSessionHolders,
   useSessionProtectionActions,
 } from '@/shared/context/SessionProtectionContext';
 import ChatMessagesPane from '@/modules/chat/transcript/ChatMessagesPane';
@@ -75,6 +76,9 @@ function ChatInterface({
   const { subscribe } = useWebSocket();
   const { t } = useTranslation('chat');
   const processingSessions = useProcessingSessions();
+  const externalHolders = useExternalSessionHolders();
+  // A refusal can arrive before the next ownership poll; keep its banner visible for that session.
+  const [externalError, setExternalError] = useState<{ sessionId: string; message: string | null; poll: ReadonlyMap<string, number | undefined> } | null>(null);
   const {
     markSessionProcessing: onSessionProcessing,
     markSessionIdle: onSessionIdle,
@@ -186,6 +190,10 @@ function ChatInterface({
     onNavigateToSession?.(sessionId);
   }, [setCurrentSessionId, onSessionEstablished, onNavigateToSession]);
 
+  const viewedSessionId = selectedSession?.id || currentSessionId || null;
+  const refused = externalError?.sessionId === viewedSessionId && (externalError.poll === externalHolders || externalHolders.has(viewedSessionId));
+  const externallyHeld = Boolean(viewedSessionId && (externalHolders.has(viewedSessionId) || refused));
+  const takeoverError = refused ? externalError?.message : null;
   const {
     input,
     setInput,
@@ -214,6 +222,8 @@ function ChatInterface({
     isDragActive,
     openAttachmentPicker,
     handleSubmit,
+    handleTakeOver,
+    takeOverNextSend,
     backgroundSendPrompt,
     resolveBackgroundSendPrompt,
     queuedDraft,
@@ -248,6 +258,7 @@ function ChatInterface({
     currentProviderModel,
     currentProviderEffort,
     isLoading: isProcessing,
+    externallyHeld,
     processingSessions,
     canAbortSession,
     tokenBudget,
@@ -298,6 +309,7 @@ function ChatInterface({
     onSessionIdle,
     onSessionBackground,
     getSessionActivity,
+    onExternalHoldError: (sessionId, message) => setExternalError({ sessionId, message, poll: externalHolders }),
     onWebSocketReconnect: handleWebSocketReconnect,
     requestLatestMessages,
     sessionStore,
@@ -539,6 +551,10 @@ function ChatInterface({
           handleGrantToolPermission={handleGrantToolPermission}
           activity={sessionActivity}
           isLoading={isProcessing}
+          externallyHeld={externallyHeld}
+          takeOverNextSend={takeOverNextSend}
+          takeoverError={takeoverError}
+          onTakeOver={handleTakeOver}
           onAbortSession={handleAbortSession}
           permissionMode={permissionMode}
           availablePermissionModes={availablePermissionModes}
