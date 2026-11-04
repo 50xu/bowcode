@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
-import { Check, ChevronDown, ChevronRight, Edit3, SquarePen, Star, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Edit3, Plus, Star, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Button } from '@/shared/ui';
@@ -266,19 +266,6 @@ function SidebarProjectItem({
                 ) : (
                   <>
                     <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-primary active:scale-90 active:bg-primary/10"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onProjectSelect(project);
-                        onNewSession(project);
-                      }}
-                      aria-label={t('sessions.newSession')}
-                      title={t('sessions.newSession')}
-                    >
-                      <SquarePen className="h-[18px] w-[18px]" />
-                    </button>
-
-                    <button
                       className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-500/10 active:scale-90 dark:border-red-800 dark:bg-red-900/30"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -305,6 +292,19 @@ function SidebarProjectItem({
                         <ChevronRight className="h-3 w-3 text-muted-foreground" />
                       )}
                     </div>
+
+                    <button
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-primary active:scale-90 active:bg-primary/10"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onProjectSelect(project);
+                        onNewSession(project);
+                      }}
+                      aria-label={t('sessions.newSession')}
+                      title={t('sessions.newSession')}
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
                   </>
                 )}
               </div>
@@ -421,18 +421,6 @@ function SidebarProjectItem({
             ) : (
               <>
                 <div
-                  role="button"
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onNewSession(project);
-                  }}
-                  aria-label={t('sessions.newSession')}
-                  title={t('sessions.newSession')}
-                >
-                  <SquarePen className="h-4 w-4" />
-                </div>
-                <div
                   className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-accent group-hover:opacity-100"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -457,6 +445,18 @@ function SidebarProjectItem({
                 ) : (
                   <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
                 )}
+                <div
+                  role="button"
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onNewSession(project);
+                  }}
+                  aria-label={t('sessions.newSession')}
+                  title={t('sessions.newSession')}
+                >
+                  <Plus className="h-4 w-4" />
+                </div>
               </>
             )}
           </div>
