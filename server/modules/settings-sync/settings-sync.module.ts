@@ -5,7 +5,7 @@ import path from 'node:path';
 import { appConfigDb, getConnection, getDatabasePath, githubTokensDb, notificationPreferencesDb, providerModelsDb, userDb, userPreferencesDb } from '@/modules/database/index.js';
 import { getPluginsConfig, savePluginsConfig, scanPlugins } from '@/modules/plugins/index.js';
 import { providerMcpService, providerModelsService } from '@/modules/providers/index.js';
-import type { LLMProvider, ProviderMcpServer } from '@/shared/types.js';
+import type { CustomProviderModelInput, LLMProvider, ProviderMcpServer } from '@/shared/types.js';
 
 import { createSettingsSyncRouter } from './settings-sync.routes.js';
 import { createSettingsSyncService, readClaudeFiles } from './settings-sync.service.js';
@@ -81,7 +81,8 @@ const service = createSettingsSyncService({
         if (!providers.includes(row.provider as LLMProvider) || typeof row.id !== 'string' || typeof row.model !== 'string' || !row.id.trim() || !row.model.trim()) continue;
         const provider = row.provider as LLMProvider;
         desired.add(`${provider}:${row.id}`);
-        const input = { id: row.id, model: row.model };
+        // Effort levels travel with the model; absent in the snapshot means "keep local".
+        const input = { id: row.id, model: row.model, ...(row.effort !== undefined ? { effort: row.effort as CustomProviderModelInput['effort'] } : {}) };
         const existing = providerModelsDb.findCustomProviderModelByModelId(provider, row.id);
         if (existing) providerModelsDb.updateCustomProviderModel(provider, existing.recordId, input);
         else providerModelsDb.createCustomProviderModel(provider, input);
