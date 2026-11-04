@@ -284,7 +284,7 @@ export default function ChatComposer({
       : t('input.send');
 
   return (
-    <div className="chat-composer-shell relative flex-shrink-0 px-2 pb-2 pt-0 sm:px-4 sm:pb-4 md:px-4 md:pb-6">
+    <div className="chat-composer-shell relative min-w-0 flex-shrink-0 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-0 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
       {!hasPendingPermissions && (
         <div className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[calc(100%-1rem)] max-w-[54.25rem] -translate-x-1/2 translate-y-px bg-transparent sm:w-[calc(100%-2rem)]">
           <ActivityIndicator activity={activity} onAbort={onAbortSession} isInputFocused={isInputFocused} />
@@ -342,7 +342,7 @@ export default function ChatComposer({
         />
       )}
 
-      {!hasQuestionPanel && <div className="relative mx-auto max-w-[54.25rem]">
+      {!hasQuestionPanel && <div className="relative mx-auto w-full min-w-0 max-w-[54.25rem]">
         {showFileDropdown && filteredFiles.length > 0 && (
           <div
             ref={fileDropdownRef}
@@ -385,9 +385,9 @@ export default function ChatComposer({
         />
 
         {externallyHeld && (
-          <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
-            <span className="flex-1">{takeoverError || t('composer.externalHold.message')}</span>
-            <button type="button" onClick={onTakeOver} className="shrink-0 rounded-md px-2 py-1 font-medium hover:bg-amber-500/20">
+          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 rounded-xl hairline bg-card px-3 py-2 text-xs">
+            <span className="min-w-0 flex-1 break-words">{takeoverError || t('composer.externalHold.message')}</span>
+            <button type="button" onClick={onTakeOver} className="min-h-9 shrink-0 rounded-lg px-2 font-medium text-primary hover:bg-accent">
               {t('composer.externalHold.takeOver')}
             </button>
           </div>
@@ -438,7 +438,7 @@ export default function ChatComposer({
 
           <PromptInputBody>
             <div ref={inputHighlightRef} aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-              <div className="chat-input-placeholder block w-full whitespace-pre-wrap break-words px-4 py-2 text-sm leading-6 text-transparent">
+              <div className="chat-input-placeholder block w-full whitespace-pre-wrap break-words px-4 py-2 text-base leading-6 text-transparent sm:text-sm">
                 {renderInputWithMentions(input)}
               </div>
             </div>
@@ -459,8 +459,8 @@ export default function ChatComposer({
             />
         </PromptInputBody>
 
-        <PromptInputFooter className="flex-wrap gap-y-1">
-          <PromptInputTools className="min-w-0">
+        <PromptInputFooter>
+          <PromptInputTools className="min-w-0 flex-wrap">
             <PromptInputButton
               tooltip={{ content: t('input.attachFiles') }}
               onClick={openAttachmentPicker}
@@ -494,7 +494,7 @@ export default function ChatComposer({
               <PromptInputButton
                 tooltip={{ content: t('input.clearInput', { defaultValue: 'Clear input' }) }}
                 onClick={onClearInput}
-                className="hidden sm:flex"
+                aria-label={t('input.clearInput', { defaultValue: 'Clear input' })}
               >
                 <XIcon />
               </PromptInputButton>
@@ -502,7 +502,7 @@ export default function ChatComposer({
 
           </PromptInputTools>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
             <ScheduleMessagePopover
               disabled={!input.trim()}
               onSchedule={onScheduleMessage}
@@ -552,7 +552,7 @@ export default function ChatComposer({
               }
               aria-label={submitAriaLabel}
               title={submitAriaLabel}
-              className="h-10 w-10 sm:h-10 sm:w-10"
+              className="h-9 w-9"
             >
               {isTranscribing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

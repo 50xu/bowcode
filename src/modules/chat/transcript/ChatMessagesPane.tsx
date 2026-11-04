@@ -190,7 +190,7 @@ function ChatMessagesPane({
       ref={scrollContainerRef}
       onWheel={onWheel}
       onTouchMove={onTouchMove}
-      className={`chat-messages-pane relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden pt-3 sm:pt-4 ${
+      className={`chat-messages-pane relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-3 sm:pt-4 ${
         hasActivityIndicator ? 'pb-12 sm:pb-14' : 'pb-3 sm:pb-4'
       }`}
     >
@@ -219,7 +219,7 @@ function ChatMessagesPane({
           </div>
         </div>
       )}
-      <div className="mx-auto w-full max-w-[54.25rem] space-y-3 px-4 sm:space-y-4">
+      <div className="mx-auto w-full min-w-0 max-w-[54.25rem] space-y-3 px-2 sm:space-y-4 sm:px-4">
       {(isLoadingSessionMessages || isProcessing) && chatMessages.length === 0 ? (
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400">
           <div className="flex items-center justify-center space-x-2">
@@ -280,12 +280,12 @@ function ChatMessagesPane({
           {!hasMoreMessages && chatMessages.length > visibleMessageCount && (
             <div className="border-b border-gray-200 py-2 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
               {t('session.messages.showingLast', { count: visibleMessageCount, total: chatMessages.length })} |
-              <button className="ml-1 text-blue-600 underline hover:text-blue-700" onClick={loadEarlierMessages}>
+              <button className="ml-1 inline-flex min-h-9 items-center text-primary underline" onClick={loadEarlierMessages}>
                 {t('session.messages.loadEarlier')}
               </button>
               {' | '}
               <button
-                className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                className="inline-flex min-h-9 items-center text-primary underline"
                 onClick={loadAllMessages}
               >
                 {t('session.messages.loadAll')}

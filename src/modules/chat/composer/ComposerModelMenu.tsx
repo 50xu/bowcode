@@ -87,13 +87,13 @@ function ComposerModelMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className="flex h-8 max-w-20 shrink-0 items-center gap-1 rounded-lg border border-border/60 bg-muted/40 px-2 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:max-w-56"
+        className="flex h-9 min-w-0 max-w-24 shrink items-center gap-1 rounded-lg hairline bg-card px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent sm:max-w-56"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         title={ariaLabel}
       >
-        <span className="truncate">{triggerLabel}</span>
+        <span className="min-w-0 truncate">{triggerLabel}</span>
         {hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE && (
           <span className="hidden shrink-0 capitalize text-muted-foreground sm:inline">· {effortLabel}</span>
         )}

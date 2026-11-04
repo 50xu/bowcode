@@ -166,7 +166,7 @@ const MessageCopyControl = ({
   };
 
   const toneClass = messageType === 'user'
-    ? 'text-muted-foreground hover:text-foreground'
+    ? 'text-primary-foreground/80 hover:text-primary-foreground'
     : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300';
   const copyTitle = copied ? t('copyMessage.copied') : t('copyMessage.copy');
   const rootClassName = canSelectCopyFormat
@@ -180,7 +180,7 @@ const MessageCopyControl = ({
         onClick={handleCopyClick}
         title={copyTitle}
         aria-label={copyTitle}
-        className={`inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors ${toneClass}`}
+        className={`inline-flex min-h-9 items-center gap-1 rounded-lg px-2 transition-colors ${toneClass}`}
       >
         {copied ? (
           <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -213,7 +213,7 @@ const MessageCopyControl = ({
             ref={triggerRef}
             type="button"
             onClick={() => (isDropdownOpen ? setIsDropdownOpen(false) : openDropdown())}
-            className={`rounded px-1 py-0.5 transition-colors ${toneClass}`}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${toneClass}`}
             aria-label={t('copyMessage.selectFormat', { defaultValue: 'Select copy format' })}
             title={t('copyMessage.selectFormat', { defaultValue: 'Select copy format' })}
           >
@@ -240,7 +240,7 @@ const MessageCopyControl = ({
                     key={option.format}
                     type="button"
                     onClick={() => handleFormatChange(option.format)}
-                    className={`block w-full rounded px-2 py-1.5 text-left transition-colors ${isSelected
+                    className={`block min-h-9 w-full rounded px-2 py-2 text-left transition-colors ${isSelected
                       ? 'bg-accent text-foreground'
                       : 'text-foreground hover:bg-accent'
                       }`}

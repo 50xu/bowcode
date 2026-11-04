@@ -1,4 +1,4 @@
-import { CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { CheckSquare, Trash2 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Button } from '@/shared/ui';
@@ -124,30 +124,6 @@ export default function SidebarProjectSessions({
 
   return (
     <div className="space-y-1 border-t border-border bg-card px-2 pb-2">
-      {isCompact ? (
-        <div className="px-3 pb-1 pt-1">
-          <button
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-primary text-xs font-medium text-primary-foreground transition-all duration-150 hover:bg-primary/90 active:scale-[0.98]"
-            onClick={() => {
-              onProjectSelect(project);
-              onNewSession(project);
-            }}
-          >
-            <Plus className="h-3 w-3" />
-            {t('sessions.newSession')}
-          </button>
-        </div>
-      ) : (
-        <Button
-          variant="default"
-          size="sm"
-          className="flex min-h-9 w-full justify-start gap-2 bg-primary text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          onClick={() => onNewSession(project)}
-        >
-          <Plus className="h-3 w-3" />
-          {t('sessions.newSession')}
-        </Button>
-      )}
 
       {(isSelecting || (initialSessionsLoaded && selectableSessionIds.length > 0)) && (
         <div className={cn('space-y-1', isCompact && 'px-3')}>

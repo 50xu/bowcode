@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { SendHorizonalIcon, SquareIcon } from 'lucide-react';
+import { ArrowUpIcon, SquareIcon } from 'lucide-react';
 
 import { cn } from '@/shared/utils';
 import { Button, Tooltip } from '@/shared/ui';
@@ -40,7 +40,7 @@ export const PromptInput = React.forwardRef<HTMLFormElement, PromptInputProps>(
           ref={ref}
           data-slot="prompt-input"
           className={cn(
-            'relative overflow-hidden rounded-xl border border-border/50 bg-card/80 shadow-sm backdrop-blur-sm transition-all duration-200 focus-within:border-primary/30 focus-within:shadow-md focus-within:ring-1 focus-within:ring-primary/15',
+            'relative min-w-0 overflow-hidden rounded-[20px] hairline bg-card transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/15',
             className
           )}
           {...props}
@@ -96,7 +96,7 @@ export const PromptInputTextarea = React.forwardRef<
     ref={ref}
     data-slot="prompt-input-textarea"
     className={cn(
-      'chat-input-placeholder block max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent px-4 py-2 text-sm leading-6 text-foreground placeholder-muted-foreground/50 focus:outline-none sm:max-h-[300px]',
+      'chat-input-placeholder block max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent px-4 py-2 text-base leading-6 text-foreground placeholder-muted-foreground/50 focus:outline-none sm:max-h-[300px] sm:text-sm',
       className
     )}
     {...props}
@@ -114,7 +114,7 @@ export const PromptInputFooter = React.forwardRef<
   <div
     ref={ref}
     data-slot="prompt-input-footer"
-    className={cn('flex items-center justify-between border-t border-border/30 px-3 py-2', className)}
+    className={cn('flex flex-wrap items-center gap-1 border-t border-border px-2 py-1.5 sm:px-3', className)}
     {...props}
   />
 ));
@@ -157,7 +157,7 @@ export const PromptInputButton = React.forwardRef<HTMLButtonElement, PromptInput
         type="button"
         variant="ghost"
         size="icon"
-        className={cn('h-8 w-8 [&_svg]:size-4', className)}
+        className={cn('h-9 w-9 shrink-0 rounded-full [&_svg]:size-4', className)}
         {...props}
       >
         {children}
@@ -206,13 +206,13 @@ export const PromptInputSubmit = React.forwardRef<HTMLButtonElement, PromptInput
         type={isActive ? 'button' : 'submit'}
         variant="default"
         size="icon"
-        className={cn('h-8 w-8 shrink-0 rounded-lg', className)}
+        className={cn('h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted-foreground disabled:text-primary-foreground disabled:opacity-100', className)}
         {...props}
       >
         {children ?? (isActive ? (
           <SquareIcon className="h-3.5 w-3.5 fill-current" />
         ) : (
-          <SendHorizonalIcon className="h-4 w-4" />
+          <ArrowUpIcon className="h-5 w-5" strokeWidth={2.5} />
         ))}
       </Button>
     );

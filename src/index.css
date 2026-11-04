@@ -255,6 +255,16 @@
 
   /* Surface separators without changing composer or transcript layout. */
   .chat-message .font-serif { font-family: inherit; }
+  .chat-message.assistant .prose,
+  .chat-message.user .prose { font-size: 16px; line-height: 1.45; }
+  @media (min-width: 640px) {
+    .chat-message.assistant .prose,
+    .chat-message.user .prose { font-size: 15px; }
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .chat-message button,
+    .chat-composer-shell button { min-width: 36px; min-height: 36px; }
+  }
   .chat-message.assistant pre,
   .chat-message.tool pre,
   .chat-message.tool .rounded.border { border-color: hsl(var(--border)); }

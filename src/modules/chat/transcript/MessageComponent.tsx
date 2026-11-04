@@ -99,7 +99,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
     >
       {message.type === 'user' ? (
         /* User turn on the right: claude.ai-style attachment cards above the bubble */
-        <div className="flex w-full items-end space-x-0 sm:w-auto sm:max-w-[85%] sm:space-x-3 md:max-w-md lg:max-w-lg xl:max-w-xl">
+        <div className="flex w-full max-w-[85%] min-w-0 items-end space-x-0 sm:w-auto sm:space-x-3">
           <div className="flex min-w-0 flex-1 flex-col items-end gap-2 sm:flex-initial">
             {message.images && message.images.length > 0 && (
               <ChatMessageImages
@@ -111,23 +111,23 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <ChatMessageFiles files={message.files} />
             )}
             {userCopyContent.trim().length > 0 || (!message.images?.length && !message.files?.length) ? (
-              <div className="group max-w-full rounded-2xl rounded-br-md border border-border/60 bg-muted/60 px-3 py-2 text-foreground shadow-sm dark:bg-gray-800/60 sm:px-4">
-                <div dir="auto" className="break-words font-serif text-sm">
+              <div className="group max-w-full min-w-0 rounded-[18px] bg-primary px-3 py-2 text-primary-foreground sm:px-4">
+                <div dir="auto" className="break-words text-base leading-[1.45] sm:text-[15px]">
                   <Markdown
                     breaks
-                    className="prose prose-sm max-w-none font-serif dark:prose-invert"
+                    className="prose prose-sm max-w-none text-inherit prose-headings:text-inherit prose-p:text-inherit prose-a:text-inherit prose-strong:text-inherit prose-code:text-inherit dark:prose-invert"
                   >
                     {message.content}
                   </Markdown>
                 </div>
-                <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                <div className="mt-1 flex flex-wrap items-center justify-end gap-1 text-xs text-primary-foreground/80">
                   {onEditMessage && message.transcriptAnchorId && (
                     <button
                       type="button"
                       onClick={() => onEditMessage(message)}
                       title={t('message.editAndResend')}
                       aria-label={t('message.editAndResend')}
-                      className="rounded p-1 opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover:opacity-100"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg opacity-0 transition-opacity hover:bg-white/15 focus-visible:opacity-100 group-hover:opacity-100"
                     >
                       <PencilIcon className="h-3.5 w-3.5" />
                     </button>
@@ -138,7 +138,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                       onClick={() => onForkFromMessage(message)}
                       title={t('message.forkFromHere')}
                       aria-label={t('message.forkFromHere')}
-                      className="rounded p-1 opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover:opacity-100"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg opacity-0 transition-opacity hover:bg-white/15 focus-visible:opacity-100 group-hover:opacity-100"
                     >
                       <GitBranchIcon className="h-3.5 w-3.5" />
                     </button>
@@ -164,7 +164,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
         </div>
       ) : message.compact ? (
         /* A compaction: one row, its numbers, and its summary folded into it */
-        <div className="w-full">
+        <div className="w-full min-w-0">
           <div className="flex items-center gap-2 py-0.5">
             <span
               className={`inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full ${
@@ -185,7 +185,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                 {t('chat:misc.compactionSummary', 'full summary')}
               </summary>
               <div className="mt-1">
-                <Markdown className="prose prose-sm prose-gray max-w-none font-serif dark:prose-invert">
+                <Markdown className="prose prose-sm max-w-none text-base leading-[1.45] sm:text-[15px] dark:prose-invert">
                   {message.compactSummary}
                 </Markdown>
               </div>
@@ -194,7 +194,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
         </div>
       ) : message.isTaskNotification ? (
         /* Compact task notification on the left */
-        <div className="w-full">
+        <div className="w-full min-w-0">
           <div className="flex items-center gap-2 py-0.5">
             <span className={`inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full ${message.taskNotificationStatus === 'completed' ? 'bg-green-400 dark:bg-green-500' : 'bg-amber-400 dark:bg-amber-500'}`} />
             <span className="text-xs text-gray-500 dark:text-gray-400">{message.content}</span>
@@ -202,7 +202,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
         </div>
       ) : (
         /* Claude/Error/Tool messages on the left */
-        <div className="w-full">
+        <div className="w-full min-w-0">
           {!isGrouped && (
             <div className="mb-2 flex items-center space-x-3">
               {message.type === 'error' ? (
@@ -232,7 +232,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
             </div>
           )}
 
-          <div className="w-full">
+          <div className={message.isToolUse || message.type === 'tool' ? 'w-full min-w-0 rounded-xl hairline bg-card p-2 sm:p-3' : 'w-full min-w-0'}>
 
             {message.isToolUse && message.toolName === 'Workflow' ? (
               /* A workflow launch owns its whole card too. The anchor is what
@@ -267,7 +267,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <>
                 <div className="flex flex-col">
                   <div className="flex flex-col">
-                    <Markdown className="prose prose-sm max-w-none font-serif dark:prose-invert">
+                    <Markdown className="prose prose-sm max-w-none text-inherit prose-headings:text-inherit prose-p:text-inherit prose-a:text-inherit prose-strong:text-inherit prose-code:text-inherit dark:prose-invert">
                       {String(message.displayText || '')}
                     </Markdown>
                   </div>
@@ -326,7 +326,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <Reasoning defaultOpen={isExporting}>
                 <ReasoningTrigger />
                 <ReasoningContent>
-                  <Markdown className="prose prose-sm prose-gray max-w-none font-serif dark:prose-invert">
+                  <Markdown className="prose prose-sm max-w-none text-base leading-[1.45] sm:text-[15px] dark:prose-invert">
                     {message.content}
                   </Markdown>
                   {!isExporting && (
@@ -337,7 +337,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                 </ReasoningContent>
               </Reasoning>
             ) : (
-              <div dir="auto" className="text-sm text-gray-700 dark:text-gray-300">
+              <div dir="auto" className="min-w-0 text-base leading-[1.45] text-foreground sm:text-[15px]">
                 {/* Reasoning accordion */}
                 {showThinking && message.reasoning && (
                   <Reasoning className="mb-3" defaultOpen={false}>
@@ -369,7 +369,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                             </svg>
                             <span className="font-medium">{t('json.response')}</span>
                           </div>
-                          <div className="overflow-hidden rounded-lg border border-border bg-muted">
+                          <div className="overflow-hidden rounded-xl hairline bg-card">
                             <pre className="overflow-x-auto p-4">
                               <code className="block whitespace-pre font-mono text-sm text-foreground">
                                 {formatted}
@@ -390,7 +390,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                     <StreamingMarkdown
                       content={content}
                       isStreaming={Boolean(message.isStreaming)}
-                      className="prose prose-sm prose-gray max-w-none font-serif dark:prose-invert"
+                      className="prose prose-sm max-w-none text-base leading-[1.45] sm:text-[15px] dark:prose-invert"
                     />
                   ) : (
                     <div className="whitespace-pre-wrap">

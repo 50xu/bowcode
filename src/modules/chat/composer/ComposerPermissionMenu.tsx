@@ -133,7 +133,7 @@ function ComposerPermissionMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className={`flex h-8 min-w-8 max-w-40 shrink-0 items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition-colors sm:max-w-48 ${isNameShown ? 'px-2' : 'w-8'} ${activeAppearance.trigger}`}
+        className={`flex h-9 min-w-9 max-w-40 shrink-0 items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition-colors sm:max-w-48 ${isNameShown ? 'px-2' : 'w-9'} ${activeAppearance.trigger}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         // The mode name leads the accessible name, so what a screen reader
