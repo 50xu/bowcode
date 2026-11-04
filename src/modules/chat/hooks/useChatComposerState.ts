@@ -557,6 +557,15 @@ export function useChatComposerState({
     );
   }, [executeCommand]);
 
+  /** Sends Claude Code's native `/compact` to the session, leaving the composer's draft alone. */
+  const compactSession = useCallback(() => {
+    void handleSubmitRef.current?.(
+      createFakeSubmitEvent(),
+      { content: '/compact', attachments: [], uploadedAttachments: [] },
+      { skipCommandInterception: true },
+    );
+  }, []);
+
   const {
     slashCommands,
     slashCommandsCount,
@@ -1605,5 +1614,6 @@ export function useChatComposerState({
     commandModalPayload,
     closeCommandModal,
     showCostModal,
+    compactSession,
   };
 }

@@ -99,7 +99,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
     >
       {message.type === 'user' ? (
         /* User turn on the right: claude.ai-style attachment cards above the bubble */
-        <div className="flex w-full max-w-[85%] min-w-0 items-end space-x-0 sm:w-auto sm:space-x-3">
+        <div className="flex w-full min-w-0 max-w-[85%] items-end space-x-0 sm:w-auto sm:space-x-3">
           <div className="flex min-w-0 flex-1 flex-col items-end gap-2 sm:flex-initial">
             {message.images && message.images.length > 0 && (
               <ChatMessageImages
@@ -111,11 +111,11 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <ChatMessageFiles files={message.files} />
             )}
             {userCopyContent.trim().length > 0 || (!message.images?.length && !message.files?.length) ? (
-              <div className="group max-w-full min-w-0 rounded-[18px] bg-primary px-3 py-2 text-primary-foreground sm:px-4">
+              <div className="group min-w-0 max-w-full rounded-[18px] bg-primary px-3 py-2 text-primary-foreground sm:px-4">
                 <div dir="auto" className="break-words text-base leading-[1.45] sm:text-[15px]">
                   <Markdown
                     breaks
-                    className="prose prose-sm max-w-none text-inherit prose-headings:text-inherit prose-p:text-inherit prose-a:text-inherit prose-strong:text-inherit prose-code:text-inherit dark:prose-invert"
+                    className="prose prose-sm max-w-none text-inherit dark:prose-invert prose-headings:text-inherit prose-p:text-inherit prose-a:text-inherit prose-strong:text-inherit prose-code:text-inherit"
                   >
                     {message.content}
                   </Markdown>
@@ -185,7 +185,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                 {t('chat:misc.compactionSummary', 'full summary')}
               </summary>
               <div className="mt-1">
-                <Markdown className="prose prose-sm max-w-none text-base leading-[1.45] sm:text-[15px] dark:prose-invert">
+                <Markdown className="prose prose-sm max-w-none text-base leading-[1.45] dark:prose-invert sm:text-[15px]">
                   {message.compactSummary}
                 </Markdown>
               </div>
@@ -232,7 +232,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
             </div>
           )}
 
-          <div className={message.isToolUse || message.type === 'tool' ? 'w-full min-w-0 rounded-xl hairline bg-card p-2 sm:p-3' : 'w-full min-w-0'}>
+          <div className={message.isToolUse || message.type === 'tool' ? 'hairline w-full min-w-0 rounded-xl bg-card p-2 sm:p-3' : 'w-full min-w-0'}>
 
             {message.isToolUse && message.toolName === 'Workflow' ? (
               /* A workflow launch owns its whole card too. The anchor is what
@@ -267,7 +267,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <>
                 <div className="flex flex-col">
                   <div className="flex flex-col">
-                    <Markdown className="prose prose-sm max-w-none text-inherit prose-headings:text-inherit prose-p:text-inherit prose-a:text-inherit prose-strong:text-inherit prose-code:text-inherit dark:prose-invert">
+                    <Markdown className="prose prose-sm max-w-none text-inherit dark:prose-invert prose-headings:text-inherit prose-p:text-inherit prose-a:text-inherit prose-strong:text-inherit prose-code:text-inherit">
                       {String(message.displayText || '')}
                     </Markdown>
                   </div>
@@ -326,7 +326,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <Reasoning defaultOpen={isExporting}>
                 <ReasoningTrigger />
                 <ReasoningContent>
-                  <Markdown className="prose prose-sm max-w-none text-base leading-[1.45] sm:text-[15px] dark:prose-invert">
+                  <Markdown className="prose prose-sm max-w-none text-base leading-[1.45] dark:prose-invert sm:text-[15px]">
                     {message.content}
                   </Markdown>
                   {!isExporting && (
@@ -369,7 +369,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                             </svg>
                             <span className="font-medium">{t('json.response')}</span>
                           </div>
-                          <div className="overflow-hidden rounded-xl hairline bg-card">
+                          <div className="hairline overflow-hidden rounded-xl bg-card">
                             <pre className="overflow-x-auto p-4">
                               <code className="block whitespace-pre font-mono text-sm text-foreground">
                                 {formatted}
@@ -390,7 +390,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                     <StreamingMarkdown
                       content={content}
                       isStreaming={Boolean(message.isStreaming)}
-                      className="prose prose-sm max-w-none text-base leading-[1.45] sm:text-[15px] dark:prose-invert"
+                      className="prose prose-sm max-w-none text-base leading-[1.45] dark:prose-invert sm:text-[15px]"
                     />
                   ) : (
                     <div className="whitespace-pre-wrap">

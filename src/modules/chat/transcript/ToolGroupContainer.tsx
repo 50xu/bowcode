@@ -116,7 +116,7 @@ function ToolGroupContainer({
     <div className="chat-message tool px-3 sm:px-0" data-message-timestamp={group.timestamp || undefined}>
       <button
         type="button"
-        className="group flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl hairline bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
+        className="hairline group flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
         onClick={() => setIsExpanded((current) => !current)}
         aria-expanded={isExpanded}
       >

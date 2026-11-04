@@ -34,13 +34,17 @@ export default function LoadAllMessagesOverlay({
 }: LoadAllMessagesOverlayProps) {
   const { t } = useTranslation('chat');
 
+  // The overlay occupies no layout height and leaves a same-sized placeholder
+  // when hidden: it appears at the top of the transcript and fades out 2.5s
+  // later, and an in-flow element coming and going above the reader's position
+  // shifts the whole transcript on engines without scroll anchoring (iOS).
   if (!showLoadAllOverlay && !isLoadingAllMessages && !loadAllJustFinished) {
-    return null;
+    return <div aria-hidden className="!mt-0 h-0" />;
   }
 
   return (
     <div
-      className={`pointer-events-none sticky top-2 z-20 flex justify-center ${!isLoadingAllMessages ? 'load-all-overlay-auto-fade' : ''}`}
+      className={`pointer-events-none sticky top-2 z-20 !mt-0 flex h-0 items-start justify-center overflow-visible ${!isLoadingAllMessages ? 'load-all-overlay-auto-fade' : ''}`}
       style={!isLoadingAllMessages ? { animation: 'loadAllOverlayAutoFade 2500ms ease forwards' } : undefined}
     >
       <style>{loadAllOverlayAnimationStyle}</style>

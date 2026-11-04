@@ -67,7 +67,7 @@ type ChatComposerProps = {
   onSelectModel: (model: string) => void;
   modelsLoading: boolean;
   tokenBudget: Record<string, unknown> | null;
-  onShowTokenUsage: () => void;
+  onCompact?: () => void;
   slashCommandsCount: number;
   onToggleCommandMenu: () => void;
   hasInput: boolean;
@@ -147,7 +147,7 @@ export default function ChatComposer({
   onSelectModel,
   modelsLoading,
   tokenBudget,
-  onShowTokenUsage,
+  onCompact,
   slashCommandsCount,
   onToggleCommandMenu,
   hasInput,
@@ -491,7 +491,7 @@ export default function ChatComposer({
               <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} />
             )}
 
-            <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} />
+            <TokenUsageSummary usage={tokenBudget} onCompact={onCompact} compactDisabled={isLoading} />
 
             <PromptInputButton
               tooltip={{ content: t('input.showAllCommands') }}

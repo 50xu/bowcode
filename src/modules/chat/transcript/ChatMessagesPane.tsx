@@ -246,25 +246,23 @@ function ChatMessagesPane({
         />
       ) : (
         <>
-          {/* Loading indicator for older messages (hide when load-all is active) */}
-          {isLoadingMoreMessages && !isLoadingAllMessages && !allMessagesLoaded && (
-            <div className="py-3 text-center text-gray-500 dark:text-gray-400">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-400" />
-                <p className="text-sm">{t('session.loading.olderMessages')}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Indicator showing there are more messages to load (hide when all loaded) */}
-          {hasMoreMessages && !isLoadingMoreMessages && !allMessagesLoaded && (
-            <div className="border-b border-gray-200 py-2 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              {totalMessages > 0 && (
-                <span>
+          {/* One fixed-height status row for paging older messages. The spinner
+              and the count used to be two rows of different heights swapping
+              places above the reader, which shifts the transcript on engines
+              without scroll anchoring (iOS). */}
+          {hasMoreMessages && !allMessagesLoaded && (
+            <div className="flex h-10 items-center justify-center border-b border-gray-200 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              {isLoadingMoreMessages && !isLoadingAllMessages ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-400" />
+                  <p className="text-sm">{t('session.loading.olderMessages')}</p>
+                </div>
+              ) : totalMessages > 0 ? (
+                <span className="block min-w-0 truncate px-2">
                   {t('session.messages.showingOf', { shown: sessionMessagesCount, total: totalMessages })}{' '}
                   <span className="text-xs">{t('session.messages.scrollToLoad')}</span>
                 </span>
-              )}
+              ) : null}
             </div>
           )}
 

@@ -238,6 +238,8 @@ export function useChatSessionState({
    * time, a scroll-up inside that window is silently undone.
    */
   const isUserScrolledUpRef = useRef(false);
+  /** Last observed scrollTop, to tell an upward user scroll from content growth. */
+  const lastScrollTopRef = useRef(0);
   const isLoadingMoreRef = useRef(false);
   const allMessagesLoadedRef = useRef(false);
   const topLoadLockRef = useRef(false);
@@ -457,13 +459,26 @@ export function useChatSessionState({
   }, []);
 
   const scrollToBottomAndReset = useCallback(() => {
-    scrollToBottom();
+    const container = scrollContainerRef.current;
+    isUserScrolledUpRef.current = false;
+    setIsUserScrolledUp(false);
+    if (container) {
+      // iOS keeps applying an in-flight momentum fling after a programmatic
+      // jump, which fights the jump and stutters. Briefly removing the
+      // scrollability cancels the fling first.
+      container.style.overflowY = 'hidden';
+      container.scrollTop = container.scrollHeight;
+      requestAnimationFrame(() => {
+        container.style.overflowY = '';
+        container.scrollTop = container.scrollHeight;
+      });
+    }
     if (allMessagesLoaded) {
       setVisibleMessageCount(INITIAL_VISIBLE_MESSAGES);
       setAllMessagesLoaded(false);
       allMessagesLoadedRef.current = false;
     }
-  }, [allMessagesLoaded, scrollToBottom]);
+  }, [allMessagesLoaded]);
 
   const isNearBottom = useCallback(() => {
     const container = scrollContainerRef.current;
@@ -537,8 +552,21 @@ export function useChatSessionState({
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    // Stick to the bottom only while the user is there; any upward scroll
+    // releases it immediately, so streamed output never drags the reader back
+    // down. Content growth only raises scrollHeight (or is followed by our own
+    // downward scroll), so a decreasing scrollTop away from the bottom is the
+    // user's doing.
     const nearBottom = isNearBottom();
-    setIsUserScrolledUp(!nearBottom);
+    const movedUp = container.scrollTop < lastScrollTopRef.current - 1;
+    lastScrollTopRef.current = container.scrollTop;
+    if (nearBottom) {
+      isUserScrolledUpRef.current = false;
+      setIsUserScrolledUp(false);
+    } else if (movedUp || isUserScrolledUpRef.current) {
+      isUserScrolledUpRef.current = true;
+      setIsUserScrolledUp(true);
+    }
     scrollPositionRef.current = {
       height: container.scrollHeight,
       top: container.scrollTop,
@@ -998,6 +1026,42 @@ export function useChatSessionState({
     };
     fetchInitialTokenUsage();
   }, [selectedSession?.id]);
+
+  // While the user reads further up, messages appended at the tail must not
+  // push the oldest rendered rows out of the window: removing rows above the
+  // viewport shifts everything the reader is looking at. Grow the window by
+  // the appended count before paint instead; it shrinks back when they return
+  // to the bottom (scrollToBottomAndReset / session change).
+  const previousTailRef = useRef<{ length: number; last: unknown }>({ length: 0, last: null });
+  useLayoutEffect(() => {
+    const previous = previousTailRef.current;
+    const last = chatMessages[chatMessages.length - 1] ?? null;
+    previousTailRef.current = { length: chatMessages.length, last };
+    const appended = chatMessages.length - previous.length;
+    if (appended <= 0 || previous.last === last) return;
+    if (!isUserScrolledUpRef.current || isLoadingMoreRef.current) return;
+    if (chatMessages.length <= visibleMessageCount) return;
+    setVisibleMessageCount((count) => count + appended);
+  }, [chatMessages, visibleMessageCount]);
+
+  // Keep the transcript pinned to the bottom while content grows (streamed
+  // text, tool output, late-rendering markdown/images) — synchronously, in the
+  // ResizeObserver callback before paint, instead of chasing it with timers.
+  const hasChatMessages = chatMessages.length > 0;
+  useEffect(() => {
+    if (!isActive) return undefined;
+    const container = scrollContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => {
+      if (isUserScrolledUpRef.current) return;
+      if (pendingScrollRestoreRef.current || searchScrollActiveRef.current) return;
+      if (container.scrollHeight - container.scrollTop - container.clientHeight < 1) return;
+      container.scrollTop = container.scrollHeight;
+      lastScrollTopRef.current = container.scrollTop;
+    });
+    for (const child of Array.from(container.children)) observer.observe(child);
+    return () => observer.disconnect();
+  }, [isActive, hasChatMessages, currentSessionId]);
 
   const visibleMessages = useMemo(() => {
     if (chatMessages.length <= visibleMessageCount) return chatMessages;
