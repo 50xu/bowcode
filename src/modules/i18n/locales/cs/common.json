@@ -19,7 +19,7 @@
   },
   "tabs": {
     "chat": "Chat",
-    "shell": "Shell",
+    "shell": "Terminal",
     "files": "Soubory",
     "git": "Správa verzí",
     "tasks": "Úkoly",
@@ -410,7 +410,6 @@
     "projectFallback": "Projekt",
     "openMenu": "Otevřít nabídku",
     "noProjectSelected": "Není vybrán žádný projekt",
-    "projectRequiredForShell": "K otevření shellu je potřeba projekt",
     "completedBadge": "(Dokončeno)",
     "close": "Zavřít",
     "hideToken": "Skrýt token",

@@ -19,7 +19,7 @@
   },
   "tabs": {
     "chat": "Sohbet",
-    "shell": "Shell",
+    "shell": "Terminal",
     "files": "Dosyalar",
     "git": "Kaynak Kontrolü",
     "tasks": "Görevler",

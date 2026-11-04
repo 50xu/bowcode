@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
-import { StandaloneShell } from '@/modules/standalone-shell';
+import { TerminalView } from '@/modules/terminal';
 import { IS_PLATFORM } from '@/shared/utils';
 import type { LLMProvider } from '@/shared/types';
 
@@ -70,7 +70,6 @@ export default function ProviderLoginModal({
   isOpen,
   onClose,
   provider = 'claude',
-  onComplete,
   customCommand,
   isAuthenticated = false,
 }: ProviderLoginModalProps) {
@@ -81,11 +80,6 @@ export default function ProviderLoginModal({
 
   const command = getProviderCommand({ provider, customCommand, isAuthenticated });
   const title = getProviderTitle(provider);
-
-  const handleComplete = (exitCode: number) => {
-    onComplete?.(exitCode);
-    // Keep the modal open so users can read terminal output before closing.
-  };
 
   return (
     <div
@@ -104,8 +98,9 @@ export default function ProviderLoginModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          <StandaloneShell project={DEFAULT_PROJECT_FOR_EMPTY_SHELL} command={command} onComplete={handleComplete} minimal={true} />
+        <p className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Run in terminal: <code>{command}</code></p>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <TerminalView projectPath={DEFAULT_PROJECT_FOR_EMPTY_SHELL.path} />
         </div>
       </div>
     </div>

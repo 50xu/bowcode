@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, type Dispatch, type SetStateAction, useS
 
 import { ChatInterface } from '@/modules/chat';
 import { FileTree } from '@/modules/file-tree';
-import { StandaloneShell } from '@/modules/standalone-shell';
+import { TerminalView } from '@/modules/terminal';
 import { GitPanel } from '@/modules/git-panel';
 import { PluginTabContent } from '@/modules/plugins';
 import { BrowserUsePanel, useBrowserUseEnabled } from '@/modules/browser-use';
@@ -191,12 +191,7 @@ function WorkspaceMain({
 
           {activeTab === 'shell' && (
             <div className="h-full w-full overflow-hidden">
-              <StandaloneShell
-                project={selectedProject}
-                session={selectedSession}
-                showHeader={false}
-                isActive={activeTab === 'shell'}
-              />
+              <TerminalView key={selectedProject.path ?? selectedProject.fullPath} projectPath={selectedProject.path ?? selectedProject.fullPath ?? ''} />
             </div>
           )}
 

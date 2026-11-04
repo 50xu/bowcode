@@ -3,7 +3,7 @@ import { Plus, Terminal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/utils';
-import { Shell } from '@/modules/shell';
+import { TerminalView } from '@/modules/terminal';
 import type { TaskMasterProject } from '@/shared/types';
 
 type TaskMasterSetupModalProps = {
@@ -56,19 +56,9 @@ export default function TaskMasterSetupModal({ isOpen, project, onClose, onAfter
         </div>
 
         <div className="flex-1 p-4">
-          <div className="h-full overflow-hidden rounded-lg bg-black">
-            <Shell
-              selectedProject={project}
-              selectedSession={null}
-              initialCommand="npx task-master init"
-              isPlainShell
-              isActive
-              onProcessComplete={(exitCode) => {
-                if (exitCode === 0) {
-                  setIsTaskMasterComplete(true);
-                }
-              }}
-            />
+          <div className="flex h-full flex-col overflow-hidden rounded-lg bg-black">
+            <p className="p-2 text-sm text-white">Run in terminal: <code>npx task-master init</code></p>
+            <div className="min-h-0 flex-1"><TerminalView projectPath={project.path ?? project.fullPath ?? ''} /></div>
           </div>
         </div>
 

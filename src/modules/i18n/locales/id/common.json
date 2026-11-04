@@ -19,7 +19,7 @@
   },
   "tabs": {
     "chat": "Chat",
-    "shell": "Shell",
+    "shell": "Terminal",
     "files": "File",
     "git": "Kontrol Sumber",
     "tasks": "Tugas",
@@ -341,7 +341,6 @@
     "projectFallback": "Proyek",
     "openMenu": "Buka menu",
     "noProjectSelected": "Tidak Ada Proyek yang Dipilih",
-    "projectRequiredForShell": "Proyek diperlukan untuk membuka shell",
     "completedBadge": "(Selesai)",
     "close": "Tutup",
     "hideToken": "Sembunyikan token",

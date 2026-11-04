@@ -19,7 +19,7 @@
   },
   "tabs": {
     "chat": "צ'אט",
-    "shell": "Shell",
+    "shell": "Terminal",
     "files": "קבצים",
     "git": "ניהול גרסאות",
     "tasks": "משימות",
@@ -399,7 +399,6 @@
     "projectFallback": "פרויקט",
     "openMenu": "פתיחת תפריט",
     "noProjectSelected": "לא נבחר פרויקט",
-    "projectRequiredForShell": "צריך פרויקט כדי לפתוח shell",
     "completedBadge": "(הושלם)",
     "close": "סגירה",
     "hideToken": "הסתרת הטוקן",
