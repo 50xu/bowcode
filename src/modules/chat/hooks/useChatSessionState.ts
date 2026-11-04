@@ -115,6 +115,11 @@ type ScrollRestoreState = {
   anchorOffset: number | null;
 };
 
+function needsManualScrollAnchoring(): boolean {
+  if (typeof ResizeObserver === 'undefined' || typeof CSS === 'undefined' || !CSS.supports) return false;
+  return !CSS.supports('overflow-anchor', 'auto');
+}
+
 function captureScrollRestoreState(container: HTMLDivElement): ScrollRestoreState {
   const containerBounds = container.getBoundingClientRect();
   const anchor = Array.from(container.querySelectorAll<HTMLElement>('.chat-message'))
@@ -243,6 +248,7 @@ export function useChatSessionState({
   const isLoadingMoreRef = useRef(false);
   const allMessagesLoadedRef = useRef(false);
   const topLoadLockRef = useRef(false);
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingScrollRestoreRef = useRef<ScrollRestoreState | null>(null);
   const pendingInitialScrollRef = useRef(true);
   const messagesOffsetRef = useRef(0);
@@ -591,18 +597,20 @@ export function useChatSessionState({
     }
 
     if (!allMessagesLoadedRef.current) {
-      // Prefetch older pages well before the top: prepending (and re-anchoring
-      // the scroll position) right at the edge interrupts iOS momentum scrolling.
-      const nearTopForPrefetch = container.scrollTop < 600;
-      if (!nearTopForPrefetch) { topLoadLockRef.current = false; return; }
-      if (topLoadLockRef.current) return;
-      const didLoad = await loadOlderMessages(container);
-      if (didLoad) {
-        // Debounce the next page instead of waiting for the user to leave the
-        // prefetch zone: a short page may leave them still near the top.
-        topLoadLockRef.current = true;
-        setTimeout(() => { topLoadLockRef.current = false; }, 400);
-      }
+      // Prefetch older pages well before the top, but only once scrolling has
+      // settled: prepending re-anchors scrollTop, and writing scrollTop during
+      // an iOS momentum fling stops the fling dead — the "jerk" while reading.
+      const prefetchZone = Math.max(1200, container.clientHeight * 2);
+      if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+      prefetchTimerRef.current = null;
+      if (container.scrollTop > prefetchZone) return;
+      prefetchTimerRef.current = setTimeout(() => {
+        prefetchTimerRef.current = null;
+        const current = scrollContainerRef.current;
+        if (current && current.scrollTop <= prefetchZone) {
+          void loadOlderMessages(current);
+        }
+      }, 180);
     }
   }, [hasMoreMessages, isActive, isNearBottom, loadOlderMessages]);
 
@@ -657,6 +665,8 @@ export function useChatSessionState({
     pendingInitialScrollRef.current = true;
     setVisibleMessageCount(INITIAL_VISIBLE_MESSAGES);
     topLoadLockRef.current = false;
+    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+    prefetchTimerRef.current = null;
     pendingScrollRestoreRef.current = null;
     wasNearTopRef.current = false;
     setIsUserScrolledUp(false);
@@ -1062,6 +1072,103 @@ export function useChatSessionState({
     for (const child of Array.from(container.children)) observer.observe(child);
     return () => observer.disconnect();
   }, [isActive, hasChatMessages, currentSessionId]);
+
+  // Manual scroll anchoring for engines without `overflow-anchor` (iOS
+  // Safari). While the user reads further up, anything above the viewport that
+  // changes height — rows mounting or remounting, older pages arriving, the
+  // sticky task strip, a refetch replacing realtime rows — would otherwise move
+  // the text under their eyes. Track the first visible row and its offset, and
+  // after any layout change (ResizeObserver: after layout, before paint) shift
+  // scrollTop by however far that row moved.
+  const anchorCompensateRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (!isActive || !needsManualScrollAnchoring()) return undefined;
+    const container = scrollContainerRef.current;
+    if (!container) return undefined;
+
+    // The anchor's position within the scrolled content (viewport offset +
+    // scrollTop). A user scroll changes scrollTop and the viewport offset by
+    // the same amount, leaving this constant; only a layout change above the
+    // row moves it. That separates "the user scrolled" from "content shifted"
+    // no matter which callback (scroll, resize, commit) observes it first.
+    let anchor: { element: Element; timestamp: string | null; contentTop: number } | null = null;
+    const contentTopOf = (element: Element) => (
+      element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+    );
+
+    const capture = () => {
+      const viewportTop = container.getBoundingClientRect().top;
+      const rows = container.querySelectorAll('[data-transcript-row]');
+      // Rows are in document order: binary-search the first one still visible.
+      let low = 0;
+      let high = rows.length - 1;
+      let found = -1;
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if (rows[mid].getBoundingClientRect().bottom > viewportTop) {
+          found = mid;
+          high = mid - 1;
+        } else {
+          low = mid + 1;
+        }
+      }
+      if (found < 0) { anchor = null; return; }
+      const element = rows[found];
+      anchor = {
+        element,
+        timestamp: element.getAttribute('data-message-timestamp'),
+        contentTop: contentTopOf(element),
+      };
+    };
+
+    const compensate = () => {
+      // Pinned to the bottom, stick-to-bottom owns the offset; a prepend in
+      // flight restores its own anchor.
+      if (!isUserScrolledUpRef.current || pendingScrollRestoreRef.current || !anchor) {
+        capture();
+        return;
+      }
+      let element: Element | null = anchor.element;
+      if (!element.isConnected) {
+        element = anchor.timestamp
+          ? container.querySelector(`[data-transcript-row][data-message-timestamp="${CSS.escape(anchor.timestamp)}"]`)
+          : null;
+      }
+      if (element) {
+        const delta = contentTopOf(element) - anchor.contentTop;
+        if (Math.abs(delta) >= 0.5) {
+          container.scrollTop += delta;
+          lastScrollTopRef.current = container.scrollTop;
+        }
+      }
+      capture();
+    };
+    anchorCompensateRef.current = compensate;
+
+    const resizeObserver = new ResizeObserver(compensate);
+    const observeChildren = () => {
+      resizeObserver.disconnect();
+      for (const child of Array.from(container.children)) resizeObserver.observe(child);
+    };
+    observeChildren();
+    const mutationObserver = new MutationObserver(observeChildren);
+    mutationObserver.observe(container, { childList: true });
+    container.addEventListener('scroll', compensate, { passive: true });
+    capture();
+
+    return () => {
+      anchorCompensateRef.current = null;
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      container.removeEventListener('scroll', compensate);
+    };
+  }, [isActive, hasChatMessages, currentSessionId]);
+
+  // A commit can move rows without changing any observed size (one row grows
+  // as another shrinks); re-check the anchor after every transcript commit.
+  useLayoutEffect(() => {
+    anchorCompensateRef.current?.();
+  }, [chatMessages, visibleMessageCount]);
 
   const visibleMessages = useMemo(() => {
     if (chatMessages.length <= visibleMessageCount) return chatMessages;

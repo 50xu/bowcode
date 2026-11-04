@@ -24,6 +24,10 @@ import type { LazyRowObserver } from '@/modules/chat/hooks/useLazyRowObserver';
 /** Placeholder height for rows that have never been measured. */
 const ESTIMATED_ROW_HEIGHT_PX = 100;
 
+const KEEP_ROWS_MOUNTED = typeof CSS !== 'undefined'
+  && typeof CSS.supports === 'function'
+  && !CSS.supports('overflow-anchor', 'auto');
+
 type LazyMessageRowProps = {
   lazyRows: LazyRowObserver | null;
   /** Mirrors the row's own `data-message-timestamp`, present even while unmounted. */
@@ -48,6 +52,12 @@ export default function LazyMessageRow({
   const elementRef = useRef<HTMLDivElement | null>(null);
 
   const handleNearViewportChange = useCallback((nextIsNearViewport: boolean) => {
+    // Without native scroll anchoring (iOS Safari) a row is mounted once and
+    // kept: unmounting a tall row above the viewport and re-mounting it as the
+    // compensated scroll position brings it back into the band oscillates, and
+    // each swing moves the text being read. One-way growth is compensated
+    // cleanly by the transcript's manual anchoring.
+    if (!nextIsNearViewport && KEEP_ROWS_MOUNTED) return;
     if (!nextIsNearViewport) {
       // Measured now, while the content is still in the DOM, so the
       // placeholder that replaces it occupies exactly the same space. That
@@ -77,6 +87,7 @@ export default function LazyMessageRow({
   return (
     <div
       ref={elementRef}
+      data-transcript-row=""
       data-message-timestamp={timestamp || undefined}
       style={isMounted ? undefined : { height: measuredHeight ?? ESTIMATED_ROW_HEIGHT_PX }}
     >

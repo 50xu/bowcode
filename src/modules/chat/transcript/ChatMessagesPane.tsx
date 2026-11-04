@@ -195,8 +195,11 @@ function ChatMessagesPane({
       }`}
     >
       {chatMessages.length > 0 && (
-        <div className="pointer-events-none sticky right-4 top-3 z-10 mb-2 flex items-start justify-between gap-2 sm:px-4">
-          {/* Running background work stays in view while the transcript scrolls under it. */}
+        <div className="pointer-events-none sticky right-4 top-3 z-10 flex h-0 items-start justify-between gap-2 overflow-visible sm:px-4">
+          {/* Running background work stays in view while the transcript scrolls under it.
+              Zero layout height: the strip changes size as tasks start and finish,
+              and an in-flow element above the transcript would shift every row
+              with it. The transcript reserves a constant top inset instead. */}
           <div className="pointer-events-auto min-w-0 pl-4 sm:pl-0">
             <BackgroundTasksStrip
               messages={chatMessages}
@@ -219,7 +222,7 @@ function ChatMessagesPane({
           </div>
         </div>
       )}
-      <div className="mx-auto w-full min-w-0 max-w-[54.25rem] space-y-3 px-2 sm:space-y-4 sm:px-4">
+      <div className={`mx-auto w-full min-w-0 max-w-[54.25rem] space-y-3 px-2 sm:space-y-4 sm:px-4 ${chatMessages.length > 0 ? 'pt-12' : ''}`}>
       {(isLoadingSessionMessages || isProcessing) && chatMessages.length === 0 ? (
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400">
           <div className="flex items-center justify-center space-x-2">
