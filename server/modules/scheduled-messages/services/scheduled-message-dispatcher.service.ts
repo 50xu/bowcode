@@ -1,5 +1,6 @@
-import { scheduledMessagesDb, sessionDraftsDb } from '@/modules/database/index.js';
+import { scheduledMessagesDb, sessionDraftsDb, sessionsDb } from '@/modules/database/index.js';
 import type { QueuedSessionMessageRecord, ScheduledMessageRow } from '@/modules/database/index.js';
+import { findExternalClaudeCliSession } from '@/modules/providers/index.js';
 import { announceScheduledMessagesChanged } from '@/modules/scheduled-messages/services/scheduled-messages.service.js';
 import { chatRunRegistry, runDetachedChatTurn } from '@/modules/websocket/index.js';
 import type { ProviderRuntimeGateway } from '@/modules/websocket/index.js';
@@ -66,17 +67,26 @@ async function sendClaimedQueuedMessage(
  * work, which is why the composer asks before an interactive send. A queued
  * turn was promised to go "when this finishes", so it waits for that work too.
  */
-function isSessionBusy(sessionId: string, runtime: ProviderRuntimeGateway): boolean {
-  return chatRunRegistry.isProcessing(sessionId) || runtime.hasBackgroundWork(sessionId);
+async function isSessionBusy(
+  sessionId: string, runtime: ProviderRuntimeGateway,
+  findHolder: typeof findExternalClaudeCliSession,
+): Promise<boolean> {
+  if (chatRunRegistry.isProcessing(sessionId) || runtime.hasBackgroundWork(sessionId)) return true;
+  const session = sessionsDb.getSessionById(sessionId);
+  return session?.provider === 'claude' && !!session.provider_session_id &&
+    !!(await findHolder(session.provider_session_id));
 }
 
 /** Sends every persisted queued turn whose session is currently idle. */
-export async function dispatchQueuedMessages(runtime: ProviderRuntimeGateway): Promise<number> {
+export async function dispatchQueuedMessages(
+  runtime: ProviderRuntimeGateway,
+  findHolder: typeof findExternalClaudeCliSession = findExternalClaudeCliSession,
+): Promise<number> {
   const candidates = sessionDraftsDb.listQueuedMessages();
   let claimed = 0;
 
   await Promise.all(candidates.map(async (candidate) => {
-    if (isSessionBusy(candidate.sessionId, runtime)) {
+    if (await isSessionBusy(candidate.sessionId, runtime, findHolder)) {
       return;
     }
     if (!sessionDraftsDb.claimQueuedMessage(candidate)) {

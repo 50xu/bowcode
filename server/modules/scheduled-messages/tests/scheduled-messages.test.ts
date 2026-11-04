@@ -122,6 +122,22 @@ test('a queued message is sent by the server without a browser connection', asyn
   });
 });
 
+test('a queued message waits while an external idle Claude CLI holds the session', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    sessionsDb.assignProviderSessionId(SESSION_ID, 'external-session');
+    sessionDraftsDb.saveDraft(userId, SESSION_ID, {
+      text: '', queuedMessage: { content: 'wait for CLI' },
+    });
+    const runs: RunCall[] = [];
+    assert.equal(await dispatchQueuedMessages(createRuntime(runs), async (id) => {
+      assert.equal(id, 'external-session');
+      return { providerSessionId: id, pid: 42, status: 'idle', startedAt: 1, cwd: '/work' };
+    }), 0);
+    assert.equal(runs.length, 0);
+    assert.deepEqual(sessionDraftsDb.getDrafts(userId)[0]?.queuedMessage, { content: 'wait for CLI' });
+  });
+});
+
 test('a queued message stays pending while its session is busy', async () => {
   await withIsolatedDatabase(async (userId) => {
     sessionDraftsDb.saveDraft(userId, SESSION_ID, {

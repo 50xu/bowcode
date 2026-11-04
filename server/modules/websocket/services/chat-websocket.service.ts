@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { WebSocket } from 'ws';
 
 import { sessionsDb } from '@/modules/database/index.js';
-import { providerModelsService, sessionsService } from '@/modules/providers/index.js';
+import { findExternalClaudeCliSession, terminateExternalClaudeCliSession, providerModelsService, sessionsService } from '@/modules/providers/index.js';
 import { chatRunRegistry } from '@/modules/websocket/services/chat-run-registry.service.js';
 import { connectedClients, WS_OPEN_STATE } from '@/modules/websocket/services/websocket-state.service.js';
 import {
@@ -83,6 +83,9 @@ export type ProviderRuntimeGateway = {
 type ChatWebSocketDependencies = {
   /** Central dispatcher for every provider SDK/CLI runtime. */
   runtime: ProviderRuntimeGateway;
+  /** Optional test seams for external CLI detection and takeover. */
+  findExternalSession?: typeof findExternalClaudeCliSession;
+  terminateExternalSession?: typeof terminateExternalClaudeCliSession;
 };
 
 /**
@@ -221,6 +224,29 @@ async function dispatchRun(
   beforeRun?: (run: NonNullable<ReturnType<typeof chatRunRegistry.startRun>>) => void | Promise<void>,
 ): Promise<{ started: boolean; error: string | null }> {
   const provider = session.provider as LLMProvider;
+
+  // Only a provider-native resume can collide with another CLI process.
+  // Check before reserving a run so a refused send has no side effects.
+  if (provider === 'claude' && session.provider_session_id) {
+    const holder = await (dependencies.findExternalSession ?? findExternalClaudeCliSession)(session.provider_session_id);
+    if (holder) {
+      if (data.takeOver !== true) {
+        if (ws) {
+          sendProtocolError(ws, 'SESSION_HELD_EXTERNALLY',
+            `This session is open in another Claude process (pid ${holder.pid}). Take over to continue here.`,
+            sessionId, { pid: holder.pid });
+        }
+        return { started: false, error: `Session is open in another Claude process (pid ${holder.pid}).` };
+      }
+      try {
+        await (dependencies.terminateExternalSession ?? terminateExternalClaudeCliSession)(holder);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (ws) sendProtocolError(ws, 'TAKEOVER_FAILED', message, sessionId, { pid: holder.pid });
+        return { started: false, error: message };
+      }
+    }
+  }
 
   const run = chatRunRegistry.startRun({
     appSessionId: sessionId,

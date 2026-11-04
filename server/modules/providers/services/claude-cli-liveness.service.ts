@@ -2,120 +2,154 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-/**
- * One Claude CLI process that is currently producing a response.
- *
- * `providerSessionId` is Claude's own session id, which is what the registry
- * records; callers map it onto an app session themselves.
- */
+/** A live busy Claude CLI turn, consumed by the providers sessions poll. */
 type LiveClaudeCliSession = {
   providerSessionId: string;
   startedAt: number;
 };
 
-/**
- * Claude Code keeps one file per running session here, named `<pid>.json`.
- * The directory belongs to the CLI, not to CloudCLI: it is only ever read.
- */
-const registryDirectory = () => path.join(os.homedir(), '.claude', 'sessions');
+/** A live CLI holder, consumed by the websocket guard and scheduled dispatcher. */
+export type ExternalClaudeCliSession = {
+  providerSessionId: string;
+  pid: number;
+  status: 'busy' | 'idle';
+  startedAt: number;
+  cwd: string;
+};
 
-/**
- * Upper bound on registry files inspected per poll.
- *
- * The running-sessions endpoint is polled continuously, so a directory left
- * full of stale files by repeated crashes must not turn every poll into
- * unbounded filesystem work. Real installations hold a handful of entries.
- */
+type RegistryAccess = {
+  registryDirectory?: string;
+  readProcStat?: (pid: number) => Promise<string>;
+  kill?: (pid: number, signal: NodeJS.Signals | 0) => void;
+};
+
+const registryDirectory = () => path.join(os.homedir(), '.claude', 'sessions');
 const MAX_REGISTRY_FILES = 256;
 
-/**
- * Whether `pid` is still the process the registry recorded.
- *
- * A registry file outlives a crash, so its mere presence proves nothing. The
- * signal-0 probe answers "does this pid exist" (EPERM means it exists but is
- * owned by someone else, which still counts), and on Linux the recorded
- * `procStart` is compared against the kernel's start-time for that pid so a
- * reused pid cannot be mistaken for the original process.
- */
-async function isRecordedProcessAlive(pid: number, procStart: unknown): Promise<boolean> {
+function access(options: RegistryAccess) {
+  return {
+    directory: options.registryDirectory ?? registryDirectory(),
+    readProcStat: options.readProcStat ?? ((pid: number) => fsp.readFile(`/proc/${pid}/stat`, 'utf8')),
+    kill: options.kill ?? ((pid: number, signal: NodeJS.Signals | 0) => process.kill(pid, signal)),
+  };
+}
+
+// The comm field can contain ')' and spaces. The fields following its last ')'
+// start with state and ppid; starttime is field 20 in that suffix.
+function procFields(stat: string): string[] {
+  return stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/);
+}
+
+async function isRecordedProcessAlive(pid: number, procStart: unknown, options: RegistryAccess): Promise<boolean> {
   try {
-    process.kill(pid, 0);
+    access(options).kill(pid, 0);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException)?.code !== 'EPERM') {
-      return false;
-    }
+    if ((error as NodeJS.ErrnoException)?.code !== 'EPERM') return false;
   }
-
-  if (process.platform !== 'linux' || typeof procStart !== 'string' || !procStart) {
-    return true;
-  }
-
+  if (process.platform !== 'linux' || typeof procStart !== 'string' || !procStart) return true;
   try {
-    const stat = await fsp.readFile(`/proc/${pid}/stat`, 'utf8');
-    // The comm field is parenthesised and may itself contain spaces, so the
-    // fields are counted from the last ')'. starttime is the 22nd field
-    // overall, i.e. the 20th of what follows the comm field.
-    const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
-    return fields[19] === procStart;
+    return procFields(await access(options).readProcStat(pid))[19] === procStart;
   } catch {
-    // No procfs entry means the process is gone between the two checks.
     return false;
   }
 }
 
-/** Reads one registry file, returning null for anything that is not a live busy session. */
-async function readLiveBusySession(filePath: string): Promise<LiveClaudeCliSession | null> {
+type RegistryRecord = {
+  providerSessionId: string;
+  pid: number;
+  status: 'busy' | 'idle';
+  startedAt: number;
+  cwd: string;
+  entrypoint: unknown;
+  procStart: unknown;
+};
+
+async function readRecord(filePath: string, options: RegistryAccess): Promise<RegistryRecord | null> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(await fsp.readFile(filePath, 'utf8'));
   } catch {
-    // Unreadable, half-written or malformed entries are simply not evidence
-    // of a running session.
     return null;
   }
-
   const record = parsed as Record<string, unknown> | null;
-  if (!record || typeof record !== 'object') {
-    return null;
-  }
-
+  if (!record || typeof record !== 'object') return null;
   const providerSessionId = typeof record.sessionId === 'string' ? record.sessionId : '';
   const pid = typeof record.pid === 'number' ? record.pid : NaN;
-  if (!providerSessionId || !Number.isInteger(pid) || pid <= 0 || record.status !== 'busy') {
-    return null;
-  }
-
-  if (!(await isRecordedProcessAlive(pid, record.procStart))) {
-    return null;
-  }
-
-  const startedAt = typeof record.startedAt === 'number' ? record.startedAt : Date.now();
-  return { providerSessionId, startedAt };
+  if (!providerSessionId || !Number.isInteger(pid) || pid <= 0 ||
+      (record.status !== 'busy' && record.status !== 'idle')) return null;
+  if (!(await isRecordedProcessAlive(pid, record.procStart, options))) return null;
+  return {
+    providerSessionId, pid, status: record.status,
+    startedAt: typeof record.startedAt === 'number' ? record.startedAt : Date.now(),
+    cwd: typeof record.cwd === 'string' ? record.cwd : '',
+    entrypoint: record.entrypoint, procStart: record.procStart,
+  };
 }
 
-/**
- * Lists the Claude CLI sessions that are mid-turn right now.
- *
- * Used by the providers module's sessions service so the running-sessions poll
- * also reports turns driven outside CloudCLI's own chat runs — including the
- * `claude` processes CloudCLI itself spawns for the Shell view, which live in
- * the PTY map rather than the chat-run registry. Liveness is ephemeral, so it
- * is recomputed on every read instead of being cached or persisted.
- */
-export async function listBusyClaudeCliSessions(): Promise<LiveClaudeCliSession[]> {
+async function readRegistry(options: RegistryAccess): Promise<RegistryRecord[]> {
+  const directory = access(options).directory;
   let entries: string[];
   try {
-    entries = await fsp.readdir(registryDirectory());
+    entries = await fsp.readdir(directory);
   } catch {
-    // No registry directory at all is the normal case for an install that has
-    // never run the CLI, and an unreadable one is not worth failing a poll for.
     return [];
   }
+  const files = entries.filter((entry) => entry.endsWith('.json')).slice(0, MAX_REGISTRY_FILES);
+  const records = await Promise.all(files.map((file) => readRecord(path.join(directory, file), options)));
+  return records.filter((record): record is RegistryRecord => record !== null);
+}
 
-  const registryFiles = entries.filter((entry) => entry.endsWith('.json')).slice(0, MAX_REGISTRY_FILES);
-  const sessions = await Promise.all(
-    registryFiles.map((entry) => readLiveBusySession(path.join(registryDirectory(), entry))),
-  );
+async function isExternal(record: RegistryRecord, options: RegistryAccess): Promise<boolean> {
+  if (record.entrypoint !== 'claudecodeui' || process.platform !== 'linux') return true;
+  try {
+    return Number(procFields(await access(options).readProcStat(record.pid))[1]) !== process.pid;
+  } catch {
+    // Unknown parentage cannot establish server ownership.
+    return true;
+  }
+}
 
-  return sessions.filter((session): session is LiveClaudeCliSession => session !== null);
+/** Used by the providers sessions poll; preserves its busy-only behavior. */
+export async function listBusyClaudeCliSessions(): Promise<LiveClaudeCliSession[]> {
+  return (await readRegistry({})).filter((record) => record.status === 'busy')
+    .map(({ providerSessionId, startedAt }) => ({ providerSessionId, startedAt }));
+}
+
+/** Used by websocket and scheduled messages to detect external holders of either status. */
+export async function listExternalClaudeCliSessions(options: RegistryAccess = {}): Promise<ExternalClaudeCliSession[]> {
+  const records = await readRegistry(options);
+  const external = await Promise.all(records.map(async (record) => (await isExternal(record, options)) ? record : null));
+  return external.filter((record): record is RegistryRecord => record !== null)
+    .map(({ providerSessionId, pid, status, startedAt, cwd }) => ({ providerSessionId, pid, status, startedAt, cwd }));
+}
+
+/** Used by websocket and scheduled messages to find a live external holder. */
+export async function findExternalClaudeCliSession(
+  providerSessionId: string, options: RegistryAccess = {},
+): Promise<ExternalClaudeCliSession | null> {
+  return (await listExternalClaudeCliSessions(options)).find((session) => session.providerSessionId === providerSessionId) ?? null;
+}
+
+/** Used by websocket takeover; rechecks identity before signalling a process. */
+export async function terminateExternalClaudeCliSession(
+  session: ExternalClaudeCliSession, options: RegistryAccess = {},
+): Promise<void> {
+  const record = (await readRegistry(options)).find((candidate) =>
+    candidate.pid === session.pid && candidate.providerSessionId === session.providerSessionId);
+  if (!record || !(await isExternal(record, options)) || typeof record.procStart !== 'string' || !record.procStart) {
+    throw new Error('External Claude process identity could not be verified.');
+  }
+  const alive = () => isRecordedProcessAlive(record.pid, record.procStart, options);
+  if (!(await alive())) throw new Error('External Claude process is no longer alive.');
+  console.info('[Chat] Taking over external Claude session', { sessionId: session.providerSessionId, pid: session.pid });
+  access(options).kill(session.pid, 'SIGTERM');
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    if (!(await alive())) return;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  if (await alive()) {
+    access(options).kill(session.pid, 'SIGKILL');
+    if (await alive()) throw new Error('External Claude process did not exit after SIGKILL.');
+  }
 }

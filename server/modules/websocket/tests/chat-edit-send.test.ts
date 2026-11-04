@@ -7,6 +7,7 @@ import test from 'node:test';
 
 import { closeConnection, initializeDatabase, sessionsDb } from '@/modules/database/index.js';
 import { sessionsService } from '@/modules/providers/index.js';
+import type { ExternalClaudeCliSession } from '@/modules/providers/index.js';
 import { handleChatConnection } from '@/modules/websocket/services/chat-websocket.service.js';
 import { chatRunRegistry } from '@/modules/websocket/services/chat-run-registry.service.js';
 import { connectedClients } from '@/modules/websocket/services/websocket-state.service.js';
@@ -79,6 +80,7 @@ async function withGateway(
     runs: RunCall[];
   }) => Promise<void>,
   rows: unknown[] = TRANSCRIPT_ROWS,
+  external?: { find: () => Promise<ExternalClaudeCliSession | null>; terminate: (session: ExternalClaudeCliSession) => Promise<void> },
 ): Promise<void> {
   const previousDatabasePath = process.env.DATABASE_PATH;
   const tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'chat-edit-send-'));
@@ -100,6 +102,8 @@ async function withGateway(
       socket as never,
       { user: { id: 1 } } as never,
       {
+        findExternalSession: external?.find,
+        terminateExternalSession: external?.terminate,
         runtime: {
           hasRuntime: () => true,
           run: async (runProvider: string, command: string, options: Record<string, unknown>) => {
@@ -131,6 +135,28 @@ async function withGateway(
 
 /** The handler is async and the socket listener does not await it. */
 const settle = () => new Promise((resolve) => { setTimeout(resolve, 30); });
+
+test('external Claude holder refuses a resumed send unless explicitly taken over', async () => {
+  const holder: ExternalClaudeCliSession = { providerSessionId: SESSION_ID, pid: 42, status: 'idle', startedAt: 1, cwd: '/work' };
+  const terminated: number[] = [];
+  await withGateway('claude', async ({ socket, runs }) => {
+    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'no takeover' }));
+    await settle();
+    assert.equal(runs.length, 0);
+    assert.equal(socket.frames.at(-1)?.kind, 'protocol_error');
+    assert.equal(socket.frames.at(-1)?.code, 'SESSION_HELD_EXTERNALLY');
+    assert.equal(socket.frames.at(-1)?.pid, 42);
+    assert.equal(socket.frames.at(-1)?.error, 'This session is open in another Claude process (pid 42). Take over to continue here.');
+
+    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'takeover', takeOver: true }));
+    await settle();
+    assert.deepEqual(terminated, [42]);
+    assert.equal(runs.length, 1);
+  }, TRANSCRIPT_ROWS, {
+    find: async () => holder,
+    terminate: async (session) => { terminated.push(session.pid); },
+  });
+});
 
 test('an edit resumes through the turn before the one being replaced', async () => {
   await withGateway('claude', async ({ socket, runs }) => {
