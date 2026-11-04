@@ -574,6 +574,14 @@ export const api = {
     },
   },
 
+  settingsSync: {
+    config: () => get('/api/settings-sync/config'),
+    save: (config: unknown) => put('/api/settings-sync/config', config),
+    push: (client: Record<string, string>) => post('/api/settings-sync/push', { client }),
+    pull: () => post('/api/settings-sync/pull'),
+    disconnect: () => del('/api/settings-sync/config'),
+  },
+
   plugins: {
     list: () => get('/api/plugins'),
     install: (url: string) => post('/api/plugins/install', { url }),
