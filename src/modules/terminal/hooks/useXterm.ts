@@ -13,21 +13,31 @@ const theme = {
   brightBlack: '#5C6378', brightRed: '#FF8787', brightGreen: '#7EE8DD', brightYellow: '#FFE29A', brightBlue: '#8CC4FF', brightMagenta: '#DDB4F6', brightCyan: '#9AF1EE', brightWhite: '#FFFFFF',
 };
 
-type XtermCallbacks = { onInput: (data: string) => void; onResize: (cols: number, rows: number) => void; onTitle: (title: string) => void };
+type XtermCallbacks = { onInput: (data: string) => void; onResize: (cols: number, rows: number) => void; onTitle: (title: string) => void; fontSize: number };
 
-/** Owns xterm and its addons for one terminal tab; SearchAddon is retained for the next UI iteration. */
+/** Owns xterm and its addons for one terminal tab, including search and resizing. */
 export function useXterm(containerRef: React.RefObject<HTMLDivElement>, callbacks: XtermCallbacks) {
   const terminalRef = useRef<Terminal | null>(null);
   const searchRef = useRef<SearchAddon | null>(null);
   const callbacksRef = useRef(callbacks);
+  const fitRef = useRef<FitAddon | null>(null);
   callbacksRef.current = callbacks;
+
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (terminal && terminal.options.fontSize !== callbacks.fontSize) {
+      terminal.options.fontSize = callbacks.fontSize;
+      fitRef.current?.fit();
+      callbacksRef.current.onResize(terminal.cols, terminal.rows);
+    }
+  }, [callbacks.fontSize]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const terminal = new Terminal({
       cursorBlink: true, cursorStyle: 'bar', fontFamily: '"JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace',
-      fontSize: window.innerWidth < 640 ? 13 : 14, lineHeight: 1.2, scrollback: 10000,
+      fontSize: callbacksRef.current.fontSize, lineHeight: 1.2, scrollback: 10000,
       allowProposedApi: true, macOptionIsMeta: true, theme,
     });
     const fit = new FitAddon();
@@ -60,6 +70,7 @@ export function useXterm(containerRef: React.RefObject<HTMLDivElement>, callback
     };
     terminalRef.current = terminal;
     searchRef.current = search;
+    fitRef.current = fit;
     const input = terminal.onData((data) => callbacksRef.current.onInput(data));
     const title = terminal.onTitleChange((value) => callbacksRef.current.onTitle(value));
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -83,6 +94,7 @@ export function useXterm(containerRef: React.RefObject<HTMLDivElement>, callback
       terminal.dispose();
       terminalRef.current = null;
       searchRef.current = null;
+      fitRef.current = null;
     };
   }, [containerRef]);
 
