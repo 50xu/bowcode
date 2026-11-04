@@ -1,9 +1,9 @@
 import { memo, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Check, CheckSquare, Edit2, GitBranch, Loader2, MoreHorizontal, Square, Trash2, X } from 'lucide-react';
+import { Check, CheckSquare, Edit2, GitBranch, Loader2, MessageSquare, MoreHorizontal, Square, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
-import { Badge, Dialog, DialogContent, DialogTitle, LLMProviderLogo, Tooltip, buttonVariants } from '@/shared/ui';
+import { Dialog, DialogContent, DialogTitle, LLMProviderLogo, Tooltip, buttonVariants } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import type { LLMProvider, Project, ProjectSession, SessionWithProvider } from '@/shared/types';
 import { useSessionForkingProviders } from '@/shared/hooks/useProviderCapabilities';
@@ -182,14 +182,9 @@ function SidebarSessionItem({
           aria-disabled={isSelecting && !isSelectable ? true : undefined}
           tabIndex={isSelecting ? 0 : undefined}
           className={cn(
-            'min-h-11 p-2 bg-card border-b border-border last:border-b-0 active:scale-[0.98] transition-all duration-150 relative',
-            isSelected ? 'bg-primary/5 border-primary/20' : '',
-            !isSelected && isProcessing
-              ? 'border-border/60 bg-muted/20'
-              : !isSelected && sessionView.isActive
-              ? 'border-green-500/30 bg-green-50/5 dark:bg-green-900/5'
-              : 'border-border/30',
-            isChecked && 'border-primary/40 bg-primary/10',
+            'flex h-9 min-w-0 items-center rounded-md px-2 transition-colors hover:bg-accent',
+            isSelected && 'bg-primary/10 text-primary',
+            isChecked && 'bg-primary/10',
           )}
           onClick={isSelecting ? (isSelectable ? toggleSelected : undefined) : selectMobileSession}
           onKeyDown={isSelecting ? handleSelectionKeyDown : undefined}
@@ -197,18 +192,15 @@ function SidebarSessionItem({
           <div className="flex items-center gap-2">
             {selectionIcon}
             <div
-              className={cn(
-                'w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0',
-                isSelected ? 'bg-primary/10' : 'bg-muted/50',
-              )}
+              className="flex h-4 w-4 flex-shrink-0 items-center justify-center"
             >
-              <LLMProviderLogo provider={session.__provider} className="h-3 w-3" />
+              {session.__provider ? <LLMProviderLogo provider={session.__provider} className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div
-                  className="min-w-0 flex-1 truncate text-sm font-normal text-foreground"
+                  className={cn('min-w-0 flex-1 truncate text-sm font-normal', isSelected ? 'text-primary' : 'text-foreground')}
                   title={sessionView.sessionName}
                 >
                   {sessionView.sessionName}
@@ -225,13 +217,6 @@ function SidebarSessionItem({
                   <span className="ml-auto flex-shrink-0 text-[11px] text-muted-foreground">{compactSessionAge}</span>
                 )}
               </div>
-              <div className="mt-0.5 flex items-center">
-                {sessionView.messageCount > 0 && (
-                  <Badge variant="secondary" className="px-1 py-0 text-xs">
-                    {sessionView.messageCount}
-                  </Badge>
-                )}
-              </div>
             </div>
 
             {!isSelecting && (
@@ -240,7 +225,7 @@ function SidebarSessionItem({
                 aria-label={`Session options for ${sessionView.sessionName}`}
                 aria-haspopup="dialog"
                 aria-expanded={isMobileOptionsOpen}
-                className="ml-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted active:scale-95"
+                className="ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent"
                 onClick={(event) => {
                   event.stopPropagation();
                   setMobileOptionsOpen(true);
@@ -411,15 +396,10 @@ function SidebarSessionItem({
           aria-disabled={isSelecting && !isSelectable ? true : undefined}
           className={cn(
             buttonVariants({ variant: 'ghost' }),
-            'min-h-11 w-full justify-start rounded-none border-b border-border bg-card p-2 text-left font-normal transition-all duration-150',
+            'h-7 min-h-7 w-full justify-start rounded-md px-2 py-0 text-left font-normal transition-colors hover:bg-accent',
             isSelecting ? 'pr-2' : 'pr-11',
-            isSelected ? 'border-primary/20 bg-primary/5' : 'border-border/30',
-            !isSelected && isProcessing
-              ? 'border-border/60 bg-muted/20 hover:bg-muted/25'
-              : !isSelected && sessionView.isActive
-                ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
-                : 'hover:bg-accent/50',
-            isChecked && 'border-primary/40 bg-primary/10',
+            isSelected && 'bg-primary/10 text-primary',
+             isChecked && 'bg-primary/10',
           )}
           // Left-click keeps in-app navigation; Ctrl/Cmd/middle-click and the
           // native right-click menu use the href to open a new tab/window.
@@ -442,17 +422,14 @@ function SidebarSessionItem({
           <div className="flex w-full min-w-0 items-center gap-2">
             {selectionIcon}
             <div
-              className={cn(
-                'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md',
-                isSelected ? 'bg-primary/10' : 'bg-muted/50',
-              )}
+              className="flex h-4 w-4 flex-shrink-0 items-center justify-center"
             >
-              <LLMProviderLogo provider={session.__provider} className="h-3 w-3" />
+              {session.__provider ? <LLMProviderLogo provider={session.__provider} className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div
-                  className="min-w-0 flex-1 truncate text-sm font-normal text-foreground"
+                  className={cn('min-w-0 flex-1 truncate text-sm font-normal', isSelected ? 'text-primary' : 'text-foreground')}
                   title={sessionView.sessionName}
                   onDoubleClick={(event) => {
                     if (isSelecting || isEditing || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -487,16 +464,13 @@ function SidebarSessionItem({
                   </span>
                 )}
               </div>
-              <div className="mt-0.5 flex items-center">
-                {sessionView.messageCount > 0 && <Badge variant="secondary" className="px-1 py-0 text-xs">{sessionView.messageCount}</Badge>}
-              </div>
             </div>
           </div>
         </a>
 
         {!isSelecting && (
           <SessionOptions
-            className="absolute right-2 top-1/2 -translate-y-1/2 transform transition-all duration-200"
+            className="absolute right-1 top-1/2 -translate-y-1/2 transform transition-all duration-200"
             sessionId={session.id}
             sessionName={sessionView.sessionName}
             provider={session.__provider}

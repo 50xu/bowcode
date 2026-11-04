@@ -1,11 +1,12 @@
 import { memo, useEffect, useRef } from 'react';
-import { Check, ChevronDown, ChevronRight, Edit3, Plus, Star, Trash2, X } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { Check, ChevronRight, Edit3, Plus, Star, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
-import { Button } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import type { LLMProvider, MCPServerStatus, Project, ProjectSession, SessionWithProvider, SidebarSessionSelection } from '@/shared/types';
 import { getTaskIndicatorStatus } from '@/modules/sidebar/utils/sidebarProjectFormatting';
+import { getProjectIdentity, getProjectSummary } from '@/modules/sidebar/utils/projectIdentity';
 import TaskIndicator from '@/modules/sidebar/TaskIndicator';
 import SidebarProjectSessions from '@/modules/sidebar/SidebarProjectSessions';
 import { useCompactSidebar } from '@/modules/sidebar/hooks/useCompactSidebar';
@@ -57,11 +58,6 @@ type SidebarProjectItemProps = {
   t: TFunction;
 };
 
-const getSessionCountDisplay = (project: Project, sessions: SessionWithProvider[]): string => {
-  const total = Number(project.sessionMeta?.total ?? sessions.length);
-  return String(total);
-};
-
 /** Rendered by SidebarProjectList for one project row, including its expand, rename, star and delete controls. */
 function SidebarProjectItem({
   project,
@@ -109,9 +105,8 @@ function SidebarProjectItem({
   // Project identity is tracked by the DB-assigned `projectId` everywhere
   // after the projectName → projectId migration.
   const isSelected = selectedProject?.projectId === project.projectId;
-  const totalSessionCount = Number(project.sessionMeta?.total ?? sessions.length);
-  const sessionCountDisplay = getSessionCountDisplay(project, sessions);
-  const sessionCountLabel = `${sessionCountDisplay} session${totalSessionCount === 1 ? '' : 's'}`;
+  const { Icon, hue } = getProjectIdentity(project);
+  const summary = getProjectSummary(project, sessions, currentTime);
   const taskStatus = getTaskIndicatorStatus(project, mcpServerStatus);
   const mobileRenameInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,313 +150,74 @@ function SidebarProjectItem({
   };
 
   return (
-    <div className={cn('overflow-hidden rounded-xl bg-card hairline', isDeleting && 'opacity-50 pointer-events-none')}>
-      <div className="sticky top-0 z-10 md:group group">
-        {isCompact && (
-        <div className="bg-card">
-          <div
-            className={cn(
-              'min-h-11 p-2 bg-card active:scale-[0.98] transition-all duration-150',
-              isSelected && 'bg-primary/5 border-primary/20',
-              isStarred &&
-                !isSelected &&
-                'bg-yellow-50/50 dark:bg-yellow-900/5 border-yellow-200/30 dark:border-yellow-800/30',
-            )}
-            onClick={toggleProject}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <button
-                  className={cn(
-                    'w-9 h-9 rounded-lg flex items-center justify-center active:scale-90 transition-all duration-150 border',
-                    isStarred
-                      ? 'bg-yellow-500/10 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'
-                      : 'bg-gray-500/10 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800',
-                  )}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleStarProject();
-                  }}
-                  title={isStarred ? t('tooltips.removeFromFavorites') : t('tooltips.addToFavorites')}
-                >
-                  <Star
-                    className={cn(
-                      'w-4 h-4 transition-colors',
-                      isStarred
-                        ? 'text-yellow-600 dark:text-yellow-400 fill-current'
-                        : 'text-gray-600 dark:text-gray-400',
-                    )}
-                  />
-                </button>
-
-                <div className="min-w-0 flex-1">
-                  {isEditing ? (
-                    <input
-                      ref={mobileRenameInputRef}
-                      type="text"
-                      value={renameDraft}
-                      onChange={(event) => onRenameDraftChange(event.target.value)}
-                      className="w-full rounded-lg border-2 border-primary/40 bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-all duration-200 focus:border-primary focus:shadow-md focus:outline-none"
-                      placeholder={t('projects.projectNamePlaceholder')}
-                      autoFocus
-                      autoComplete="off"
-                      onClick={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          saveProjectName();
-                        }
-
-                        if (event.key === 'Escape') {
-                          // Cancelling the rename must not also close the code editor.
-                          event.stopPropagation();
-                          onCancelEditingProject();
-                        }
-                      }}
-                      style={{
-                        fontSize: '16px',
-                        WebkitAppearance: 'none',
-                        borderRadius: '8px',
-                      }}
-                    />
-                  ) : (
-                    <>
-                      <div className="flex min-w-0 flex-1 items-center justify-between">
-                        <h3 className="truncate text-[17px] font-normal text-foreground">{project.displayName}</h3>
-                        {tasksEnabled && (
-                          <TaskIndicator
-                            status={taskStatus}
-                            size="xs"
-                            className="ml-2 hidden flex-shrink-0 md:inline-flex"
-                          />
-                        )}
-                      </div>
-                      <p className="text-[13px] text-muted-foreground">{sessionCountLabel}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-shrink-0 items-center gap-1">
-                {isEditing ? (
-                  <>
-                    <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500 shadow-sm transition-all duration-150 active:scale-90 active:shadow-none dark:bg-green-600"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        saveProjectName();
-                      }}
-                    >
-                      <Check className="h-4 w-4 text-white" />
-                    </button>
-                    <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-500 shadow-sm transition-all duration-150 active:scale-90 active:shadow-none dark:bg-gray-600"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onCancelEditingProject();
-                      }}
-                    >
-                      <X className="h-4 w-4 text-white" />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-500/10 active:scale-90 dark:border-red-800 dark:bg-red-900/30"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onDeleteProject(project);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    </button>
-
-                    <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 active:scale-90 dark:border-primary/30 dark:bg-primary/20"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onStartEditingProject(project);
-                      }}
-                    >
-                      <Edit3 className="h-4 w-4 text-primary" />
-                    </button>
-
-                    <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-primary active:scale-90 active:bg-primary/10"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onProjectSelect(project);
-                        onNewSession(project);
-                      }}
-                      aria-label={t('sessions.newSession')}
-                      title={t('sessions.newSession')}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
-
-                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-muted/30">
-                      {isExpanded ? (
-                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
-
-        {!isCompact && (
-        <Button
-          variant="ghost"
-          className={cn(
-            'sticky top-0 z-10 flex min-h-11 w-full justify-between rounded-none p-2 h-auto font-normal hover:bg-accent/50',
-            isSelected
-              ? 'bg-accent text-accent-foreground'
-              : isStarred
-                ? 'bg-card hover:bg-accent/50'
-                : 'bg-card',
-            isStarred &&
-              !isSelected &&
-              'bg-yellow-50/50 dark:bg-yellow-900/10 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20',
-          )}
-          onClick={selectAndToggleProject}
+    <div className={cn('min-w-0', isDeleting && 'pointer-events-none opacity-50')}>
+      <div className={cn('group flex h-11 min-w-0 items-center gap-1 rounded-md px-1 transition-colors hover:bg-accent md:h-9', isSelected && 'bg-primary/10')}
+        data-testid="project-tree-row"
+      >
+        <button type="button" onClick={isCompact ? toggleProject : selectAndToggleProject}
+          aria-label={isExpanded ? `Collapse ${project.displayName}` : `Expand ${project.displayName}`}
+          aria-expanded={isExpanded}
+          className="flex h-8 w-5 shrink-0 items-center justify-center text-muted-foreground"
         >
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div
-              className={cn(
-                'w-6 h-6 flex items-center justify-center rounded cursor-pointer transition-all duration-200',
-                isStarred
-                  ? 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
-                  : 'opacity-40 hover:opacity-100 hover:bg-accent',
-              )}
-              onClick={(event) => {
-                event.stopPropagation();
-                toggleStarProject();
-              }}
-              title={isStarred ? t('tooltips.removeFromFavorites') : t('tooltips.addToFavorites')}
-            >
-              <Star
-                className={cn(
-                  'w-3 h-3 transition-colors',
-                  isStarred
-                    ? 'text-yellow-600 dark:text-yellow-400 fill-current'
-                    : 'text-muted-foreground',
-                )}
-              />
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              {isEditing ? (
-                <div className="space-y-1">
-                  <input
-                    type="text"
-                    value={renameDraft}
-                    onChange={(event) => onRenameDraftChange(event.target.value)}
-                    className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus:ring-2 focus:ring-primary/20"
-                    placeholder={t('projects.projectNamePlaceholder')}
-                    autoFocus
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        saveProjectName();
-                      }
-                      if (event.key === 'Escape') {
-                        // Cancelling the rename must not also close the code editor.
-                        event.stopPropagation();
-                        onCancelEditingProject();
-                      }
-                    }}
-                  />
-                  <div className="truncate text-xs text-muted-foreground" title={project.fullPath}>
-                    {project.fullPath}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="truncate text-[17px] font-normal text-foreground" title={project.displayName}>
-                    {project.displayName}
-                  </div>
-                  <div className="text-[13px] text-muted-foreground">
-                    {sessionCountDisplay}
-                    {project.fullPath !== project.displayName && (
-                      <span className="ml-1 opacity-60" title={project.fullPath}>
-                        {' - '}
-                        {project.fullPath.length > 25 ? `...${project.fullPath.slice(-22)}` : project.fullPath}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-1">
+          <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-90')} />
+        </button>
+        <button type="button" onClick={isCompact ? toggleProject : selectAndToggleProject}
+          className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-md px-0.5 text-left', isSelected && 'text-primary')}
+          title={project.fullPath}
+        >
+          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md bg-[var(--project-icon-bg)] text-[var(--project-icon-fg)] dark:bg-[var(--project-icon-dark-bg)] dark:text-[var(--project-icon-dark-fg)]"
+            style={{
+              '--project-icon-bg': `hsl(${hue} 70% 92%)`,
+              '--project-icon-fg': `hsl(${hue} 65% 40%)`,
+              '--project-icon-dark-bg': `hsl(${hue} 45% 22%)`,
+              '--project-icon-dark-fg': `hsl(${hue} 70% 70%)`,
+            } as CSSProperties}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <span className="min-w-0 flex-1">
             {isEditing ? (
-              <>
-                <div
-                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-green-600 transition-colors hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    saveProjectName();
-                  }}
-                >
-                  <Check className="h-3 w-3" />
-                </div>
-                <div
-                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-800"
-                  onClick={(event) => {
+              <input ref={mobileRenameInputRef} type="text" value={renameDraft}
+                onChange={(event) => onRenameDraftChange(event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') saveProjectName();
+                  if (event.key === 'Escape') {
                     event.stopPropagation();
                     onCancelEditingProject();
-                  }}
-                >
-                  <X className="h-3 w-3" />
-                </div>
-              </>
+                  }
+                }}
+                className="w-full rounded border border-primary bg-background px-1 text-sm text-foreground focus:outline-none max-md:text-base"
+                placeholder={t('projects.projectNamePlaceholder')} autoFocus autoComplete="off"
+              />
             ) : (
-              <>
-                <div
-                  className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-accent group-hover:opacity-100"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onStartEditingProject(project);
-                  }}
-                  title={t('tooltips.renameProject')}
-                >
-                  <Edit3 className="h-3 w-3" />
-                </div>
-                <div
-                  role="button"
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onNewSession(project);
-                  }}
-                  aria-label={t('sessions.newSession')}
-                  title={t('sessions.newSession')}
-                >
-                  <Plus className="h-4 w-4" />
-                </div>
-                <div
-                  className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-red-50 group-hover:opacity-100 dark:hover:bg-red-900/20"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onDeleteProject(project);
-                  }}
-                  title={t('tooltips.deleteProject')}
-                >
-                  <Trash2 className="h-3 w-3 text-red-600 dark:text-red-400" />
-                </div>
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
-                )}
-              </>
+              <span className={cn('block truncate text-sm font-medium leading-4', isSelected ? 'text-primary' : 'text-foreground')}>{project.displayName}</span>
             )}
-          </div>
-        </Button>
+            <span className="block truncate text-xs leading-4 text-muted-foreground" title={summary}>{summary}</span>
+          </span>
+        </button>
+        {tasksEnabled && <TaskIndicator status={taskStatus} size="xs" className="hidden shrink-0 md:inline-flex" />}
+        {!isEditing && (
+          <button type="button" onClick={toggleStarProject}
+            className={cn('flex h-8 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent', isStarred ? 'text-yellow-600 dark:text-yellow-400' : 'md:hidden md:group-hover:flex md:group-focus-within:flex')}
+            title={isStarred ? t('tooltips.removeFromFavorites') : t('tooltips.addToFavorites')}
+            aria-label={isStarred ? t('tooltips.removeFromFavorites') : t('tooltips.addToFavorites')}
+          ><Star className={cn('h-3 w-3', isStarred && 'fill-current')} /></button>
         )}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {isEditing ? (
+            <>
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-green-600 hover:bg-accent" onClick={saveProjectName} aria-label="Save project name"><Check className="h-4 w-4" /></button>
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-accent" onClick={onCancelEditingProject} aria-label={t('actions.cancel')}><X className="h-4 w-4" /></button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-accent md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onStartEditingProject(project)} title={t('tooltips.renameProject')} aria-label={t('tooltips.renameProject')}><Edit3 className="h-3.5 w-3.5" /></button>
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-primary hover:bg-primary/10" onClick={() => { if (isCompact) onProjectSelect(project); onNewSession(project); }} title={t('sessions.newSession')} aria-label={t('sessions.newSession')}><Plus className="h-4 w-4" /></button>
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-red-600 hover:bg-red-500/10 md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onDeleteProject(project)} title={t('tooltips.deleteProject')} aria-label={t('tooltips.deleteProject')}><Trash2 className="h-3.5 w-3.5" /></button>
+            </>
+          )}
+        </div>
       </div>
 
       <SidebarProjectSessions

@@ -2,10 +2,8 @@ import { CheckSquare, Trash2 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Button } from '@/shared/ui';
-import { cn } from '@/shared/utils';
 import type { LLMProvider, Project, ProjectSession, SessionWithProvider, SidebarSessionSelection } from '@/shared/types';
 import SidebarSessionItem from '@/modules/sidebar/SidebarSessionItem';
-import { useCompactSidebar } from '@/modules/sidebar/hooks/useCompactSidebar';
 
 type SidebarProjectSessionsProps = {
   project: Project;
@@ -45,7 +43,7 @@ function SessionListSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="rounded-md p-2">
+        <div key={index} className="flex h-9 items-center px-2 md:h-7">
           <div className="flex items-start gap-2">
             <div className="mt-0.5 h-3 w-3 animate-pulse rounded-full bg-muted" />
             <div className="flex-1 space-y-1">
@@ -83,7 +81,7 @@ export default function SidebarProjectSessions({
   onDeleteSession,
   onForkSession,
   onLoadMoreSessions,
-  onNewSession,
+  onNewSession: _onNewSession,
   selectedSessionIds,
   onSetSessionSelection,
   onToggleSessionSelected,
@@ -91,8 +89,6 @@ export default function SidebarProjectSessions({
   onDeleteSelectedSessions,
   t,
 }: SidebarProjectSessionsProps) {
-  const isCompact = useCompactSidebar();
-
   if (!isExpanded) {
     return null;
   }
@@ -123,10 +119,10 @@ export default function SidebarProjectSessions({
       : t('sessions.selectAll');
 
   return (
-    <div className="space-y-1 border-t border-border bg-card px-2 pb-2">
+    <div className="ml-5 border-l border-border pl-1 pb-1">
 
       {(isSelecting || (initialSessionsLoaded && selectableSessionIds.length > 0)) && (
-        <div className={cn('space-y-1', isCompact && 'px-3')}>
+        <div className="px-1">
           {isSelecting ? (
             <>
               {/* Wraps rather than clips: at the narrowest sidebar width a long
@@ -158,7 +154,7 @@ export default function SidebarProjectSessions({
               <Button
                 variant="destructive"
                 size="sm"
-                className="h-8 w-full justify-center gap-2 bg-red-600 text-xs font-medium text-white hover:bg-red-700"
+                className="h-8 w-full justify-start gap-2 rounded-md bg-red-600 text-xs font-medium text-white hover:bg-red-700"
                 onClick={() => onDeleteSelectedSessions(effectiveSelectedIds)}
                 disabled={effectiveSelectedIds.length === 0}
               >
@@ -225,7 +221,7 @@ export default function SidebarProjectSessions({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-full justify-center text-xs text-muted-foreground hover:text-foreground"
+              className="h-9 w-full justify-start rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground md:h-7"
               onClick={() => onLoadMoreSessions(project.projectId)}
               disabled={isLoadingMoreSessions}
             >
