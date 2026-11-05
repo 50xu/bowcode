@@ -31,7 +31,7 @@ const keyEvent = (
 
 const setUp = (scope: string | null = 'session-1') => {
   const setCalls: string[] = [];
-  const textareaRef = { current: null } as RefObject<HTMLTextAreaElement>;
+  const textareaRef = { current: null } as RefObject<HTMLTextAreaElement | null>;
   const { result, rerender } = renderHook(
     ({ currentScope }: { currentScope: string | null }) =>
       useInputHistory({

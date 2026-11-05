@@ -34,7 +34,7 @@ export default function FolderBrowserModal({
   // Keep the loader stable across locale changes: t lands in a ref so an
   // open browser does not reload and snap back to the home folder when the
   // user switches language.
-  const loadFoldersRef = useRef<(pathToLoad: string) => Promise<void>>();
+  const loadFoldersRef = useRef<((pathToLoad: string) => Promise<void>) | undefined>(undefined);
 
   const loadFolders = useCallback(async (pathToLoad: string) => {
     setLoadingFolders(true);

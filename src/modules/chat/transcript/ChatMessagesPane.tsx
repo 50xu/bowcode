@@ -28,7 +28,7 @@ import { BackgroundTasksStrip } from '@/modules/chat/transcript/BackgroundTasksS
 const INITIAL_MOUNTED_TAIL_ROWS = 30;
 
 type ChatMessagesPaneProps = {
-  scrollContainerRef: RefObject<HTMLDivElement>;
+  scrollContainerRef: RefObject<HTMLDivElement | null>;
   onWheel: () => void;
   onTouchMove: () => void;
   isLoadingSessionMessages: boolean;
@@ -41,7 +41,7 @@ type ChatMessagesPaneProps = {
   currentSessionId: string | null;
   provider: LLMProvider;
   setProvider: (provider: LLMProvider) => void;
-  textareaRef: RefObject<HTMLTextAreaElement>;
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
   providerModels: Record<LLMProvider, string>;
   setProviderModel: (provider: LLMProvider, model: string) => void;
   providerModelCatalog: Partial<Record<LLMProvider, ProviderModelsDefinition>>;

@@ -51,7 +51,7 @@ type ProviderSelectionEmptyStateProps = {
   currentSessionId: string | null;
   provider: LLMProvider;
   setProvider: (next: LLMProvider) => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   providerModels: Record<LLMProvider, string>;
   /** Records the pick as this provider's default and persists it. */
   setProviderModel: (provider: LLMProvider, model: string) => void;

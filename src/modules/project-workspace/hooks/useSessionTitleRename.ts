@@ -23,7 +23,7 @@ type SessionTitleRename = {
   isEditing: boolean;
   draft: string;
   isSaving: boolean;
-  inputRef: RefObject<HTMLInputElement>;
+  inputRef: RefObject<HTMLInputElement | null>;
   startEditing: () => void;
   updateDraft: (value: string) => void;
   cancelEditing: () => void;

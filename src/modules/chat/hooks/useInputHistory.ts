@@ -73,7 +73,7 @@ function appendInputHistory(scope: string, text: string): void {
 type UseInputHistoryOptions = {
   /** Must also sync any send-time mirror (inputValueRef) with the new value. */
   setInput: (value: string) => void;
-  textareaRef: RefObject<HTMLTextAreaElement>;
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
   /** The chat being composed into: a session id, or `project:<id>` before one exists. */
   scope: string | null;
 };

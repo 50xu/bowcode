@@ -16,7 +16,7 @@ const theme = {
 type XtermCallbacks = { onInput: (data: string) => void; onResize: (cols: number, rows: number) => void; onTitle: (title: string) => void; fontSize: number };
 
 /** Owns xterm and its addons for one terminal tab, including search and resizing. */
-export function useXterm(containerRef: React.RefObject<HTMLDivElement>, callbacks: XtermCallbacks) {
+export function useXterm(containerRef: React.RefObject<HTMLDivElement | null>, callbacks: XtermCallbacks) {
   const terminalRef = useRef<Terminal | null>(null);
   const searchRef = useRef<SearchAddon | null>(null);
   const callbacksRef = useRef(callbacks);

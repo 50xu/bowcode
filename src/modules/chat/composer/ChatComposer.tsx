@@ -102,9 +102,9 @@ type ChatComposerProps = {
   getRootProps: (...args: unknown[]) => Record<string, unknown>;
   getInputProps: (...args: unknown[]) => Record<string, unknown>;
   openAttachmentPicker: () => void;
-  inputHighlightRef: RefObject<HTMLDivElement>;
+  inputHighlightRef: RefObject<HTMLDivElement | null>;
   renderInputWithMentions: (text: string) => ReactNode;
-  textareaRef: RefObject<HTMLTextAreaElement>;
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
   input: string;
   onVoiceTranscript?: (text: string, send?: boolean) => void;
   onInputChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;

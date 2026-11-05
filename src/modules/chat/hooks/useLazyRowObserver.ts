@@ -19,7 +19,7 @@ export type LazyRowObserver = {
  * pre-existing behavior.
  */
 export function useLazyRowObserver(
-  scrollContainerRef: RefObject<HTMLDivElement>,
+  scrollContainerRef: RefObject<HTMLDivElement | null>,
 ): LazyRowObserver | null {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const callbacksRef = useRef(new Map<Element, (isNearViewport: boolean) => void>());

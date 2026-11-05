@@ -136,7 +136,8 @@ test('a refreshed token on the initial auth check does not run a second loading 
 });
 
 test('tokens refreshed while the workspace is open do not remount it', async () => {
-  localStorage.setItem('auth-token', makeToken(nowSeconds() - 4 * 86400));
+  // Use a fresh token so the scheduled half-life refresh does not add an unrelated auth request.
+  localStorage.setItem('auth-token', makeToken(nowSeconds()));
 
   renderApp();
   await screen.findByText('workspace');

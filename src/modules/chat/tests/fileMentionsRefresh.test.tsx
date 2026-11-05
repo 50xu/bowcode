@@ -40,7 +40,7 @@ const keyEvent = (key: string) =>
   ({ key, preventDefault: () => {} }) as unknown as KeyboardEvent<HTMLTextAreaElement>;
 
 const renderMentions = () => {
-  const textareaRef: RefObject<HTMLTextAreaElement> = { current: null };
+  const textareaRef: RefObject<HTMLTextAreaElement | null> = { current: null };
   const hook = renderHook(
     ({ input }: { input: string }) =>
       useFileMentions({ selectedProject: project, input, setInput: vi.fn(), textareaRef }),
