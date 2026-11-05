@@ -27,7 +27,7 @@ const PROVIDER_WATCH_PATHS: Array<{ provider: LLMProvider; rootPath: string }> =
 
 /**
  * What the watcher never descends into or reports. These used to be glob
- * strings, which chokidar v4 no longer understands: it takes a path, a RegExp
+ * strings, which chokidar v4+ no longer understands: it takes a path, a RegExp
  * or a function, so the globs matched nothing and every file under every
  * provider root was watched and, with polling, stat()ed every interval (#1156).
  */
@@ -272,9 +272,9 @@ export async function initializeSessionsWatcher(): Promise<void> {
         // network shares, some container mounts. Where native events do work,
         // chokidar's own CHOKIDAR_USEPOLLING=false overrides this and a finished
         // turn reaches the sidebar at once instead of up to 6 s later.
-        usePolling: true,
-        interval: 6_000,
-        binaryInterval: 6_000,
+        backend: 'polling',
+        pollingInterval: 6_000,
+        pollingBinaryInterval: 6_000,
       });
 
       watcher

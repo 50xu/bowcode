@@ -6,7 +6,8 @@ import express from 'express';
 import type { createPluginsService } from './plugins.service.js';
 
 function wildcardPath(req: express.Request): string {
-  return ((req.params as Record<string, string>)['0'] ?? '').trim();
+  const splat = req.params.splat;
+  return (Array.isArray(splat) ? splat.join('/') : splat ?? '').trim();
 }
 
 function routeParameter(value: string | string[]): string {
@@ -23,7 +24,7 @@ export function createPluginsRouter(service: ReturnType<typeof createPluginsServ
 
   router.get('/', respond(() => service.list()));
   router.get('/:name/manifest', respond((req) => service.getManifest(routeParameter(req.params.name))));
-  router.get('/:name/assets/*', async (req, res, next) => {
+  router.get('/:name/assets/*splat', async (req, res, next) => {
     try {
       const asset = service.resolveAsset(routeParameter(req.params.name), wildcardPath(req));
       res.setHeader('Content-Type', asset.contentType);
@@ -36,7 +37,7 @@ export function createPluginsRouter(service: ReturnType<typeof createPluginsServ
   router.put('/:name/enable', respond((req) => service.setEnabled(routeParameter(req.params.name), req.body?.enabled)));
   router.post('/install', respond((req) => service.install(req.body?.url)));
   router.post('/:name/update', respond((req) => service.update(routeParameter(req.params.name))));
-  router.all('/:name/rpc/*', async (req, res, next) => {
+  router.all('/:name/rpc/*splat', async (req, res, next) => {
     try {
       const { port, secrets } = await service.prepareRpc(routeParameter(req.params.name));
       const headers: Record<string, string> = {

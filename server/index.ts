@@ -229,8 +229,12 @@ app.use(express.static(path.join(APP_ROOT, 'dist'), {
 // Chat uploads live under /api/assets (server/modules/assets), which stores
 // images and general files in the app data assets folder.
 
-// Serve React app for all other routes (excluding static files)
-app.get('*', (req, res) => {
+// Serve React app for all other routes (excluding API and static files).
+// Express 5 requires a named wildcard; braces also match the root URL.
+app.get('/{*splat}', (req, res) => {
+    if (req.path === '/api' || req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'Not found', code: 'API_NOT_FOUND' });
+    }
     // Skip requests for static assets (files with extensions)
     if (path.extname(req.path)) {
         return res.status(404).send('Not found');

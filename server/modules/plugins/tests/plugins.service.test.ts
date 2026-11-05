@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
 import test from 'node:test';
 
+import express from 'express';
+
+import { createPluginsRouter } from '../plugins.routes.js';
 import { createPluginsService } from '../plugins.service.js';
 
 type Dependencies = Parameters<typeof createPluginsService>[0];
@@ -18,6 +22,40 @@ function dependencies(overrides: Partial<Dependencies> = {}): Dependencies {
     logError: () => undefined, ...overrides,
   };
 }
+
+test('Express 5 plugin asset and RPC wildcards preserve nested paths and query strings', async () => {
+  const assetPaths: string[] = [];
+  const upstreamPaths: string[] = [];
+  const upstream = createServer((request, response) => {
+    upstreamPaths.push(request.url ?? '');
+    response.end('proxied');
+  });
+  const service = createPluginsService(dependencies({
+    getPluginDirectory: () => '/plugins/demo',
+    resolveAsset: (_name, assetPath) => {
+      assetPaths.push(assetPath);
+      return 'package.json';
+    },
+    assetIsFile: () => true,
+    joinPath: (...parts) => parts.join('/'),
+    getServerPort: () => (upstream.address() as { port: number }).port,
+  }));
+  const app = express().use('/api/plugins', createPluginsRouter(service));
+  const server = createServer(app);
+  try {
+    await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+    await fetch(`${base}/api/plugins/demo/assets/nested/logo.svg`);
+    const rpc = await fetch(`${base}/api/plugins/demo/rpc/nested/action?key=value`);
+    assert.equal(rpc.status, 200);
+    assert.equal(await rpc.text(), 'proxied');
+    assert.deepEqual(assetPaths, ['nested/logo.svg']);
+    assert.deepEqual(upstreamPaths, ['/nested/action?key=value']);
+  } finally {
+    await Promise.all([new Promise<void>((resolve) => server.close(() => resolve())), new Promise<void>((resolve) => upstream.close(() => resolve()))]);
+  }
+});
 
 test('update restarts a running plugin server when the update fails', async () => {
   const operations: string[] = [];
