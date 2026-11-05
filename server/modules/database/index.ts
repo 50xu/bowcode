@@ -25,3 +25,8 @@ export { userPreferencesDb } from '@/modules/database/repositories/user-preferen
 export { vapidKeysDb } from '@/modules/database/repositories/vapid-keys.js';
 export { scheduledMessagesDb } from './repositories/scheduled-messages.db.js';
 export type { ScheduledMessageRow, ScheduledMessageStatus } from './repositories/scheduled-messages.db.js';
+// schedulesDb / scheduleRunsDb: used by the Schedules module to persist recurring prompt schedules and their run history.
+export { schedulesDb } from '@/modules/database/repositories/schedules.db.js';
+export type { ClaimedScheduleFire, ScheduleRow } from '@/modules/database/repositories/schedules.db.js';
+export { scheduleRunsDb } from '@/modules/database/repositories/schedule-runs.db.js';
+export type { ScheduleRunRow } from '@/modules/database/repositories/schedule-runs.db.js';

@@ -738,6 +738,13 @@ export function useProjectsState({
         return;
       }
 
+      // The server archived or deleted sessions on its own (inactive-session
+      // cleanup). There is no per-session removal delta, so re-sync the list.
+      if (event.kind === 'sessions_removed') {
+        void refreshProjectsSilently();
+        return;
+      }
+
       if (event.kind === 'loading_progress') {
         if (loadingProgressTimeoutRef.current) {
           clearTimeout(loadingProgressTimeoutRef.current);
@@ -769,6 +776,8 @@ export function useProjectsState({
         && event.kind !== 'session_upserted'
         // A change to the session's scheduled messages is not new activity in it.
         && event.kind !== 'scheduled_messages_changed'
+        // Nor is a change to the recurring schedules list.
+        && event.kind !== 'schedules_changed'
         && event.kind !== 'status'
         && event.kind !== 'stream_end'
         && event.kind !== 'permission_resolved'

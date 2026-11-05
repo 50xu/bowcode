@@ -1215,6 +1215,17 @@ async function queryClaudeSDK(
         }
       }
 
+      // A headless run (a recurring schedule) has nobody to answer a question
+      // or approve a plan, and these two wait without a timeout: deny them at
+      // once so the turn carries on instead of hanging until its time limit.
+      if (requiresInteraction && options.headless === true) {
+        return {
+          behavior: 'deny',
+          message: 'No user is attached to this run (it was started by a schedule), so nobody can answer. '
+            + 'Do not ask questions or wait for plan approval; proceed with your best judgement.',
+        };
+      }
+
       const requestId = createRequestId();
       ws.send(createNormalizedMessage({ kind: 'permission_request', requestId, toolName, input, sessionId: capturedSessionId || sessionId || null, provider: 'claude' }));
       emitNotification(notificationEvent({

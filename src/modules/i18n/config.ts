@@ -23,6 +23,8 @@ import enCodeEditor from '@/modules/i18n/locales/en/codeEditor.json';
 import enTasks from '@/modules/i18n/locales/en/tasks.json';
 // oxlint-disable-next-line importx/order
 import enGit from '@/modules/i18n/locales/en/git.json';
+// oxlint-disable-next-line importx/order
+import enSchedules from '@/modules/i18n/locales/en/schedules.json';
 
 import frCommon from '@/modules/i18n/locales/fr/common.json';
 import frSettings from '@/modules/i18n/locales/fr/settings.json';
@@ -196,6 +198,8 @@ i18n
         codeEditor: enCodeEditor,
         tasks: enTasks,
 git: enGit,
+        // Other locales fall back to English for this namespace.
+        schedules: enSchedules,
       },
       fr: {
         common: frCommon,
@@ -342,7 +346,7 @@ git: enGit,
     debug: false,
 
     // Namespaces - load only what's needed
-    ns: ['common', 'settings', 'auth', 'sidebar', 'chat', 'codeEditor', 'tasks', 'git'],
+    ns: ['common', 'settings', 'auth', 'sidebar', 'chat', 'codeEditor', 'tasks', 'git', 'schedules'],
     defaultNS: 'common',
 
     // Key separator for nested keys (default: '.')

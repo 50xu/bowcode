@@ -1,4 +1,4 @@
-import { Bell, Bot, ChevronRight, GitBranch, Info, Key, ListChecks, Mic, MonitorPlay, Palette, Puzzle, RefreshCw } from 'lucide-react';
+import { Archive, Bell, Bot, ChevronRight, GitBranch, Info, Key, ListChecks, Mic, MonitorPlay, Palette, Puzzle, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/utils';
@@ -38,6 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'appearance', labelKey: 'mainTabs.appearance', icon: Palette, tint: 'bg-blue-500' },
       { id: 'notifications', labelKey: 'mainTabs.notifications', icon: Bell, tint: 'bg-red-500' },
       { id: 'voice', labelKey: 'mainTabs.voice', icon: Mic, tint: 'bg-pink-500' },
+      { id: 'sessions', labelKey: 'mainTabs.sessions', icon: Archive, tint: 'bg-stone-500' },
     ],
   },
   {

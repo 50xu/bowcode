@@ -4,7 +4,7 @@ import {
   storeAuthToken,
 } from '@/shared/authToken';
 import { readVoiceConfig, voiceConfigHeaders } from '@/shared/voiceConfig';
-import type { AppUpdateStatus } from '@/shared/types';
+import type { AppUpdateStatus, ScheduleInput, SessionRetentionSettings } from '@/shared/types';
 
 // Headers are a plain record rather than the full `HeadersInit` union so the
 // defaults below can be merged with a caller's headers by spreading.
@@ -311,6 +311,22 @@ export const api = {
     create: (body: { sessionId: string; content: string; scheduledFor: string; options?: unknown }) =>
       post('/api/scheduled-messages', body),
     cancel: (id: string) => del(`/api/scheduled-messages/${encodeURIComponent(id)}`),
+  },
+
+  // Recurring schedules: prompts that start a new session in a project on a cadence.
+  schedules: {
+    list: (projectId?: string) => get(`/api/schedules${projectId ? query({ projectId }) : ''}`),
+    get: (id: string) => get(`/api/schedules/${encodeURIComponent(id)}`),
+    create: (body: ScheduleInput) => post('/api/schedules', body),
+    update: (id: string, body: Partial<ScheduleInput>) => patch(`/api/schedules/${encodeURIComponent(id)}`, body),
+    pause: (id: string) => post(`/api/schedules/${encodeURIComponent(id)}/pause`),
+    resume: (id: string) => post(`/api/schedules/${encodeURIComponent(id)}/resume`),
+    remove: (id: string) => del(`/api/schedules/${encodeURIComponent(id)}`),
+    // Starts a run now without moving the next scheduled fire.
+    runNow: (id: string) => post(`/api/schedules/${encodeURIComponent(id)}/run-now`),
+    runs: (id: string) => get(`/api/schedules/${encodeURIComponent(id)}/runs`),
+    // Next five fires of a cron expression in a time zone, validated like a save.
+    preview: (cron: string, timezone: string) => post('/api/schedules/preview', { cron, timezone }),
   },
 
   // Workspace file tree
@@ -625,6 +641,15 @@ export const api = {
     deleteSession: (sessionId: string) => del(`/api/browser-use/sessions/${sessionId}`),
     sendInput: (sessionId: string, input: unknown) => post(`/api/browser-use/sessions/${sessionId}/input`, input),
     installRuntime: () => post('/api/browser-use/runtime/install'),
+  },
+
+  // Inactive-session cleanup: server-persisted settings, a dry-run preview of
+  // what the saved settings select, and an on-demand pass.
+  sessionRetention: {
+    settings: () => get('/api/session-retention/settings'),
+    saveSettings: (settings: Partial<SessionRetentionSettings>) => put('/api/session-retention/settings', settings),
+    preview: () => get('/api/session-retention/preview'),
+    runNow: () => post('/api/session-retention/run'),
   },
 
   voice: {

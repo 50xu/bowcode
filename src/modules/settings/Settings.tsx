@@ -17,6 +17,7 @@ import TasksSettingsTab from '@/modules/settings/tabs/tasks-settings/TasksSettin
 import { PluginSettingsTab } from '@/modules/plugins';
 import AboutTab from '@/modules/settings/tabs/AboutTab';
 import SyncSettingsTab from '@/modules/settings/tabs/sync-settings/SyncSettingsTab';
+import SessionRetentionSettingsTab from '@/modules/settings/tabs/session-retention-settings/SessionRetentionSettingsTab';
 import { useSettingsController } from '@/modules/settings/hooks/useSettingsController';
 import { useWebPush } from '@/modules/settings/hooks/useWebPush';
 import type { AgentSettingsProject, SettingsMainTab } from '@/shared/types';
@@ -351,6 +352,8 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
                 {activeTab === 'api' && <CredentialsSettingsTab />}
 
                 {activeTab === 'voice' && <VoiceSettingsTab />}
+
+                {activeTab === 'sessions' && <SessionRetentionSettingsTab />}
 
                 {activeTab === 'plugins' && <PluginSettingsTab />}
 

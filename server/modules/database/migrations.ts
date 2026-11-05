@@ -10,6 +10,8 @@ import {
   SESSION_DRAFTS_TABLE_SCHEMA_SQL,
   SUPERSEDED_PROVIDER_SESSIONS_TABLE_SCHEMA_SQL,
   SCHEDULED_MESSAGES_TABLE_SCHEMA_SQL,
+  SCHEDULE_RUNS_TABLE_SCHEMA_SQL,
+  SCHEDULES_TABLE_SCHEMA_SQL,
   SESSIONS_TABLE_SCHEMA_SQL,
   USER_PREFERENCES_TABLE_SCHEMA_SQL,
   USER_NOTIFICATION_PREFERENCES_TABLE_SCHEMA_SQL,
@@ -535,6 +537,11 @@ export const runMigrations = (db: Database) => {
     addForkedFromSessionIdColumn(db);
     ensureProjectsForSessionPaths(db);
     db.exec(SCHEDULED_MESSAGES_TABLE_SCHEMA_SQL);
+    db.exec(SCHEDULES_TABLE_SCHEMA_SQL);
+    db.exec(SCHEDULE_RUNS_TABLE_SCHEMA_SQL);
+    // The recurring-schedule poll reads enabled rows by their next fire time.
+    db.exec('CREATE INDEX IF NOT EXISTS idx_schedules_due ON schedules(enabled, next_run_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_schedule_runs_schedule ON schedule_runs(schedule_id, started_at DESC)');
 
     db.exec('CREATE INDEX IF NOT EXISTS idx_session_ids_lookup ON sessions(session_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_provider_session_id ON sessions(provider_session_id)');

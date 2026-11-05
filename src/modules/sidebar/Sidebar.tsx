@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
@@ -7,6 +7,7 @@ import { useUiPreferences, useSetUiPreference } from '@/shared/context/UiPrefere
 import { useSidebarController } from '@/modules/sidebar/hooks/useSidebarController';
 import { useTaskMaster, useTasksSettings } from '@/modules/task-master';
 import { usePaletteOps } from '@/modules/command-palette';
+import { SchedulesDialog } from '@/modules/schedules';
 import { useBackgroundSessionIdSet, useBusySessionIdSet } from '@/shared/context/SessionProtectionContext';
 import type { LLMProvider, LoadingProgress, MCPServerStatus, Project, ProjectSession, SidebarProjectListProps } from '@/shared/types';
 import SidebarCollapsed from '@/modules/sidebar/SidebarCollapsed';
@@ -171,6 +172,17 @@ function Sidebar({
     document.body.classList.toggle('pwa-mode', isPWA);
   }, [isPWA]);
 
+  // Whether the schedules dialog (opened from the header's Schedules button) is showing.
+  const [showSchedules, setShowSchedules] = useState(false);
+
+  // Opens a session a scheduled run created, the way a conversation-search hit
+  // is opened: select its project when the sidebar has it, then the session.
+  const openScheduledSession = useCallback((sessionId: string, provider: LLMProvider, projectId: string | null) => {
+    const project = projectId ? projects.find((candidate) => candidate.projectId === projectId) : null;
+    if (project) handleProjectSelect(project);
+    handleSessionClick({ id: sessionId, __provider: provider, __projectId: projectId ?? undefined }, projectId ?? '');
+  }, [projects, handleProjectSelect, handleSessionClick]);
+
   const handleProjectCreated = () => {
     void paletteOps.refreshProjects();
   };
@@ -248,6 +260,13 @@ function Sidebar({
         onConfirmDeleteSession={confirmDeleteSession}
         onConfirmDeleteSessions={confirmDeleteSessions}
         t={t}
+      />
+
+      <SchedulesDialog
+        open={showSchedules}
+        onOpenChange={setShowSchedules}
+        projects={projects}
+        onOpenSession={openScheduledSession}
       />
 
       {isSidebarCollapsed ? (
@@ -329,6 +348,7 @@ function Sidebar({
               void refreshProjects();
             }}
             isRefreshing={isRefreshing}
+            onOpenSchedules={() => setShowSchedules(true)}
             onCreateProject={() => setShowNewProject(true)}
             onCollapseSidebar={handleCollapseSidebar}
             restartRequired={restartRequired}

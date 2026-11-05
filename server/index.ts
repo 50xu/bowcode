@@ -49,6 +49,16 @@ import {
     initializeScheduledMessageDispatcher,
     scheduledMessagesRoutes,
 } from './modules/scheduled-messages/index.js';
+import {
+    closeScheduleScheduler,
+    initializeScheduleScheduler,
+    schedulesRoutes,
+} from './modules/schedules/index.js';
+import {
+    closeSessionRetention,
+    initializeSessionRetention,
+    sessionRetentionRoutes,
+} from './modules/session-retention/index.js';
 import browserUseRoutes from './modules/browser-use/browser-use.routes.js';
 import { assetsRoutes } from './modules/assets/index.js';
 import { fileTreeRoutes } from './modules/file-tree/index.js';
@@ -185,6 +195,10 @@ app.use('/api/browser-use', authenticateToken, browserUseRoutes);
 // Unified provider MCP routes (protected)
 app.use('/api/providers', authenticateToken, providerRoutes);
 app.use('/api/scheduled-messages', authenticateToken, scheduledMessagesRoutes);
+// Recurring prompt schedules: each run starts a new session in the schedule's project.
+app.use('/api/schedules', authenticateToken, schedulesRoutes);
+// Inactive-session cleanup settings, preview and manual run (protected)
+app.use('/api/session-retention', authenticateToken, sessionRetentionRoutes);
 
 // Agent API Routes (uses API key authentication)
 app.use('/api/agent', agentRoutes);
@@ -372,6 +386,12 @@ async function startServer() {
             // Sends anything that came due while the server was not running,
             // then keeps polling.
             initializeScheduledMessageDispatcher(providerRuntimeService);
+            // Recurring schedules; fires missed while the server was down are
+            // recorded as skipped, not caught up.
+            initializeScheduleScheduler(providerRuntimeService);
+            // Archives/deletes long-inactive sessions when enabled. Started after
+            // the initial index scan so last-activity times are current.
+            initializeSessionRetention();
 
             // Start server-side plugin processes for enabled plugins
             startEnabledPluginServers().catch(err => {
@@ -381,8 +401,10 @@ async function startServer() {
 
         await closeSessionsWatcher();
         closeScheduledMessageDispatcher();
+        closeScheduleScheduler();
         // Clean up plugin processes on shutdown
         const shutdownRuntimeServices = async () => {
+            closeSessionRetention();
             try {
                 await browserUseService.stopAllSessions();
             } catch (err) {

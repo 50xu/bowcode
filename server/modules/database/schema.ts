@@ -120,6 +120,58 @@ CREATE TABLE IF NOT EXISTS scheduled_messages (
 );
 `;
 
+export const SCHEDULES_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS schedules (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    -- Resolved from the project id when the schedule is created, so a run
+    -- still knows where to start after the project row is renamed.
+    project_path TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT,
+    effort TEXT,
+    permission_mode TEXT NOT NULL DEFAULT 'auto',
+    prompt TEXT NOT NULL,
+    -- once | cron
+    kind TEXT NOT NULL,
+    cron_expression TEXT,
+    -- UTC instant for a one-off schedule.
+    run_at DATETIME,
+    -- IANA zone the cron expression is read in.
+    timezone TEXT NOT NULL DEFAULT 'UTC',
+    max_duration_minutes INTEGER NOT NULL DEFAULT 120,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    -- UTC instant of the next fire; NULL when there is none (paused once, finished).
+    next_run_at DATETIME,
+    last_run_at DATETIME,
+    last_status TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+`;
+
+export const SCHEDULE_RUNS_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS schedule_runs (
+    id TEXT PRIMARY KEY,
+    schedule_id TEXT NOT NULL,
+    -- The session each run created; kept as history when the session goes.
+    session_id TEXT,
+    -- scheduled | manual
+    trigger TEXT NOT NULL,
+    -- The fire time this run was for (UTC), NULL for a manual run.
+    scheduled_for DATETIME,
+    started_at DATETIME NOT NULL,
+    finished_at DATETIME,
+    -- running | succeeded | failed | skipped | timed_out | interrupted
+    status TEXT NOT NULL,
+    error TEXT,
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE,
+    FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE SET NULL
+);
+`;
+
 export const SESSIONS_TABLE_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS sessions (
     session_id TEXT NOT NULL,

@@ -43,6 +43,7 @@
   "tooltips": {
     "hideSidebar": "Hide sidebar",
     "createProject": "Create new project",
+    "schedules": "Schedules",
     "refresh": "Refresh projects and sessions (Ctrl+R)",
     "renameProject": "Rename project (F2)",
     "deleteProject": "Remove project from sidebar (Delete)",

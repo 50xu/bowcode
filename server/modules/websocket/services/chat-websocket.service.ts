@@ -102,6 +102,46 @@ type ChatWebSocketDependencies = {
 };
 
 /**
+ * How a dispatched provider run ended, read from the run's own buffered
+ * events once the runtime settles.
+ *
+ * `exitCode` and `aborted` come from the run's terminal `complete` event (null
+ * / false when none was recorded); `providerError` is the first provider
+ * `kind: 'error'` event's text. `started` alone cannot tell a failed turn from
+ * a good one, because runtimes report most failures as events, not throws —
+ * the schedules runner reads this to record a run as failed.
+ */
+type ChatRunOutcome = {
+  exitCode: number | null;
+  aborted: boolean;
+  providerError: string | null;
+};
+
+/** What dispatchRun and runDetachedChatTurn resolve with. `outcome` is present whenever the run started. */
+type ChatRunDispatchResult = {
+  started: boolean;
+  error: string | null;
+  outcome?: ChatRunOutcome;
+};
+
+/** Reads a settled run's outcome from its buffered events. */
+function readRunOutcome(run: NonNullable<ReturnType<typeof chatRunRegistry.getRun>>): ChatRunOutcome {
+  let exitCode: number | null = null;
+  let aborted = false;
+  let providerError: string | null = null;
+  for (const event of run.events) {
+    if (event.kind === 'complete') {
+      exitCode = typeof event.exitCode === 'number' ? event.exitCode : null;
+      aborted = event.aborted === true;
+    } else if (event.kind === 'error' && providerError === null) {
+      const text = typeof event.content === 'string' ? event.content : typeof event.text === 'string' ? event.text : '';
+      providerError = text.trim() || 'The provider reported an error.';
+    }
+  }
+  return { exitCode, aborted, providerError };
+}
+
+/**
  * Extracts the authenticated request user id in the formats currently produced
  * by platform and OSS auth code paths.
  */
@@ -235,7 +275,7 @@ async function dispatchRun(
   dependencies: ChatWebSocketDependencies,
   extraRuntimeOptions: AnyRecord = {},
   beforeRun?: (run: NonNullable<ReturnType<typeof chatRunRegistry.startRun>>) => void | Promise<void>,
-): Promise<{ started: boolean; error: string | null }> {
+): Promise<ChatRunDispatchResult> {
   const provider = session.provider as LLMProvider;
 
   // Only a provider-native resume can collide with another CLI process (the
@@ -365,7 +405,9 @@ async function dispatchRun(
     chatRunRegistry.completeRunIfCurrent(run, { exitCode: 1 });
   }
 
-  return { started: true, error: failure };
+  // Read after the safety net above, so a runtime that never completed still
+  // reports the synthetic non-zero exit it was given.
+  return { started: true, error: failure, outcome: readRunOutcome(run) };
 }
 
 const TAKEOVER_WATCH_INTERVAL_MS = 3_000;
@@ -747,7 +789,9 @@ function handlePermissionResponse(data: AnyRecord, dependencies: ChatWebSocketDe
  *
  * Resolves when the provider run settles. Returns false when the session has
  * gone away or is busy without `interruptActiveRun`, which the caller reports
- * on the schedule.
+ * on the schedule. A run that started also carries its `outcome` (exit code,
+ * whether it was aborted, the first provider error), which the recurring
+ * schedules runner uses to tell a failed turn from a successful one.
  */
 export async function runDetachedChatTurn(
   input: {
@@ -763,7 +807,7 @@ export async function runDetachedChatTurn(
     interruptActiveRun?: boolean;
   },
   dependencies: ChatWebSocketDependencies,
-): Promise<{ started: boolean; error: string | null }> {
+): Promise<ChatRunDispatchResult> {
   const session = sessionsDb.getSessionById(input.sessionId);
   if (!session) {
     return { started: false, error: 'The session no longer exists.' };

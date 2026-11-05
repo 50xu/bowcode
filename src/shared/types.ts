@@ -1420,7 +1420,7 @@ export type AgentContext = {
 };
 
 /** Identifier of a top-level section in the settings dialog; use it whenever a tab is stored, compared or requested so deep links, the sidebar and the command palette all agree on the same set of names. */
-export type SettingsMainTab = 'agents' | 'appearance' | 'git' | 'api' | 'voice' | 'tasks' | 'browser' | 'notifications' | 'plugins' | 'sync' | 'about';
+export type SettingsMainTab = 'agents' | 'appearance' | 'git' | 'api' | 'voice' | 'tasks' | 'browser' | 'notifications' | 'sessions' | 'plugins' | 'sync' | 'about';
 
 /** The coding-agent CLI a settings screen is configuring, aliasing LLMProvider so agent-scoped settings read as being about an agent rather than a chat model. */
 export type AgentProvider = LLMProvider;
@@ -1477,6 +1477,59 @@ export type CodeEditorSettingsState = {
   showMinimap: boolean;
   lineNumbers: boolean;
   fontSize: string;
+};
+
+// ---------------------------
+
+//----------------- SETTINGS SESSION RETENTION ------------
+
+/** What the inactive-session cleanup does to a selected session: `archive` (hide, restorable) or `delete` (remove the row and its Claude/Codex transcript files). */
+export type SessionRetentionAction = 'archive' | 'delete';
+
+/** The server-persisted inactive-session cleanup settings, as GET/PUT /api/session-retention/settings exchange them; `inactiveDays` is a whole number from 1 to 3650. */
+export type SessionRetentionSettings = {
+  enabled: boolean;
+  inactiveDays: number;
+  action: SessionRetentionAction;
+  skipStarredProjects: boolean;
+};
+
+/** The recorded outcome of one cleanup pass (background or manual), shown as "last run" in the Sessions settings page. */
+export type SessionRetentionRun = {
+  trigger: 'scheduled' | 'manual';
+  action: SessionRetentionAction;
+  inactiveDays: number;
+  cutoff: string;
+  startedAt: string;
+  finishedAt: string;
+  archived: number;
+  deleted: number;
+  deletedFromDisk: number;
+  skippedBusy: number;
+  failed: number;
+  remaining: number;
+};
+
+/** Saved cleanup settings plus the last pass's outcome (`null` before the first pass), as the settings endpoints return them. */
+export type SessionRetentionStatus = {
+  settings: SessionRetentionSettings;
+  lastRun: SessionRetentionRun | null;
+};
+
+/** What a pass with the saved settings would select right now: the full `total` and the oldest sessions by name (at most 20). */
+export type SessionRetentionPreview = {
+  cutoff: string;
+  total: number;
+  batchLimit: number;
+  sessions: Array<{
+    sessionId: string;
+    provider: string;
+    title: string;
+    projectPath: string | null;
+    projectName: string | null;
+    isArchived: boolean;
+    lastActivity: string;
+  }>;
 };
 
 // ---------------------------
@@ -1890,3 +1943,74 @@ type TaskStatus =
 
 /** A TaskMaster task's priority; high, medium and low are the known values and the string fallback tolerates anything else TaskMaster emits. */
 type TaskPriority = 'high' | 'medium' | 'low' | string;
+
+// ---------------------------
+
+//----------------- RECURRING SCHEDULES ------------
+
+/** How a schedule decides when to fire: once at `runAt`, or at every match of a five-field cron expression. */
+export type ScheduleKind = 'once' | 'cron';
+
+/**
+ * Lifecycle of one schedule run as the server records it. `skipped` fires were never run (missed while Bowcode
+ * was down, or the previous run was still going); `timed_out` runs passed their time limit and were stopped;
+ * `interrupted` runs were stopped by someone else or cut off by a server restart.
+ */
+export type ScheduleRunStatus = 'running' | 'succeeded' | 'failed' | 'skipped' | 'timed_out' | 'interrupted';
+
+/** A recurring (or one-off) prompt that starts a new session in its project each time it fires; returned by `/api/schedules`. */
+export type Schedule = {
+  id: string;
+  name: string;
+  projectPath: string;
+  provider: LLMProvider;
+  model: string | null;
+  effort: string | null;
+  permissionMode: PermissionMode;
+  prompt: string;
+  kind: ScheduleKind;
+  /** Five-field cron expression read in `timezone`; null for a one-off schedule. */
+  cronExpression: string | null;
+  /** ISO instant of a one-off schedule; null for a recurring one. */
+  runAt: string | null;
+  /** IANA zone name the cron expression is read in. */
+  timezone: string;
+  maxDurationMinutes: number;
+  enabled: boolean;
+  /** ISO instant of the next fire, null while paused or once a one-off has fired. */
+  nextRunAt: string | null;
+  lastRunAt: string | null;
+  lastStatus: ScheduleRunStatus | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One run of a schedule, newest first in the history; `sessionId` is the session it created, for "Open session". */
+export type ScheduleRun = {
+  id: string;
+  scheduleId: string;
+  sessionId: string | null;
+  trigger: 'scheduled' | 'manual';
+  scheduledFor: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+  status: ScheduleRunStatus;
+  /** Why it failed or was skipped. */
+  error: string | null;
+};
+
+/** The body the schedule editor sends to create or update a schedule; the server validates every field. */
+export type ScheduleInput = {
+  name: string;
+  projectId: string;
+  provider: LLMProvider;
+  model: string | null;
+  effort: string | null;
+  permissionMode: PermissionMode;
+  prompt: string;
+  kind: ScheduleKind;
+  cronExpression: string | null;
+  runAt: string | null;
+  timezone: string;
+  maxDurationMinutes: number;
+};

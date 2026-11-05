@@ -25,6 +25,17 @@ type RecentSessionsPage = {
   total: number;
 };
 
+/** One row selected by `findInactiveSessions`, with what a cleanup preview shows. */
+type InactiveSessionRow = {
+  session_id: string;
+  provider: string;
+  custom_name: string | null;
+  project_path: string | null;
+  custom_project_name: string | null;
+  isArchived: number;
+  last_activity: string;
+};
+
 const SESSION_ROW_COLUMNS =
   'session_id, provider, provider_session_id, project_path, jsonl_path, custom_name, model, effort, forked_from_session_id, isArchived, created_at, updated_at';
 
@@ -592,6 +603,83 @@ export const sessionsDb = {
       .all() as SessionRow[];
 
     return normalizeSessionRows(rows);
+  },
+
+  /**
+   * Finds sessions whose last activity is older than `cutoff`, oldest first.
+   *
+   * Used by the Session Retention module's cleanup pass and preview. "Last
+   * activity" is `COALESCE(updated_at, created_at)` — the same value the sidebar
+   * shows — which the provider synchronizers keep at the transcript's mtime and
+   * the app bumps on its own writes. A row whose timestamp SQLite cannot parse
+   * yields NULL from `julianday` and is therefore never selected.
+   *
+   * Always excluded, so the caller cannot forget them: `cursor` rows (not
+   * managed by the app), the given busy session ids, sessions with a pending
+   * scheduled message or a server-queued turn (both are activity that is
+   * still to come), and archived rows unless `includeArchived` is set.
+   * `total` counts every match; `sessions` holds at most `limit` of them.
+   */
+  findInactiveSessions(input: {
+    cutoff: Date;
+    includeArchived: boolean;
+    skipStarredProjects: boolean;
+    excludeSessionIds: readonly string[];
+    limit: number;
+  }): { sessions: InactiveSessionRow[]; total: number } {
+    const db = getConnection();
+    const whereClause = `
+      sessions.provider != 'cursor'
+      AND (@includeArchived = 1 OR sessions.isArchived = 0)
+      AND julianday(COALESCE(sessions.updated_at, sessions.created_at)) < julianday(@cutoff)
+      AND (@skipStarredProjects = 0 OR COALESCE(projects.isStarred, 0) = 0)
+      AND sessions.session_id NOT IN (SELECT value FROM json_each(@excludeSessionIds))
+      AND NOT EXISTS (
+        SELECT 1 FROM scheduled_messages
+        WHERE scheduled_messages.session_id = sessions.session_id
+          AND scheduled_messages.status = 'pending'
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM session_drafts
+        WHERE session_drafts.draft_scope = sessions.session_id
+          AND session_drafts.queued_message IS NOT NULL
+      )
+    `;
+    const parameters = {
+      cutoff: input.cutoff.toISOString(),
+      includeArchived: input.includeArchived ? 1 : 0,
+      skipStarredProjects: input.skipStarredProjects ? 1 : 0,
+      excludeSessionIds: JSON.stringify(input.excludeSessionIds),
+    };
+
+    const rows = db
+      .prepare(
+        `SELECT sessions.session_id, sessions.provider, sessions.custom_name, sessions.project_path,
+                projects.custom_project_name, sessions.isArchived,
+                COALESCE(sessions.updated_at, sessions.created_at) AS last_activity
+         FROM sessions
+         LEFT JOIN projects ON projects.project_path = sessions.project_path
+         WHERE ${whereClause}
+         ORDER BY julianday(COALESCE(sessions.updated_at, sessions.created_at)) ASC, sessions.session_id ASC
+         LIMIT @limit`
+      )
+      .all({ ...parameters, limit: input.limit }) as InactiveSessionRow[];
+    const countRow = db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM sessions
+         LEFT JOIN projects ON projects.project_path = sessions.project_path
+         WHERE ${whereClause}`
+      )
+      .get(parameters) as { count: number } | undefined;
+
+    return {
+      sessions: rows.map((row) => ({
+        ...row,
+        last_activity: normalizeTimestamp(row.last_activity) ?? row.last_activity,
+      })),
+      total: Number(countRow?.count ?? 0),
+    };
   },
 
   getSessionsByProjectPath(projectPath: string): SessionRow[] {

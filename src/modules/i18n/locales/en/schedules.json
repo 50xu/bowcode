@@ -1,0 +1,102 @@
+{
+  "title": "Schedules",
+  "loading": "Loading schedules…",
+  "runsWhileRunningNote": "Schedules only run while Bowcode is running. Runs missed while it is stopped are skipped, not caught up. Every run starts a new session.",
+  "paused": "Paused",
+  "nextRun": "Next run {{time}}",
+  "noNextRun": "No upcoming run",
+  "confirmDelete": "Delete the schedule \"{{name}}\"? Its run history goes too; the sessions it created stay.",
+  "empty": {
+    "title": "No schedules yet",
+    "description": "Create a schedule to run a prompt in a project on a recurring cadence."
+  },
+  "actions": {
+    "new": "New schedule",
+    "runNow": "Run now",
+    "pause": "Pause",
+    "resume": "Resume",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "status": {
+    "running": "Running",
+    "succeeded": "Succeeded",
+    "failed": "Failed",
+    "skipped": "Skipped",
+    "timed_out": "Timed out",
+    "interrupted": "Interrupted"
+  },
+  "cadence": {
+    "onceAt": "Once at {{time}}",
+    "everyHour": "Every hour at :{{minute}}",
+    "everyNHours_one": "Every hour at :{{minute}}",
+    "everyNHours_other": "Every {{count}} hours at :{{minute}}",
+    "dailyAt": "Daily at {{time}}",
+    "weekdaysAt": "Weekdays at {{time}}",
+    "weeklyAt": "Every {{day}} at {{time}}",
+    "custom": "Cron: {{cron}}"
+  },
+  "history": {
+    "title": "Run history",
+    "toggle": "Show run history",
+    "loading": "Loading runs…",
+    "empty": "No runs yet.",
+    "manual": "Manual",
+    "openSession": "Open session"
+  },
+  "providers": {
+    "claude": "Claude Code",
+    "codex": "Codex",
+    "opencode": "OpenCode"
+  },
+  "permissionModes": {
+    "default": "Default (ask)",
+    "auto": "Auto",
+    "acceptEdits": "Accept edits",
+    "bypassPermissions": "Bypass permissions",
+    "plan": "Plan"
+  },
+  "editor": {
+    "newTitle": "New schedule",
+    "editTitle": "Edit schedule",
+    "name": "Name",
+    "namePlaceholder": "Nightly dependency check",
+    "project": "Project",
+    "projectPlaceholder": "Choose a project",
+    "projectRequired": "Choose a project for this schedule.",
+    "provider": "Provider",
+    "model": "Model",
+    "defaultModel": "Default model",
+    "effort": "Effort",
+    "defaultEffort": "Default",
+    "permissionMode": "Permission mode",
+    "prompt": "Prompt",
+    "promptPlaceholder": "What should the agent do each time?",
+    "cadence": "When",
+    "modes": {
+      "hourly": "Every N hours",
+      "daily": "Daily",
+      "weekdays": "Weekdays",
+      "weekly": "Weekly",
+      "once": "Once",
+      "cron": "Advanced: cron"
+    },
+    "every": "Every",
+    "hours": "Hours",
+    "hoursAtMinute": "hour(s), at minute",
+    "minute": "Minute",
+    "day": "Day",
+    "time": "Time",
+    "runAt": "Date and time",
+    "runAtRequired": "Pick a date and time.",
+    "cronExpression": "Cron expression",
+    "cronHelp": "Five fields: minute hour day-of-month month day-of-week. At most once every 5 minutes.",
+    "timezone": "Time zone",
+    "preview": "Next runs",
+    "previewLoading": "Checking…",
+    "maxDuration": "Time limit (minutes)",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create schedule"
+  }
+}

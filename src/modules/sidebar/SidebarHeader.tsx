@@ -1,4 +1,4 @@
-import { FolderPlus, Plus, RefreshCw, Search, X, PanelLeftClose } from 'lucide-react';
+import { CalendarClock, FolderPlus, Plus, RefreshCw, Search, X, PanelLeftClose } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { BrandMark, Button, Input } from '@/shared/ui';
@@ -23,6 +23,8 @@ type SidebarHeaderProps = {
   onSearchModeChange: (mode: SidebarSearchMode) => void;
   onRefresh: () => void;
   isRefreshing: boolean;
+  /** Opens the schedules dialog (recurring prompts across all projects). */
+  onOpenSchedules: () => void;
   onCreateProject: () => void;
   onCollapseSidebar: () => void;
   t: TFunction;
@@ -40,7 +42,7 @@ function LogoBlock({ t }: { t: TFunction }) {
   );
 }
 
-/** Rendered by SidebarContent at the top of the panel for the search box, search-mode tabs, refresh and new-project actions. */
+/** Rendered by SidebarContent at the top of the panel for the search box, search-mode tabs, refresh, schedules and new-project actions. */
 export default function SidebarHeader({
   isPWA,
   isMobile,
@@ -56,6 +58,7 @@ export default function SidebarHeader({
   onSearchModeChange,
   onRefresh,
   isRefreshing,
+  onOpenSchedules,
   onCreateProject,
   onCollapseSidebar,
   t,
@@ -93,6 +96,16 @@ export default function SidebarHeader({
                   isRefreshing ? 'animate-spin' : ''
                 }`}
               />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 rounded-[10px] p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={onOpenSchedules}
+              title={t('tooltips.schedules')}
+              aria-label={t('tooltips.schedules')}
+            >
+              <CalendarClock className="h-3.5 w-3.5" />
             </Button>
             <Button
               variant="ghost"
@@ -175,6 +188,14 @@ export default function SidebarHeader({
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-4 w-4 text-muted-foreground ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-card text-muted-foreground transition-all active:scale-95"
+              onClick={onOpenSchedules}
+              title={t('tooltips.schedules')}
+              aria-label={t('tooltips.schedules')}
+            >
+              <CalendarClock className="h-4 w-4" />
             </button>
             <button
               className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-card text-primary transition-all active:scale-95"

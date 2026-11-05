@@ -1,4 +1,5 @@
 import {
+  Archive,
   Bell,
   Bot,
   GitBranch,
@@ -66,6 +67,7 @@ export const SETTINGS_MAIN_TABS: SettingsMainTabMeta[] = [
   { id: 'tasks', label: 'Tasks', keywords: 'tasks taskmaster', icon: ListChecks },
   { id: 'browser', label: 'Browser', keywords: 'browser playwright chromium automation', icon: MonitorPlay },
   { id: 'notifications', label: 'Notifications', keywords: 'notifications alerts push', icon: Bell },
+  { id: 'sessions', label: 'Sessions', keywords: 'sessions conversations cleanup archive delete inactive retention', icon: Archive },
   { id: 'plugins', label: 'Plugins', keywords: 'plugins extensions integrations', icon: Plug },
   { id: 'sync', label: 'Sync', keywords: 'settings sync github repository', icon: RefreshCw },
   { id: 'about', label: 'About', keywords: 'about version info', icon: Info },

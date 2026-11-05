@@ -244,7 +244,10 @@ export type GatewayEventKind =
   | 'session_upserted'
   | 'loading_progress'
   | 'protocol_error'
-  | 'scheduled_messages_changed';
+  | 'scheduled_messages_changed'
+  | 'schedules_changed'
+  // Sessions archived or deleted by the server itself (inactive-session cleanup).
+  | 'sessions_removed';
 
 /**
  * Complete set of `kind` values emitted to websocket clients.
@@ -973,6 +976,36 @@ export type CreateCredentialResult = {
 };
 
 // ---------------------------
+//----------------- SESSION RETENTION TYPES ------------
+/**
+ * What the inactive-session cleanup does to a session it selects.
+ *
+ * `archive` hides the session exactly like the sidebar's Archive action
+ * (restorable, nothing on disk changes). `delete` removes it exactly like the
+ * sidebar's permanent delete: the database row is dropped and the session's
+ * Claude/Codex transcript files are removed from disk. Used by the
+ * Session Retention service and its route parser.
+ */
+export type SessionRetentionAction = 'archive' | 'delete';
+
+/**
+ * Server-persisted configuration of the inactive-session cleanup.
+ *
+ * Stored as one JSON document in `app_config` so the background pass runs with
+ * no browser open. `inactiveDays` is the whole number of days (1..3650) a
+ * session's last activity must be older than before it is selected.
+ * `skipStarredProjects` protects every session of a starred project, since the
+ * app has no per-session pin. Used by the Session Retention service (read,
+ * merge, validate) and its routes (which parse a partial patch of it).
+ */
+export type SessionRetentionSettings = {
+  enabled: boolean;
+  inactiveDays: number;
+  action: SessionRetentionAction;
+  skipStarredProjects: boolean;
+};
+
+// ---------------------------
 //----------------- CHAT DRAFT QUEUE TYPES ------------
 /**
  * A chat message queued to be sent when its session is next idle, in the shape
@@ -1651,4 +1684,65 @@ export type CliApplication = {
  */
 export type SandboxCommandService = {
   execute(argumentsList: string[]): Promise<number>;
+};
+
+// ---------------------------
+//----------------- RECURRING SCHEDULE TYPES ------------
+
+/**
+ * How a schedule decides when to fire.
+ *
+ * `once` fires a single time at `run_at` and then disables itself; `cron`
+ * fires at every match of a five-field cron expression read in the schedule's
+ * IANA time zone. Shared by the database repositories and the schedules
+ * module's service, runner and routes.
+ */
+export type ScheduleKind = 'once' | 'cron';
+
+/**
+ * What started one schedule run: the poll loop reaching `next_run_at`
+ * (`scheduled`) or the user pressing "Run now" (`manual`, which never moves
+ * `next_run_at`).
+ */
+export type ScheduleRunTrigger = 'scheduled' | 'manual';
+
+/**
+ * Lifecycle of one schedule run, as stored in `schedule_runs.status` and
+ * mirrored onto `schedules.last_status`.
+ *
+ * - `running`: the provider turn is in progress.
+ * - `succeeded`: the turn completed with exit code 0 and no provider error.
+ * - `failed`: the turn could not start, threw, exited non-zero or reported a
+ *   provider error.
+ * - `skipped`: the fire was not run at all (missed while the server was down,
+ *   the previous run of the same schedule still going, ...); `error` says why.
+ * - `timed_out`: the run exceeded `max_duration_minutes` and was aborted.
+ * - `interrupted`: the run was aborted by someone else, or the server stopped
+ *   while it was going.
+ */
+export type ScheduleRunStatus = 'running' | 'succeeded' | 'failed' | 'skipped' | 'timed_out' | 'interrupted';
+
+/**
+ * Validated, typed fields for creating or updating a schedule, produced by the
+ * schedules routes from the request body and consumed by the schedules
+ * service. Every field is optional so the same shape serves PATCH; the service
+ * enforces which fields a create requires and re-validates the merged result.
+ *
+ * `runAt` is an ISO instant (one-off schedules); `cronExpression` is a
+ * five-field expression read in `timezone` (an IANA zone name).
+ */
+export type ScheduleWriteInput = {
+  name?: string;
+  projectId?: string;
+  provider?: LLMProvider;
+  model?: string | null;
+  effort?: string | null;
+  permissionMode?: string;
+  prompt?: string;
+  kind?: ScheduleKind;
+  cronExpression?: string | null;
+  runAt?: string | null;
+  timezone?: string;
+  maxDurationMinutes?: number;
+  enabled?: boolean;
 };
