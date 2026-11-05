@@ -164,9 +164,10 @@ export async function executeScheduleRun(job: ScheduleRunJob, dependencies: Sche
 
   let timer: ReturnType<typeof setTimeout> | null = null;
   const timeout = new Promise<{ kind: 'timeout' }>((resolve) => {
+    // Deliberately not unref'd: it is cleared as soon as the turn settles, and
+    // an unref'd timer as the only pending work lets Node 22 treat the event
+    // loop as idle while the turn is still being awaited.
     timer = setTimeout(() => resolve({ kind: 'timeout' }), maxDurationMs);
-    // A run's time limit must never keep the process alive on its own.
-    (timer as { unref?: () => void }).unref?.();
   });
 
   const first = await Promise.race([turn, timeout]);
@@ -183,7 +184,9 @@ export async function executeScheduleRun(job: ScheduleRunJob, dependencies: Sche
       console.error('[Schedules] Could not abort a timed-out run', { scheduleId: schedule.id, sessionId, error: message });
     }
     // Give the provider a moment to wind down; never wait on it indefinitely.
-    await Promise.race([turn, new Promise((resolve) => setTimeout(resolve, ABORT_GRACE_MS).unref?.())]);
+    let graceTimer: ReturnType<typeof setTimeout> | null = null;
+    await Promise.race([turn, new Promise((resolve) => { graceTimer = setTimeout(resolve, ABORT_GRACE_MS); })]);
+    if (graceTimer) clearTimeout(graceTimer);
     const minutes = Math.round(maxDurationMs / 60_000);
     settleRun(
       schedule.id,
