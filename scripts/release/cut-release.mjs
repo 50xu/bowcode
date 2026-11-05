@@ -27,8 +27,9 @@ try {
   const tag = `v${version}`;
   run('git', ['add', '--', 'package.json', 'package-lock.json']);
   run('git', ['commit', '-m', `chore(release): ${tag}`]);
-  run('git', ['tag', tag]);
-  run('git', ['push', 'origin', 'main', '--follow-tags']);
+  run('git', ['tag', '-a', tag, '-m', `Bowcode ${tag}`]);
+  run('git', ['push', 'origin', 'main']);
+  run('git', ['push', 'origin', tag]);
   console.log(`Release workflow: https://github.com/vantran-se/bowcode/actions/workflows/release.yml`);
   console.log(`Tag: ${tag}`);
 } catch (error) {
