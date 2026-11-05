@@ -156,13 +156,14 @@ function SidebarSessionItem({
   return (
     <div className="group relative">
       {(showAttentionIndicator || showBackgroundIndicator || showRecentIndicator) && (
-        <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 transform">
+        <div className="absolute left-0 top-1/2 -translate-x-[calc(100%+1px)] -translate-y-1/2">
+          {/* In the gutter left of the row, clear of its hover/selected background. */}
           <Tooltip content={indicatorLabel} position="right">
             <div
               role="status"
               aria-label={indicatorLabel}
               className={cn(
-                'h-2 w-2 animate-pulse rounded-full',
+                'h-1.5 w-1.5 animate-pulse rounded-full',
                 showAttentionIndicator
                   ? 'bg-amber-500'
                   : showBackgroundIndicator

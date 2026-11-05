@@ -178,7 +178,8 @@ export default function SidebarRecentConversations({
                 * which carries no information in a list ordered by recency.
                 */}
               {showAttentionIndicator && (
-                <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 transform">
+                <div className="absolute left-0 top-1/2 -translate-x-[calc(100%+1px)] -translate-y-1/2">
+          {/* In the gutter left of the row, clear of its hover/selected background. */}
                   <Tooltip
                     content={t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })}
                     position="right"
@@ -186,7 +187,7 @@ export default function SidebarRecentConversations({
                     <div
                       role="status"
                       aria-label={t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })}
-                      className="h-2 w-2 animate-pulse rounded-full bg-amber-500"
+                      className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"
                     />
                   </Tooltip>
                 </div>
