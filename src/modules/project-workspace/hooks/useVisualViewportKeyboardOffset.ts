@@ -18,9 +18,16 @@ export function useVisualViewportKeyboardOffset() {
 
     let settleTimer: ReturnType<typeof setTimeout> | null = null;
     const root = document.documentElement;
+    // 100vh in px. iOS standalone PWAs under-report innerHeight by the status
+    // bar while drawing full screen; the shell is sized from 100vh there, so
+    // the keyboard is measured against the same full height.
+    const fullHeightProbe = document.createElement('div');
+    fullHeightProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100vh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(fullHeightProbe);
 
     const updateKeyboardHeight = () => {
-      const covered = window.innerHeight - visualViewport.height - visualViewport.offsetTop;
+      const fullHeight = Math.max(window.innerHeight, fullHeightProbe.offsetHeight);
+      const covered = fullHeight - visualViewport.height - visualViewport.offsetTop;
       const keyboardHeight = covered >= MIN_KEYBOARD_HEIGHT_PX ? Math.round(covered) : 0;
       root.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
     };
@@ -45,6 +52,7 @@ export function useVisualViewportKeyboardOffset() {
       window.removeEventListener('focusout', updateAfterSettle);
       window.removeEventListener('orientationchange', updateAfterSettle);
       root.style.removeProperty('--keyboard-height');
+      fullHeightProbe.remove();
     };
   }, []);
 }
