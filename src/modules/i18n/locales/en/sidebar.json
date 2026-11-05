@@ -123,7 +123,8 @@
     "deleteSessionsPartialFailure_other": "{{count}} of {{total}} sessions could not be deleted. Please try again."
   },
   "version": {
-    "restartRequired": "Update installed — restart the server to apply"
+    "restartRequired": "Update installed — restart the server to apply",
+    "updateAvailable": "Bowcode update available"
   },
   "search": {
     "modeProjects": "Projects",

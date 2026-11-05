@@ -13,9 +13,24 @@ Bowcode is self-hosted; vendor, Pro and hosted services are not included.
 
 ## Install
 
-Requires Node.js 22 or newer and a configured Claude Code, Codex or OpenCode CLI.
+Requires Linux or macOS, Node.js 22 or newer, npm, and a configured Claude Code, Codex or OpenCode CLI.
 
-From a source checkout (the fork is not published to npm):
+```sh
+curl -fsSL https://raw.githubusercontent.com/vantran-se/bowcode/main/install.sh | bash
+```
+
+The installer downloads the latest GitHub Release tarball and installs a background service on port 3001. To pin a version or skip the service, download `install.sh` and run `bash install.sh --version v1.38.0 --no-service` (use `--port N` to change the port).
+
+For a manual install:
+
+```sh
+npm install -g https://github.com/vantran-se/bowcode/releases/latest/download/bowcode.tgz --allow-scripts=bowcode,bcrypt,better-sqlite3,node-pty
+bowcode service install --port 3001
+```
+
+Open `http://<hostname>:3001` and create an account. Run `bowcode update` for future releases. Configuration and local data are stored under `~/.bowcode`.
+
+To run from source instead:
 
 ```sh
 git clone https://github.com/vantran-se/bowcode.git
@@ -25,9 +40,7 @@ npm run build
 node dist-server/server/modules/cli/cli.js start
 ```
 
-If you package the CLI locally, its executable name is `bowcode`.
-
-Open `http://localhost:3001` in your browser. Configuration and local data are stored under `~/.bowcode`. For development, run `npm run dev` from the repository root.
+For development, run `npm run dev` from the repository root.
 
 ## Desktop
 

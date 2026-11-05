@@ -4,6 +4,7 @@ import {
   storeAuthToken,
 } from '@/shared/authToken';
 import { readVoiceConfig, voiceConfigHeaders } from '@/shared/voiceConfig';
+import type { AppUpdateStatus } from '@/shared/types';
 
 // Headers are a plain record rather than the full `HeadersInit` union so the
 // defaults below can be merged with a caller's headers by spreading.
@@ -212,6 +213,16 @@ export const api = {
     }),
     refresh: () => post('/api/auth/refresh'),
     user: () => get('/api/auth/user'),
+  },
+
+  // Application updates. Health stays unauthenticated while the server restarts.
+  updates: {
+    get: async () => {
+      const response = await get('/api/updates');
+      return readApiJson<AppUpdateStatus>(response);
+    },
+    apply: () => post('/api/updates/apply'),
+    health: () => fetch('/health', { cache: 'no-store' }),
   },
 
   // Protected endpoints

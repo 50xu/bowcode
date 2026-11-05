@@ -76,14 +76,15 @@ test('passes only sandbox arguments to the injected sandbox service', async () =
   assert.deepEqual(harness.getSandboxArguments(), ['ls']);
 });
 
-test('help and status present Bowcode command examples without an update command', async () => {
+test('help and status present Bowcode command examples with update command', async () => {
   const harness = createHarness();
 
   assert.equal(await harness.service.run(['help']), 0);
   const help = harness.logMessages.join('\n');
   assert.match(help, /Bowcode - Command Line Tool/);
   assert.match(help, /bowcode \[command\] \[options\]/);
-  assert.doesNotMatch(help, /claude-code-ui|cloudcli|\bupdate\b/i);
+  assert.doesNotMatch(help, /claude-code-ui|cloudcli/i);
+  assert.match(help, /update\s+Check for or install a release/);
 
   assert.equal(await harness.service.run(['status']), 0);
   const status = harness.logMessages.join('\n');
@@ -91,11 +92,10 @@ test('help and status present Bowcode command examples without an update command
   assert.match(status, /bowcode --port 8080/);
 });
 
-test('update is no longer a CLI command', async () => {
+test('version reports package version and installation mode', async () => {
   const harness = createHarness();
-
-  assert.equal(await harness.service.run(['update']), 1);
-  assert.match(harness.errorMessages[0], /Unknown command: update/);
+  assert.equal(await harness.service.run(['--version']), 0);
+  assert.match(harness.logMessages[0], /1\.2\.3 \(npm\)/);
 });
 
 test('returns a failure code for an unknown command without exiting the process', async () => {

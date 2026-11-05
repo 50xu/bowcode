@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify release tag
+        id: metadata
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" != tag ]; then
+            echo 'Dispatch this workflow on a release tag (vX.Y.Z).' >&2
+            exit 1
+          fi
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v${VERSION}"
+          if [ "$REF_NAME" != "$TAG" ]; then
+            echo "Tag $REF_NAME does not match package version $VERSION" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci --allow-scripts=bcrypt,better-sqlite3,node-pty,esbuild
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Pack release
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          npm pack
+          test -f "bowcode-${VERSION}.tgz"
+          cp "bowcode-${VERSION}.tgz" bowcode.tgz
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.metadata.outputs.tag }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: gh release create "$TAG" "bowcode-${VERSION}.tgz" bowcode.tgz install.sh --title "Bowcode $TAG" --generate-notes

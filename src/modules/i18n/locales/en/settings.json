@@ -908,7 +908,22 @@
     "license": "License",
     "origin": "Origin",
     "basedOn": "A modified fork of",
-    "notAffiliated": "Not affiliated with or endorsed by Siteboon AI B.V."
+    "notAffiliated": "Not affiliated with or endorsed by Siteboon AI B.V.",
+    "update": {
+      "title": "Application updates",
+      "checking": "Checking for updates…",
+      "upToDate": "Up to date",
+      "available": "Version {{version}} available",
+      "releaseNotes": "View release notes",
+      "updateNow": "Update now",
+      "confirm": "Update Bowcode now? The server will restart and this page will reload when it is back.",
+      "updating": "Updating… the page will reload when Bowcode is back.",
+      "checkAgain": "Check again",
+      "checkFailed": "Could not check for updates.",
+      "applyFailed": "Could not start the update.",
+      "manualPackage": "Run bowcode update on the server to install this version.",
+      "manualGit": "Run git pull && npm ci && npm run build on the server to install this version."
+    }
   },
   "navGroups": {
     "agents": "Agents",

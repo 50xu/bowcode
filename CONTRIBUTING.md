@@ -136,20 +136,13 @@ feat!: redesign settings page layout
 
 ## Releases
 
-Releases are managed by maintainers using [release-it](https://github.com/release-it/release-it) with the [conventional changelog plugin](https://github.com/release-it/conventional-changelog).
+Maintainers cut releases from a clean `main` branch:
 
 ```bash
-npm run release           # interactive (prompts for version bump)
-npm run release -- patch  # patch release
-npm run release -- minor  # minor release
+npm run release -- minor
 ```
 
-This automatically:
-- Bumps the version based on commit types (`feat` = minor, `fix` = patch)
-- Generates categorized release notes
-- Updates `CHANGELOG.md`
-- Creates a git tag and GitHub Release
-- Does not publish to npm automatically
+Use `patch`, `minor`, `major`, or an explicit `x.y.z` version. The helper updates `package.json` and `package-lock.json`, commits the version bump, tags it, and pushes `main` and the tag to `origin`. GitHub Actions tests, builds, packs, and publishes the release tarball and installer to GitHub Releases. Releases are not published to npm.
 
 ## License
 

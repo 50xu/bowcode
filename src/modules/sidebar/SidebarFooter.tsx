@@ -1,5 +1,13 @@
 import { Settings, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { TFunction } from 'i18next';
+
+import { api } from '@/shared/api';
+
+// Reuse the last sidebar check across remounts; never request more than once an hour.
+let lastChecked = 0;
+let cachedAvailable = false;
+let pendingCheck: Promise<boolean> | null = null;
 
 
 type SidebarFooterProps = {
@@ -15,6 +23,29 @@ type SidebarFooterProps = {
  * with the running version tucked in at the right.
  */
 export default function SidebarFooter({ restartRequired, currentVersion, onShowSettings, t }: SidebarFooterProps) {
+  // Only a confirmed available update lights the settings indicator.
+  const [updateAvailable, setUpdateAvailable] = useState(cachedAvailable);
+
+  useEffect(() => {
+    let active = true;
+    if (Date.now() - lastChecked < 60 * 60 * 1000) return;
+    pendingCheck ??= api.updates.get()
+      .then((status) => {
+        cachedAvailable = status.updateAvailable;
+        lastChecked = Date.now();
+        return cachedAvailable;
+      })
+      .catch(() => {
+        lastChecked = Date.now();
+        return cachedAvailable;
+      })
+      .finally(() => { pendingCheck = null; });
+    void pendingCheck.then((available) => {
+      if (active) setUpdateAvailable(available);
+    });
+    return () => { active = false; };
+  }, []);
+
   return (
     <div
       className="flex-shrink-0 border-t border-border px-2 pt-1.5"
@@ -33,6 +64,9 @@ export default function SidebarFooter({ restartRequired, currentVersion, onShowS
       >
         <Settings className="h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover:rotate-45" />
         <span className="min-w-0 flex-1 truncate">{t('actions.settings')}</span>
+        {updateAvailable && (
+          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" title={t('version.updateAvailable')} aria-label={t('version.updateAvailable')} />
+        )}
         {currentVersion && (
           <span className="flex-shrink-0 text-[11px] tabular-nums text-muted-foreground/60">v{currentVersion}</span>
         )}

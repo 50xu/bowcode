@@ -19,6 +19,8 @@ type CliServiceDependencies = {
   fileSystem: CliFileSystem;
   output: CliOutput;
   sandboxService: SandboxCommandService;
+  updateCommand?: (argumentsList: string[]) => Promise<number>;
+  serviceCommand?: (argumentsList: string[]) => Promise<number>;
   startServer(): Promise<void>;
   startBrowserUseMcp(): Promise<void>;
 };
@@ -51,11 +53,13 @@ function parseCliArguments(argumentsList: string[]): ParsedCliArguments {
       parsedArguments.options.databasePath = argument.slice('--database-path='.length);
     } else if (argument === '--help' || argument === '-h') {
       parsedArguments.command = 'help';
-    } else if (argument === '--version' || argument === '-v') {
+    } else if ((argument === '--version' || argument === '-v') && parsedArguments.command !== 'update') {
       parsedArguments.command = 'version';
+    } else if (argument === '--version' && parsedArguments.command === 'update') {
+      argumentIndex += 1;
     } else if (!argument.startsWith('-')) {
       parsedArguments.command = argument;
-      if (argument === 'sandbox') {
+      if (['sandbox', 'update', 'service'].includes(argument)) {
         parsedArguments.remainingArguments = argumentsList.slice(argumentIndex + 1);
         break;
       }
@@ -127,7 +131,9 @@ Commands:
   browser-use-mcp  Run Browser MCP stdio server
   status           Show configuration and data locations
   help             Show this help information
-  version          Show version information
+  version          Show version and installation mode
+  update           Check for or install a release
+  service          Manage the background service
 
 Options:
   -p, --port <port>           Set server port (default: 3001)
@@ -191,8 +197,12 @@ export function createCliService(dependencies: CliServiceDependencies): CliAppli
           showHelp(dependencies);
           return 0;
         case 'version':
-          dependencies.output.log(dependencies.packageMetadata.version);
+          dependencies.output.log(`${dependencies.packageMetadata.version} (${dependencies.fileSystem.pathExists(path.join(dependencies.applicationRoot, '.git')) ? 'git' : 'npm'})`);
           return 0;
+        case 'update':
+          return dependencies.updateCommand ? dependencies.updateCommand(parsedArguments.remainingArguments) : 1;
+        case 'service':
+          return dependencies.serviceCommand ? dependencies.serviceCommand(parsedArguments.remainingArguments) : 1;
         default:
           dependencies.output.error(`\n❌ Unknown command: ${parsedArguments.command}`);
           dependencies.output.log('   Run "bowcode help" for usage information.\n');

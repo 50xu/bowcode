@@ -1,7 +1,10 @@
 import { ExternalLink } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { APP_VERSION, PROJECT_REPO_URL } from '@/shared/constants';
+import { api, readApiJson, ApiRequestError } from '@/shared/api';
+import type { AppUpdateStatus } from '@/shared/types';
 import { BrandMark } from '@/shared/ui';
 import SettingsCard from '@/modules/settings/SettingsCard';
 
@@ -21,6 +24,72 @@ const UPSTREAM_URL = 'https://github.com/siteboon/claudecodeui';
  */
 export default function AboutTab() {
   const { t } = useTranslation('settings');
+  // The server's update eligibility and available release control this row.
+  const [update, setUpdate] = useState<AppUpdateStatus | null>(null);
+  // A failed check should not be mistaken for an up-to-date installation.
+  const [checkError, setCheckError] = useState<string | null>(null);
+  // The apply request may disconnect as the server restarts; keep this state until reload.
+  const [updating, setUpdating] = useState(false);
+  // Prevent overlapping manual checks while one request is in flight.
+  const [checking, setChecking] = useState(true);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  const checkUpdates = useCallback(async () => {
+    try {
+      const status = await api.updates.get();
+      if (mounted.current) {
+        setUpdate(status);
+        setCheckError(status.error ?? null);
+      }
+    } catch (error) {
+      if (mounted.current) setCheckError(error instanceof Error ? error.message : t('about.update.checkFailed'));
+    } finally {
+      if (mounted.current) setChecking(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    // The request resolves asynchronously; it is safe to update state when it returns.
+    const timer = window.setTimeout(() => { void checkUpdates(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [checkUpdates]);
+
+  async function applyUpdate() {
+    if (!update?.canSelfUpdate || !update.updateAvailable || updating ||
+      !window.confirm(t('about.update.confirm'))) return;
+    setUpdating(true);
+    try {
+      const response = await api.updates.apply();
+      if (!response.ok) await readApiJson(response);
+    } catch (error) {
+      // A dropped connection can mean the server is already restarting, but an
+      // explicit refusal means no update started and should allow another attempt.
+      if (error instanceof ApiRequestError) {
+        if (mounted.current) setUpdating(false);
+      }
+      if (mounted.current) setCheckError(error instanceof Error ? error.message : t('about.update.applyFailed'));
+    }
+  }
+
+  useEffect(() => {
+    if (!updating) return;
+    const timer = window.setInterval(async () => {
+      try {
+        const response = await api.updates.health();
+        if (!response.ok) return;
+        const health = await response.json() as { version?: string };
+        if (health.version && health.version !== update?.current) window.location.reload();
+      } catch {
+        // The server is temporarily unavailable during replacement.
+      }
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [updating, update]);
 
   return (
     <div className="space-y-8">
@@ -36,6 +105,36 @@ export default function AboutTab() {
       </div>
 
       <SettingsCard divided>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3.5 text-sm">
+          <div className="min-w-48 flex-1 space-y-1">
+            <div className="text-foreground">{t('about.update.title')}</div>
+            <p role="status" className="text-muted-foreground">
+              {updating ? t('about.update.updating') : checking && !update ? t('about.update.checking')
+                : checkError ? t('about.update.checkFailed')
+                  : update?.updateAvailable ? t('about.update.available', { version: update.latest })
+                    : update ? t('about.update.upToDate') : t('about.update.checking')}
+            </p>
+            {checkError && <p role="alert" className="text-red-600 dark:text-red-400">{checkError}</p>}
+            {update?.updateAvailable && !update.canSelfUpdate && (
+              <p className="text-muted-foreground">
+                {update.installMode === 'git' ? t('about.update.manualGit') : t('about.update.manualPackage')}
+              </p>
+            )}
+            {update?.updateAvailable && update.releaseUrl && (
+              <a href={update.releaseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                {t('about.update.releaseNotes')} <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+          {update?.updateAvailable && update.canSelfUpdate && (
+            <button type="button" disabled={updating || checking} onClick={() => { void applyUpdate(); }} className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground disabled:opacity-50">
+              {t('about.update.updateNow')}
+            </button>
+          )}
+          <button type="button" disabled={checking || updating} onClick={() => { setChecking(true); void checkUpdates(); }} className="rounded-md border border-border px-3 py-1.5 text-foreground disabled:opacity-50">
+            {t('about.update.checkAgain')}
+          </button>
+        </div>
         <a
           href={PROJECT_REPO_URL}
           target="_blank"

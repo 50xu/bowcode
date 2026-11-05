@@ -57,6 +57,7 @@ import browserUseMcpRoutes from './modules/browser-use/browser-use-mcp.routes.js
 import { browserUseService } from './modules/browser-use/browser-use.service.js';
 import { initializeDatabase, sessionsDb } from './modules/database/index.js';
 import { configureWebPush } from './modules/notifications/index.js';
+import { updatesRoutes } from './modules/updates/index.js';
 
 const __dirname = getModuleDirectory(import.meta.url);
 // The server source runs from /server, while the compiled output runs from /dist-server/server.
@@ -159,6 +160,9 @@ app.use('/api/taskmaster', authenticateToken, taskmasterRoutes);
 
 // Commands API Routes (protected)
 app.use('/api/commands', authenticateToken, commandsRoutes);
+
+// Release updates API (protected)
+app.use('/api/updates', authenticateToken, updatesRoutes);
 
 // Settings API Routes (protected)
 app.use('/api/settings', authenticateToken, settingsRoutes);

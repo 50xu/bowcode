@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn as nodeSpawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,6 +12,8 @@ import { findApplicationRoot, getModuleDirectory } from '@/shared/utils.js';
 
 import { createCliService } from './cli.service.js';
 import { createSandboxCommandService } from './sandbox.service.js';
+import { createUpdateCommand } from './update.service.js';
+import { createServiceCommand } from './service.service.js';
 
 /**
  * Creates the production CLI application for the executable entrypoint. This is
@@ -71,6 +73,46 @@ export function createCliApplication(): CliApplication {
     fileSystem,
     output,
     sandboxService,
+    updateCommand: createUpdateCommand({
+      root: applicationRoot, current: packageMetadata.version, platform: process.platform,
+      uid: process.getuid?.() ?? 0, home: homeDirectory, exists: fs.existsSync,
+      releaseLock: () => {
+        if (process.env.BOWCODE_UPDATE_LOCK !== '1') return;
+        try { fs.unlinkSync(path.join(homeDirectory, '.bowcode/update.lock')); } catch { /* already removed */ }
+      },
+      log: output.log, error: output.error,
+      fetchRelease: async (url) => {
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'bowcode-cli', Accept: 'application/vnd.github+json' },
+          signal: AbortSignal.timeout(10_000),
+        });
+        return { ok: response.ok, status: response.status, json: () => response.json() as Promise<{ tag_name?: string }> };
+      },
+      spawn: (command, args) => new Promise((resolve, reject) => {
+        const child = spawn(command, args, { stdio: 'inherit', shell: false, env: { ...process.env, BOWCODE_UPDATE_LOCK: '' } });
+        child.once('error', reject);
+        child.once('close', (code) => resolve(code ?? 1));
+      }),
+      exec: async (command, args) => new Promise((resolve) => {
+        const child = nodeSpawn(command, args, { stdio: 'ignore', shell: false });
+        child.once('error', () => resolve(false));
+        child.once('close', (code) => resolve(code === 0));
+      }),
+    }),
+    serviceCommand: createServiceCommand({
+      platform: process.platform, home: homeDirectory, uid: process.getuid?.() ?? 0,
+      nodePath: process.execPath, cliPath: path.join(applicationRoot, 'dist-server/server/modules/cli/cli.js'),
+      pathEnv: process.env.PATH || '', exists: fs.existsSync,
+      read: (filePath) => fs.readFileSync(filePath, 'utf8'),
+      write: (filePath, content) => fs.writeFileSync(filePath, content, { mode: 0o600 }),
+      mkdir: (directory) => fs.mkdirSync(directory, { recursive: true }), remove: fs.unlinkSync,
+      log: output.log, error: output.error,
+      exec: async (command, args) => new Promise((resolve) => {
+        const child = nodeSpawn(command, args, { stdio: 'ignore', shell: false });
+        child.once('error', () => resolve(false));
+        child.once('close', (code) => resolve(code === 0));
+      }),
+    }),
     startServer: async () => {
       // The server executable is an entrypoint rather than a feature module,
       // so it has no barrel contract to import through.

@@ -1502,3 +1502,18 @@ export function findApplicationRoot(startDirectory: string): string {
     ? path.dirname(parentDirectory)
     : parentDirectory;
 }
+
+/**
+ * True when release version `candidate` (x.y.z, optional leading "v") is newer
+ * than `current`. Used by the update check in the CLI and the Updates API, so a
+ * build that is ahead of the latest release is never told to "update" backwards.
+ */
+export function isNewerVersion(candidate: string, current: string): boolean {
+  const parse = (value: string) => value.replace(/^v/, '').split(/[-+]/)[0].split('.').map((part) => Number(part) || 0);
+  const a = parse(candidate);
+  const b = parse(current);
+  for (let index = 0; index < 3; index += 1) {
+    if ((a[index] ?? 0) !== (b[index] ?? 0)) return (a[index] ?? 0) > (b[index] ?? 0);
+  }
+  return false;
+}

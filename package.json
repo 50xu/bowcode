@@ -1,6 +1,6 @@
 {
   "name": "bowcode",
-  "version": "1.37.7",
+  "version": "1.38.0",
   "productName": "Bowcode",
   "description": "Self-hosted remote web UI for Claude Code, Codex and OpenCode",
   "type": "module",
@@ -9,15 +9,18 @@
     "bowcode": "dist-server/server/modules/cli/cli.js"
   },
   "files": [
-    "electron/",
-    "server/",
     "shared/",
     "public/api-docs.html",
     "dist/",
     "dist-server/",
     "scripts/",
-    "README.md"
+    "install.sh",
+    "README.md",
+    "NOTICE"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "homepage": "https://github.com/vantran-se/bowcode",
   "repository": {
     "type": "git",
@@ -55,7 +58,7 @@
     "lint:client": "oxlint src/",
     "lint:fix": "oxlint src/ server/ --fix",
     "start": "npm run build && npm run server",
-    "release": "./release.sh",
+    "release": "node scripts/release/cut-release.mjs",
     "prepublishOnly": "npm run build",
     "postinstall": "node scripts/fix-node-pty.js",
     "prepare": "husky",
@@ -192,7 +195,6 @@
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
-    "@release-it/conventional-changelog": "^10.0.5",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/better-sqlite3": "^7.6.13",
@@ -225,7 +227,6 @@
     "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",
     "postcss": "^8.4.32",
-    "release-it": "^19.0.5",
     "sharp": "^0.34.2",
     "tailwindcss": "^3.4.0",
     "tsc-alias": "^1.8.16",

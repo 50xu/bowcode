@@ -273,6 +273,22 @@ export type QueueItemStatus = 'completed' | 'in_progress' | 'pending';
 
 // ---------------------------
 
+//----------------- APPLICATION UPDATES ------------
+
+/** Server-reported installed and available versions; use canSelfUpdate to gate the in-app updater. */
+export type AppUpdateStatus = {
+  current: string;
+  latest: string | null;
+  updateAvailable: boolean;
+  installMode: string;
+  canSelfUpdate: boolean;
+  releaseUrl: string | null;
+  checkedAt: string | null;
+  error?: string | null;
+};
+
+// ---------------------------
+
 //----------------- AUTH ------------
 
 
