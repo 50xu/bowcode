@@ -56,7 +56,8 @@
     "clearSearch": "Clear search",
     "openCommandPalette": "Open command palette",
     "attentionRequiredIndicator": "Session needs attention",
-    "backgroundWorkIndicator": "Background work running"
+    "backgroundWorkIndicator": "Background work running",
+    "projectOptions": "Project options"
   },
   "navigation": {
     "chat": "Chat",
@@ -171,5 +172,11 @@
     "archiveSessions_other": "Archive {{count}} sessions",
     "archiveSessionsNotice_one": "Archive keeps the session out of the active list while preserving its history.",
     "archiveSessionsNotice_other": "Archive keeps the sessions out of the active list while preserving their history."
+  },
+  "projectMenu": {
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "rename": "Rename",
+    "remove": "Remove from sidebar"
   }
 }

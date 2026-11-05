@@ -1,9 +1,10 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Check, ChevronRight, Edit3, Plus, Star, Trash2, X } from 'lucide-react';
+import { Check, ChevronRight, Edit3, MoreHorizontal, Plus, Star, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { cn } from '@/shared/utils';
+import { ActionMenu } from '@/shared/ui';
 import type { LLMProvider, MCPServerStatus, Project, ProjectSession, SessionWithProvider, SidebarSessionSelection } from '@/shared/types';
 import { getTaskIndicatorStatus } from '@/modules/sidebar/utils/sidebarProjectFormatting';
 import { getProjectIdentity, getProjectSummary } from '@/modules/sidebar/utils/projectIdentity';
@@ -133,6 +134,8 @@ function SidebarProjectItem({
   }, [isEditing]);
 
   const isCompact = useCompactSidebar();
+  // Keeps the "…" trigger visible while its menu is open, after the pointer leaves the row.
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
   const toggleProject = () => onToggleProject(project.projectId);
   const toggleStarProject = () => onToggleStarProject(project.projectId);
@@ -197,14 +200,10 @@ function SidebarProjectItem({
           </span>
         </button>
         {tasksEnabled && <TaskIndicator status={taskStatus} size="xs" className="hidden shrink-0 md:inline-flex" />}
-        {!isEditing && (
-          <button type="button" onClick={toggleStarProject}
-            className={cn('flex h-8 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent', isStarred ? 'text-yellow-600 dark:text-yellow-400' : 'md:hidden md:group-hover:flex md:group-focus-within:flex')}
-            title={isStarred ? t('tooltips.removeFromFavorites') : t('tooltips.addToFavorites')}
-            aria-label={isStarred ? t('tooltips.removeFromFavorites') : t('tooltips.addToFavorites')}
-          ><Star className={cn('h-3 w-3', isStarred && 'fill-current')} /></button>
+        {isStarred && !isEditing && (
+          <Star className="h-3 w-3 shrink-0 fill-current text-yellow-500 dark:text-yellow-400" aria-label={t('tooltips.removeFromFavorites')} />
         )}
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex shrink-0 items-center">
           {isEditing ? (
             <>
               <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-green-600 hover:bg-accent" onClick={saveProjectName} aria-label="Save project name"><Check className="h-4 w-4" /></button>
@@ -212,9 +211,45 @@ function SidebarProjectItem({
             </>
           ) : (
             <>
-              {/* Hover actions appear to the LEFT of +, which never moves: delete must not slide under the pointer aimed at +. */}
-              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-red-600 hover:bg-red-500/10 md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onDeleteProject(project)} title={t('tooltips.deleteProject')} aria-label={t('tooltips.deleteProject')}><Trash2 className="h-3.5 w-3.5" /></button>
-              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-accent md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onStartEditingProject(project)} title={t('tooltips.renameProject')} aria-label={t('tooltips.renameProject')}><Edit3 className="h-3.5 w-3.5" /></button>
+              {/* Star / rename / delete live behind one "…" so the name keeps its width.
+                  The trigger always holds its slot (only its opacity changes), so neither
+                  the name nor the + to its right shifts when the pointer arrives. */}
+              <div className={cn('transition-opacity', optionsOpen ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100')}>
+                <ActionMenu
+                  label={t('tooltips.projectOptions', { defaultValue: 'Project options' })}
+                  ariaLabel={`${t('tooltips.projectOptions', { defaultValue: 'Project options' })}: ${project.displayName}`}
+                  icon={MoreHorizontal}
+                  iconOnly
+                  portal
+                  variant="ghost"
+                  size="icon"
+                  onOpenChange={setOptionsOpen}
+                  triggerClassName="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  menuClassName="w-[220px] rounded-xl p-1.5 shadow-xl"
+                  items={[
+                    {
+                      key: 'star',
+                      label: isStarred ? t('projectMenu.unfavorite') : t('projectMenu.favorite'),
+                      icon: Star,
+                      onSelect: toggleStarProject,
+                    },
+                    {
+                      key: 'rename',
+                      label: t('projectMenu.rename'),
+                      icon: Edit3,
+                      onSelect: () => onStartEditingProject(project),
+                    },
+                    {
+                      key: 'delete',
+                      label: t('projectMenu.remove'),
+                      icon: Trash2,
+                      isDanger: true,
+                      showDividerBefore: true,
+                      onSelect: () => onDeleteProject(project),
+                    },
+                  ]}
+                />
+              </div>
               <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-primary hover:bg-primary/10" onClick={() => { if (isCompact) onProjectSelect(project); onNewSession(project); }} title={t('sessions.newSession')} aria-label={t('sessions.newSession')}><Plus className="h-4 w-4" /></button>
             </>
           )}
