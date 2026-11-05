@@ -570,7 +570,6 @@
     "description": "Perluas antarmuka dengan plugin kustom. Instal dari Git atau letakkan folder di ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Instal",
-    "installing": "Menginstal…",
     "securityWarning": "Hanya instal plugin yang kode sumbernya sudah ditinjau atau berasal dari pembuat yang dipercaya.",
     "scanningPlugins": "Memindai plugin…",
     "noPluginsInstalled": "Belum ada plugin terinstal",
@@ -585,79 +584,9 @@
     "installFailed": "Instalasi gagal",
     "uninstallFailed": "Uninstal gagal",
     "toggleFailed": "Gagal mengubah status",
-    "starterPluginLabel": "Plugin Starter",
-    "starter": "Starter",
-    "sections": {
-      "officialTitle": "Plugin Resmi",
-      "officialDescription": "Dikelola oleh tim CloudCLI dan siap langsung diinstal.",
-      "unofficialTitle": "Plugin Lainnya",
-      "unofficialDescription": "Plugin dan integrasi tidak resmi dari pengguna lain. Tinjau kode sumber sebelum menginstal."
-    },
-    "starterPlugin": {
-      "name": "Project Stats",
-      "badge": "starter",
-      "description": "Jumlah file, baris kode, rincian jenis file, dan aktivitas terbaru proyek.",
-      "install": "Instal"
-    },
-    "terminalPlugin": {
-      "name": "Terminal",
-      "badge": "resmi",
-      "description": "Terminal terintegrasi dengan akses shell penuh langsung di dalam antarmuka.",
-      "install": "Instal"
-    },
-    "scheduledPromptPlugin": {
-      "name": "Scheduled Prompts",
-      "badge": "tidak resmi",
-      "description": "Jadwalkan prompt workspace, tinjau riwayat proses, dan kelola tugas lokal berulang.",
-      "install": "Instal"
-    },
-    "prismCloudCLI": {
-      "name": "PRISM CloudCLI",
-      "badge": "tidak resmi",
-      "description": "Intelijen sesi untuk Claude Code di dalam Bowcode. Lihat penyebab penggunaan token tinggi tanpa meninggalkan browser.",
-      "install": "Instal"
-    },
-    "sessionManagerPlugin": {
-      "name": "Sessions",
-      "badge": "tidak resmi",
-      "description": "Lihat, kelola, dan hentikan sesi Claude Code yang aktif.",
-      "install": "Instal"
-    },
-    "tokenCostCalculatorPlugin": {
-      "name": "Token Cost Calculator",
-      "badge": "tidak resmi",
-      "description": "Hitung biaya API dari harga model dan penggunaan token, dengan dukungan preset harga model.",
-      "install": "Instal"
-    },
-    "taskQueuePlugin": {
-      "name": "Task Queue",
-      "badge": "tidak resmi",
-      "description": "Dasbor antrean tugas untuk melihat, memfilter, dan menjalankan tugas agen.",
-      "install": "Instal"
-    },
-    "githubIssuesBoardPlugin": {
-      "name": "GitHub Issues Board",
-      "badge": "tidak resmi",
-      "description": "Board Kanban untuk GitHub Issues dengan sinkronisasi dua arah TaskMaster dan instalasi otomatis skill CLI /github-task",
-      "install": "Instal"
-    },
-    "claudeUsagePlugin": {
-      "name": "Claude Usage",
-      "badge": "tidak resmi",
-      "description": "Pantau batas paket Claude Code secara langsung dan jelajahi riwayat token serta biaya 30 hari.",
-      "install": "Instal"
-    },
-    "codexUsagePlugin": {
-      "name": "Codex Usage",
-      "badge": "tidak resmi",
-      "description": "Pantau batas paket Codex secara langsung, waktu reset, dan aktivitas token akun selama 30 hari.",
-      "install": "Instal"
-    },
-    "morePlugins": "Lainnya",
     "enable": "Aktifkan",
     "disable": "Nonaktifkan",
     "installAriaLabel": "URL repositori Git plugin",
-    "tab": "tab",
     "runningStatus": "berjalan"
   },
   "skillsPage": {

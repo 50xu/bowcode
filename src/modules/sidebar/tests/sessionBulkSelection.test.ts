@@ -629,20 +629,6 @@ test('hydrating the preference restores groups before writing browser storage', 
   assert.deepEqual(JSON.parse(localStorage.getItem('bowcode-expanded-projects')!), ['saved-1', 'saved-2']);
 });
 
-test('legacy expansion is copied once to Bowcode storage and removed', () => {
-  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['legacy-project']));
-  const first = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
-  assert.equal(first.result.current.isProjectExpanded('legacy-project'), true);
-  assert.equal(localStorage.getItem('bowcode-expanded-projects'), JSON.stringify(['legacy-project']));
-  assert.equal(localStorage.getItem('cloudcli-expanded-projects'), null);
-  first.unmount();
-
-  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['stale-project']));
-  const second = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
-  assert.equal(second.result.current.isProjectExpanded('legacy-project'), true);
-  assert.equal(second.result.current.isProjectExpanded('stale-project'), false);
-});
-
 test('invalid saved expansion data does not break navigation', () => {
   localStorage.setItem('bowcode-expanded-projects', 'invalid JSON');
   const { result } = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });

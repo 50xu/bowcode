@@ -4,9 +4,9 @@ USER root
 COPY shared/install-bowcode.sh /tmp/install-bowcode.sh
 RUN chmod +x /tmp/install-bowcode.sh && /tmp/install-bowcode.sh
 
+RUN npm install -g --allow-scripts=bowcode,bcrypt,better-sqlite3,node-pty https://github.com/50xu/bowcode/releases/latest/download/bowcode.tgz
+
 USER agent
-# TODO(bowcode): build and package this fork before publishing sandbox images.
-# The Bowcode CLI is not available from npm yet.
 
 COPY --chown=agent:agent shared/start-bowcode.sh /home/agent/.bowcode-start.sh
 RUN echo '. ~/.bowcode-start.sh' >> /home/agent/.bashrc

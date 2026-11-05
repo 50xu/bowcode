@@ -16,11 +16,8 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-const UPSTREAM_URL = 'https://github.com/siteboon/claudecodeui';
-
 /**
  * Rendered by Settings to show the app's identity, source repository and license.
- * The upstream attribution is required by the Section 7 terms in LICENSE — keep it.
  */
 export default function AboutTab() {
   const { t } = useTranslation('settings');
@@ -148,16 +145,6 @@ export default function AboutTab() {
         <div className="space-y-1 px-4 py-3.5 text-sm">
           <div className="text-foreground">{t('about.license', { defaultValue: 'License' })}</div>
           <p className="text-muted-foreground">{t('about.licensed')}</p>
-        </div>
-        <div className="space-y-1 px-4 py-3.5 text-sm">
-          <div className="text-foreground">{t('about.origin', { defaultValue: 'Origin' })}</div>
-          <p className="text-muted-foreground">
-            {t('about.basedOn', { defaultValue: 'A modified fork of' })}{' '}
-            <a href={UPSTREAM_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              CloudCLI UI ({UPSTREAM_URL})
-            </a>
-            . {t('about.notAffiliated', { defaultValue: 'Not affiliated with or endorsed by Siteboon AI B.V.' })}
-          </p>
         </div>
       </SettingsCard>
     </div>

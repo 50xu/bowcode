@@ -29,7 +29,7 @@ test('creates a sandbox through injected filesystem, subprocess, and clock adapt
   assert.deepEqual(detachedCommands, [[
     'run',
     '--template',
-    'docker.io/cloudcliai/sandbox:claude-code',
+    'ghcr.io/50xu/bowcode-sandbox:claude-code',
     '--name',
     'project',
     'claude',
@@ -42,7 +42,7 @@ test('creates a sandbox through injected filesystem, subprocess, and clock adapt
   assert.ok(commands.some((argumentsList) => argumentsList[0] === 'ports'));
 });
 
-test('sandbox help uses Bowcode while retaining published CloudCLI template images', async () => {
+test('sandbox help uses Bowcode template images', async () => {
   const messages: string[] = [];
   const service = createSandboxCommandService({
     homeDirectory: '/home/user',
@@ -57,8 +57,7 @@ test('sandbox help uses Bowcode while retaining published CloudCLI template imag
   const help = messages.join('\n');
   assert.match(help, /Bowcode Sandbox/);
   assert.match(help, /bowcode sandbox ~\/my-project/);
-  assert.match(help, /docker\.io\/cloudcliai\/sandbox:claude-code/);
-  assert.doesNotMatch(help, /cloudcli sandbox|CloudCLI Sandbox/);
+  assert.match(help, /ghcr\.io\/50xu\/bowcode-sandbox:claude-code/);
 });
 
 test('sandbox logs read the Bowcode log path', async () => {

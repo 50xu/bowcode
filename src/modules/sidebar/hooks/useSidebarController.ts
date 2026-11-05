@@ -18,21 +18,10 @@ import {
 
 
 const EXPANDED_PROJECTS_STORAGE_KEY = 'bowcode-expanded-projects';
-const LEGACY_EXPANDED_PROJECTS_STORAGE_KEY = 'cloudcli-expanded-projects';
-
-/** Read browser-local project expansion, migrating an existing CloudCLI value once. */
+/** Read browser-local project expansion when the preference is enabled. */
 function readExpandedProjects(): Set<string> | null {
   try {
-    let stored = localStorage.getItem(EXPANDED_PROJECTS_STORAGE_KEY);
-    if (stored === null) {
-      const legacy = localStorage.getItem(LEGACY_EXPANDED_PROJECTS_STORAGE_KEY);
-      if (legacy !== null) {
-        localStorage.setItem(EXPANDED_PROJECTS_STORAGE_KEY, legacy);
-        localStorage.removeItem(LEGACY_EXPANDED_PROJECTS_STORAGE_KEY);
-        stored = legacy;
-      }
-    }
-    const saved: unknown = JSON.parse(stored ?? 'null');
+    const saved: unknown = JSON.parse(localStorage.getItem(EXPANDED_PROJECTS_STORAGE_KEY) ?? 'null');
     return Array.isArray(saved)
       ? new Set(saved.filter((id): id is string => typeof id === 'string'))
       : null;

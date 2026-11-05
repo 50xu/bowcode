@@ -549,7 +549,6 @@
     "description": "Rozšiřte rozhraní o vlastní pluginy. Nainstalujte je z git repozitáře nebo vložte složku do ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Instalovat",
-    "installing": "Instalace…",
     "securityWarning": "Instalujte pouze pluginy, jejichž zdrojový kód jste zkontrolovali, nebo pluginy od autorů, kterým důvěřujete.",
     "scanningPlugins": "Prohledávání pluginů…",
     "noPluginsInstalled": "Nejsou nainstalovány žádné pluginy",
@@ -564,85 +563,9 @@
     "installFailed": "Nepodařilo se nainstalovat plugin",
     "uninstallFailed": "Nepodařilo se odinstalovat plugin",
     "toggleFailed": "Nepodařilo se přepnout plugin",
-    "starterPluginLabel": "Startovací plugin",
-    "starter": "Šablona",
-    "sections": {
-      "officialTitle": "Oficiální pluginy",
-      "officialDescription": "Spravuje je tým CloudCLI a jsou připravené k přímé instalaci.",
-      "unofficialTitle": "Další pluginy",
-      "unofficialDescription": "Neoficiální pluginy a integrace od jiných uživatelů. Před instalací zkontrolujte zdrojový kód."
-    },
-    "starterPlugin": {
-      "name": "Statistiky projektu",
-      "badge": "startovací",
-      "description": "Počty souborů, řádky kódu, rozdělení podle typů souborů a nedávná aktivita vašeho projektu.",
-      "install": "Instalovat"
-    },
-    "terminalPlugin": {
-      "name": "Terminál",
-      "badge": "oficiální",
-      "description": "Integrovaný terminál s plným přístupem k shellu přímo v rozhraní.",
-      "install": "Instalovat"
-    },
-    "scheduledPromptPlugin": {
-      "name": "Plánované prompty",
-      "badge": "neoficiální",
-      "description": "Plánujte prompty v pracovním prostoru, procházejte historii běhů a spravujte opakované lokální úkoly.",
-      "install": "Instalovat"
-    },
-    "prismCloudCLI": {
-      "name": "PRISM CloudCLI",
-      "badge": "neoficiální",
-      "description": "Analýza relací Claude Code přímo v Bowcode. Zjistěte, proč vaše relace spalují tokeny, aniž byste opustili prohlížeč.",
-      "install": "Instalovat"
-    },
-    "sessionManagerPlugin": {
-      "name": "Relace",
-      "badge": "neoficiální",
-      "description": "Zobrazujte, spravujte a ukončujte aktivní relace Claude Code.",
-      "install": "Instalovat"
-    },
-    "tokenCostCalculatorPlugin": {
-      "name": "Kalkulačka nákladů na tokeny",
-      "badge": "neoficiální",
-      "description": "Vypočítá náklady na API z cen modelů a využití tokenů, s podporou přednastavených ceníků modelů.",
-      "install": "Instalovat"
-    },
-    "taskQueuePlugin": {
-      "name": "Fronta úkolů",
-      "badge": "neoficiální",
-      "description": "Přehled fronty úkolů pro zobrazení, filtrování a spouštění úkolů agentů.",
-      "install": "Instalovat"
-    },
-    "githubIssuesBoardPlugin": {
-      "name": "Nástěnka GitHub Issues",
-      "badge": "neoficiální",
-      "description": "Kanban nástěnka pro GitHub Issues s obousměrnou synchronizací s TaskMaster a automatickou instalací CLI skillu /github-task",
-      "install": "Instalovat"
-    },
-    "claudeUsagePlugin": {
-      "name": "Využití Claude",
-      "badge": "neoficiální",
-      "description": "Sledujte aktuální limity plánu Claude Code a procházejte 30denní historii tokenů a nákladů.",
-      "install": "Instalovat"
-    },
-    "codexUsagePlugin": {
-      "name": "Využití Codex",
-      "badge": "neoficiální",
-      "description": "Sledujte aktuální limity plánu Codex, časy jejich obnovení a 30denní aktivitu tokenů na účtu.",
-      "install": "Instalovat"
-    },
-    "glmUsagePlugin": {
-      "name": "Využití GLM",
-      "badge": "neoficiální",
-      "description": "Sledujte aktuální kvóty programovacího plánu GLM/Zhipu a 30denní historii tokenů.",
-      "install": "Instalovat"
-    },
-    "morePlugins": "Další",
     "enable": "Zapnout",
     "disable": "Vypnout",
     "installAriaLabel": "URL git repozitáře pluginu",
-    "tab": "karta",
     "runningStatus": "běží"
   },
   "skillsPage": {

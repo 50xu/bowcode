@@ -104,7 +104,6 @@ const DEFAULT_SETTINGS: BrowserUseSettings = {
 const AGENT_OWNER_ID = 'agent';
 const PROFILE_ROOT = path.join(getAppDataDir(), 'browser-use', 'profiles');
 const MCP_SERVER_NAME = 'bowcode-browser';
-const LEGACY_MCP_SERVER_NAMES = ['cloudcli-browser', 'cloudcli-browser-use'];
 const RUNTIME_READINESS_CACHE_TTL_MS = 30_000;
 
 function readSettings(): BrowserUseSettings {
@@ -486,7 +485,6 @@ export const browserUseService = {
 
   async registerAgentMcp() {
     const { command, args } = getMcpCommand();
-    await Promise.all(LEGACY_MCP_SERVER_NAMES.map((name) => removeMcpServerFromAllProviders(name)));
     const results = await providerMcpService.addMcpServerToAllProviders({
       name: MCP_SERVER_NAME,
       scope: 'user',
@@ -506,9 +504,7 @@ export const browserUseService = {
   },
 
   async unregisterAgentMcp() {
-    const results = (await Promise.all(
-      [MCP_SERVER_NAME, ...LEGACY_MCP_SERVER_NAMES].map((name) => removeMcpServerFromAllProviders(name)),
-    )).flat();
+    const results = await removeMcpServerFromAllProviders(MCP_SERVER_NAME);
     return { name: MCP_SERVER_NAME, results };
   },
 

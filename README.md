@@ -13,7 +13,7 @@ A self-hosted web app for driving **Claude Code**, **Codex** and **OpenCode** on
 ![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-555)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](LICENSE)
 
-[Install](#install) · [Features](#features) · [Update](#updating) · [From source](#run-from-source) · [Origin & license](#origin--license)
+[Install](#install) · [Features](#features) · [Update](#updating) · [From source](#run-from-source) · [License](#license)
 
 <br>
 
@@ -140,16 +140,8 @@ npm run dev             # or hot-reload development
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), including how releases are cut (`npm run release -- minor`).
 
-## Origin & license
+## License
 
-Bowcode is a modified fork of CloudCLI UI (https://github.com/siteboon/claudecodeui).
+Licensed under **AGPL-3.0-or-later** — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Claude Code, Codex and OpenCode are third-party tools; their names belong to their owners.
 
-It is not affiliated with or endorsed by Siteboon AI B.V., Anthropic, OpenAI or the OpenCode project. Claude Code, Codex and OpenCode are third-party tools and their names belong to their owners.
-
-What this fork changed:
-- One agent per session, a live view of terminal (TUI) sessions and their subagents.
-- Git-backed settings sync, a desktop split view, an iOS-style PWA and a redesigned settings screen.
-- One-line install with self-update through GitHub Releases.
-- The vendor, Pro and hosted-service code has been removed.
-
-Licensed under **AGPL-3.0-or-later** with the additional terms in [LICENSE](LICENSE) (Section 7). See [NOTICE](NOTICE) for copyright and attribution.
+_Bowcode is forked and modified from CloudCLI UI (https://github.com/siteboon/claudecodeui)._

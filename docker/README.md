@@ -48,10 +48,10 @@ npx bowcode@latest sandbox ~/my-project --agent codex
 
 | Agent | Template |
 |-------|----------|
-| **Claude Code** (default) | `docker.io/cloudcliai/sandbox:claude-code` |
-| OpenAI Codex | `docker.io/cloudcliai/sandbox:codex` |
+| **Claude Code** (default) | `ghcr.io/50xu/bowcode-sandbox:claude-code` |
+| OpenAI Codex | `ghcr.io/50xu/bowcode-sandbox:codex` |
 
-These upstream template images are maintained by CloudCLI, not Bowcode; build the Dockerfiles in this repository for Bowcode-specific images. They are used with `--template` when running `sbx` directly (see [Advanced usage](#advanced-usage)).
+These images are built from `docker/claude-code/Dockerfile` and `docker/codex/Dockerfile` in this repository and published to GHCR by `.github/workflows/docker.yml` on version tags or manual dispatch. Use them with `--template` when running `sbx` directly (see [Advanced usage](#advanced-usage)).
 
 ## Managing sandboxes
 
@@ -108,7 +108,7 @@ sbx exec -d my-project bowcode start --port 3001
 | `SERVER_PORT` | `3001` | Web UI port |
 | `HOST` | `0.0.0.0` | Bind address (must be `0.0.0.0` for `sbx ports`) |
 | `DATABASE_PATH` | `~/.bowcode/auth.db` | SQLite database location |
-| `BOWCODE_SERVER_PORT` | unset | Desktop local server port override (legacy `CLOUDCLI_SERVER_PORT` also accepted) |
+| `BOWCODE_SERVER_PORT` | unset | Desktop local server port override |
 
 ## Advanced usage
 
@@ -116,17 +116,17 @@ For branch mode, multiple workspaces, memory limits, or the terminal agent exper
 
 ```bash
 # Terminal agent + web UI
-sbx run --template docker.io/cloudcliai/sandbox:claude-code claude ~/my-project --name my-project
+sbx run --template ghcr.io/50xu/bowcode-sandbox:claude-code claude ~/my-project --name my-project
 sbx ports my-project --publish 3001:3001
 
 # Branch mode (Git worktree isolation)
-sbx run --template docker.io/cloudcliai/sandbox:claude-code claude ~/my-project --branch my-feature
+sbx run --template ghcr.io/50xu/bowcode-sandbox:claude-code claude ~/my-project --branch my-feature
 
 # Multiple workspaces
-sbx run --template docker.io/cloudcliai/sandbox:claude-code claude ~/project ~/shared-libs:ro
+sbx run --template ghcr.io/50xu/bowcode-sandbox:claude-code claude ~/project ~/shared-libs:ro
 
 # Pass a prompt directly
-sbx run --template docker.io/cloudcliai/sandbox:claude-code claude ~/my-project -- "Fix the auth bug"
+sbx run --template ghcr.io/50xu/bowcode-sandbox:claude-code claude ~/my-project -- "Fix the auth bug"
 ```
 
 Bowcode auto-starts via `.bashrc` when using `sbx run`.
@@ -151,4 +151,4 @@ The web UI itself doesn't need a policy — access it via `sbx ports`.
 
 ## License
 
-Bowcode is a modified fork of CloudCLI UI (https://github.com/siteboon/claudecodeui). Licensed under AGPL-3.0-or-later with the additional terms in [LICENSE](../LICENSE) (Section 7).
+Licensed under AGPL-3.0-or-later with the additional terms in [LICENSE](../LICENSE) (Section 7).

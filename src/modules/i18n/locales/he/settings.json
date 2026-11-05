@@ -569,7 +569,6 @@
     "description": "הרחבת הממשק עם תוספים מותאמים אישית. אפשר להתקין מ-git או להניח תיקייה ב-~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "התקנה",
-    "installing": "מתקין…",
     "securityWarning": "יש להתקין רק תוספים שקוד המקור שלהם נבדק או ממפתחים מהימנים.",
     "scanningPlugins": "סורק תוספים…",
     "noPluginsInstalled": "אין תוספים מותקנים",
@@ -584,85 +583,9 @@
     "installFailed": "ההתקנה נכשלה",
     "uninstallFailed": "ההסרה נכשלה",
     "toggleFailed": "השינוי נכשל",
-    "starterPluginLabel": "תוסף התחלתי",
-    "starter": "התחלתי",
-    "sections": {
-      "officialTitle": "תוספים רשמיים",
-      "officialDescription": "מתוחזקים על ידי צוות CloudCLI ומוכנים להתקנה ישירה.",
-      "unofficialTitle": "תוספים נוספים",
-      "unofficialDescription": "תוספים ושילובים לא רשמיים ממשתמשים אחרים. כדאי לבדוק את קוד המקור לפני ההתקנה."
-    },
-    "starterPlugin": {
-      "name": "סטטיסטיקות פרויקט",
-      "badge": "התחלתי",
-      "description": "מספר קבצים, שורות קוד, פילוח לפי סוג קובץ ופעילות אחרונה בפרויקט.",
-      "install": "התקנה"
-    },
-    "terminalPlugin": {
-      "name": "טרמינל",
-      "badge": "רשמי",
-      "description": "טרמינל מובנה עם גישת shell מלאה ישירות מתוך הממשק.",
-      "install": "התקנה"
-    },
-    "scheduledPromptPlugin": {
-      "name": "פרומפטים מתוזמנים",
-      "badge": "לא רשמי",
-      "description": "תזמון פרומפטים לסביבת העבודה, צפייה בהיסטוריית ריצות וניהול משימות מקומיות חוזרות.",
-      "install": "התקנה"
-    },
-    "prismCloudCLI": {
-      "name": "PRISM CloudCLI",
-      "badge": "לא רשמי",
-      "description": "ניתוח סשנים של Claude Code בתוך Bowcode. אפשר לראות למה הסשנים צורכים טוקנים בלי לצאת מהדפדפן.",
-      "install": "התקנה"
-    },
-    "sessionManagerPlugin": {
-      "name": "סשנים",
-      "badge": "לא רשמי",
-      "description": "צפייה, ניהול וסגירה של סשנים פעילים של Claude Code.",
-      "install": "התקנה"
-    },
-    "tokenCostCalculatorPlugin": {
-      "name": "מחשבון עלות טוקנים",
-      "badge": "לא רשמי",
-      "description": "חישוב עלויות API לפי מחירי מודלים ושימוש בטוקנים, עם תמחור מוגדר מראש למודלים.",
-      "install": "התקנה"
-    },
-    "taskQueuePlugin": {
-      "name": "תור משימות",
-      "badge": "לא רשמי",
-      "description": "לוח בקרה לתור משימות: צפייה, סינון והפעלה של משימות סוכן.",
-      "install": "התקנה"
-    },
-    "githubIssuesBoardPlugin": {
-      "name": "לוח GitHub Issues",
-      "badge": "לא רשמי",
-      "description": "לוח קנבן ל-GitHub Issues עם סנכרון דו-כיווני ל-TaskMaster והתקנה אוטומטית של CLI skill בשם /github-task",
-      "install": "התקנה"
-    },
-    "claudeUsagePlugin": {
-      "name": "שימוש ב-Claude",
-      "badge": "לא רשמי",
-      "description": "מעקב חי אחרי מגבלות התוכנית של Claude Code והיסטוריית טוקנים ועלויות של 30 יום.",
-      "install": "התקנה"
-    },
-    "codexUsagePlugin": {
-      "name": "שימוש ב-Codex",
-      "badge": "לא רשמי",
-      "description": "מעקב חי אחרי מגבלות התוכנית של Codex, זמני איפוס ופעילות טוקנים בחשבון ב-30 הימים האחרונים.",
-      "install": "התקנה"
-    },
-    "glmUsagePlugin": {
-      "name": "שימוש ב-GLM",
-      "badge": "לא רשמי",
-      "description": "מעקב חי אחרי מכסות תוכנית הקוד של GLM/Zhipu והיסטוריית טוקנים של 30 יום.",
-      "install": "התקנה"
-    },
-    "morePlugins": "עוד",
     "enable": "הפעלה",
     "disable": "השבתה",
     "installAriaLabel": "כתובת מאגר ה-git של התוסף",
-    "tab": "לשונית",
     "runningStatus": "פועל"
   },
   "skillsPage": {

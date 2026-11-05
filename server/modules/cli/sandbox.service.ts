@@ -28,8 +28,8 @@ type SandboxOptions = {
 
 // TODO(bowcode): Publish Bowcode sandbox images before replacing these working templates.
 const SANDBOX_TEMPLATES: Record<string, string> = {
-  claude: 'docker.io/cloudcliai/sandbox:claude-code',
-  codex: 'docker.io/cloudcliai/sandbox:codex',
+  claude: 'ghcr.io/50xu/bowcode-sandbox:claude-code',
+  codex: 'ghcr.io/50xu/bowcode-sandbox:codex',
 };
 
 const SANDBOX_SECRETS: Record<string, string> = {
@@ -149,8 +149,8 @@ Advanced usage:
   For branch mode, multiple workspaces, memory limits, network policies,
   or passing prompts to the agent, use sbx directly with the template:
 
-    sbx run --template docker.io/cloudcliai/sandbox:claude-code claude ~/my-project --branch my-feature
-    sbx run --template docker.io/cloudcliai/sandbox:claude-code claude ~/project ~/libs:ro --memory 8g
+    sbx run --template ghcr.io/50xu/bowcode-sandbox:claude-code claude ~/my-project --branch my-feature
+    sbx run --template ghcr.io/50xu/bowcode-sandbox:claude-code claude ~/project ~/libs:ro --memory 8g
 
   Full Docker Sandboxes docs: https://docs.docker.com/ai/sandboxes/usage/
 `);

@@ -106,8 +106,8 @@ function sha256(filePath) {
   });
 }
 
-const platform = mapPlatform(process.env.BOWCODE_BUNDLE_PLATFORM ?? process.env.CLOUDCLI_BUNDLE_PLATFORM ?? process.platform);
-const arch = mapArch(process.env.BOWCODE_BUNDLE_ARCH ?? process.env.CLOUDCLI_BUNDLE_ARCH ?? process.arch);
+const platform = mapPlatform(process.env.BOWCODE_BUNDLE_PLATFORM ?? process.platform);
+const arch = mapArch(process.env.BOWCODE_BUNDLE_ARCH ?? process.arch);
 const version = packageJson.version;
 const bundleName = `bowcode-local-server-${version}-${platform}-${arch}.tar.gz`;
 const bundleRoot = path.join(rootDir, 'release', 'local-server');

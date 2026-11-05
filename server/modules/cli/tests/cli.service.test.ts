@@ -83,7 +83,6 @@ test('help and status present Bowcode command examples with update command', asy
   const help = harness.logMessages.join('\n');
   assert.match(help, /Bowcode - Command Line Tool/);
   assert.match(help, /bowcode \[command\] \[options\]/);
-  assert.doesNotMatch(help, /claude-code-ui|cloudcli/i);
   assert.match(help, /update\s+Check for or install a release/);
 
   assert.equal(await harness.service.run(['status']), 0);

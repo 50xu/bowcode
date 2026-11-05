@@ -53,10 +53,9 @@ const getServerKey = (server: ProviderMcpServer): string => (
   `${server.provider}:${server.scope}:${server.workspacePath || 'global'}:${server.name}`
 );
 
-// Bowcode feature toggles own these servers; legacy CloudCLI-prefixed servers
-// remain read-only so users don't edit/delete them out of sync with the feature.
+// Bowcode feature toggles own these servers, so users cannot edit or delete them out of sync.
 const isManagedServer = (server: ProviderMcpServer): boolean => (
-  server.name.startsWith('bowcode-') || server.name.startsWith('cloudcli-')
+  server.name.startsWith('bowcode-')
 );
 
 function ConfigLine({ label, children }: { label: string; children: string }) {

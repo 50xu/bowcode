@@ -584,7 +584,6 @@
     "description": "Amplía la interfaz con plugins personalizados. Instala desde git o suelta una carpeta en ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/usuario/mi-plugin",
     "installButton": "Instalar",
-    "installing": "Instalando…",
     "securityWarning": "Instala solo plugins cuyo código fuente hayas revisado o de autores en los que confíes.",
     "scanningPlugins": "Buscando plugins…",
     "noPluginsInstalled": "No hay plugins instalados",
@@ -599,91 +598,9 @@
     "installFailed": "La instalación falló",
     "uninstallFailed": "La desinstalación falló",
     "toggleFailed": "El cambio de estado falló",
-    "starterPluginLabel": "Plugin de inicio",
-    "starter": "Inicio",
-    "sections": {
-      "officialTitle": "Plugins oficiales",
-      "officialDescription": "Mantenidos por el equipo de CloudCLI y listos para instalar directamente.",
-      "unofficialTitle": "Otros plugins",
-      "unofficialDescription": "Plugins e integraciones no oficiales de otros usuarios. Revisa el código fuente antes de instalar."
-    },
-    "starterPlugin": {
-      "name": "Estadísticas del proyecto",
-      "badge": "inicio",
-      "description": "Recuento de archivos, líneas de código, desglose por tipo de archivo y actividad reciente de tu proyecto.",
-      "install": "Instalar"
-    },
-    "terminalPlugin": {
-      "name": "Terminal",
-      "badge": "oficial",
-      "description": "Terminal integrada con acceso completo a la shell directamente en la interfaz.",
-      "install": "Instalar"
-    },
-    "scheduledPromptPlugin": {
-      "name": "Prompts programados",
-      "badge": "no oficial",
-      "description": "Programa prompts del espacio de trabajo, revisa el historial de ejecuciones y gestiona tareas locales recurrentes.",
-      "install": "Instalar"
-    },
-    "prismCloudCLI": {
-      "name": "PRISM CloudCLI",
-      "badge": "no oficial",
-      "description": "Inteligencia de sesiones para Claude Code, dentro de Bowcode. Descubre por qué tus sesiones queman tokens sin salir del navegador.",
-      "install": "Instalar"
-    },
-    "sessionManagerPlugin": {
-      "name": "Sesiones",
-      "badge": "no oficial",
-      "description": "Ver, gestionar y terminar sesiones activas de Claude Code.",
-      "install": "Instalar"
-    },
-    "tokenCostCalculatorPlugin": {
-      "name": "Calculadora de costes de tokens",
-      "badge": "no oficial",
-      "description": "Calcula costes de API a partir de precios de modelos y uso de tokens, con precios de modelos predefinidos.",
-      "install": "Instalar"
-    },
-    "taskQueuePlugin": {
-      "name": "Cola de tareas",
-      "badge": "no oficial",
-      "description": "Panel de cola de tareas para ver, filtrar y lanzar tareas de agentes.",
-      "install": "Instalar"
-    },
-    "githubIssuesBoardPlugin": {
-      "name": "Tablero de GitHub Issues",
-      "badge": "no oficial",
-      "description": "Tablero Kanban para GitHub Issues con sincronización bidireccional con TaskMaster e instalación automática de la skill CLI /github-task",
-      "install": "Instalar"
-    },
-    "claudeUsagePlugin": {
-      "name": "Uso de Claude",
-      "badge": "no oficial",
-      "description": "Sigue en vivo los límites del plan de Claude Code y explora el historial de tokens y costes de 30 días.",
-      "install": "Instalar"
-    },
-    "codexUsagePlugin": {
-      "name": "Uso de Codex",
-      "badge": "no oficial",
-      "description": "Sigue en vivo los límites del plan de Codex, cuándo se reinician y la actividad de tokens de la cuenta en 30 días.",
-      "install": "Instalar"
-    },
-    "glmUsagePlugin": {
-      "name": "Uso de GLM",
-      "badge": "no oficial",
-      "description": "Sigue en vivo las cuotas del plan de programación de GLM/Zhipu y el historial de tokens de 30 días.",
-      "install": "Instalar"
-    },
-    "agentMonitorPlugin": {
-      "name": "Monitor de agentes",
-      "badge": "no oficial",
-      "description": "Ve los subagentes y las shells en segundo plano que siguen en ejecución al terminar un chat, y deténlos.",
-      "install": "Instalar"
-    },
-    "morePlugins": "Más",
     "enable": "Activar",
     "disable": "Desactivar",
     "installAriaLabel": "URL del repositorio git del plugin",
-    "tab": "pestaña",
     "runningStatus": "en ejecución"
   },
   "skillsPage": {

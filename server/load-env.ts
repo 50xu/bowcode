@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { getAppDataDir, migrateLegacyDataDirectory, migrateLegacyPlugins } from './shared/data-directory.js';
+import { getAppDataDir } from './shared/data-directory.js';
 
 // This bootstrap cannot import shared/utils.ts: that module reads environment
 // defaults during evaluation, before this file has loaded `.env`.
@@ -38,11 +38,6 @@ try {
 } catch (e: any) {
   console.error('No .env file found or error reading it:', e.message);
 }
-
-// Migrate before other server imports initialize the database or plugin stores.
-// Failed moves retain the legacy directory and log a warning.
-migrateLegacyDataDirectory();
-migrateLegacyPlugins();
 
 // Keep the default database in a stable user-level location so rebuilding dist-server
 // never changes where the backend stores auth.db when DATABASE_PATH is not set explicitly.

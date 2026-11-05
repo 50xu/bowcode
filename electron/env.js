@@ -1,4 +1,4 @@
-// New Bowcode environment variables take precedence over their legacy CloudCLI names.
+/** Reads a desktop configuration variable, using the given default when absent. */
 export function desktopEnv(name, fallback = undefined) {
-  return process.env[name] ?? process.env[name.replace(/^BOWCODE_/, 'CLOUDCLI_')] ?? fallback;
+  return process.env[name] ?? fallback;
 }

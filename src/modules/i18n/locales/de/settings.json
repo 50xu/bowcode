@@ -519,7 +519,6 @@
     "description": "Erweitere die Oberfläche mit eigenen Plugins. Installiere sie von Git oder lege einen Ordner in ~/.bowcode/plugins/ ab.",
     "installPlaceholder": "https://github.com/benutzer/mein-plugin",
     "installButton": "Installieren",
-    "installing": "Wird installiert…",
     "securityWarning": "Installiere nur Plugins, deren Quellcode du geprüft hast oder die von Autoren stammen, denen du vertraust.",
     "scanningPlugins": "Plugins werden durchsucht…",
     "noPluginsInstalled": "Keine Plugins installiert",
@@ -535,18 +534,9 @@
     "uninstallFailed": "Deinstallation fehlgeschlagen",
     "toggleFailed": "Umschalten fehlgeschlagen",
     "buildYourOwn": "Eigenes Plugin erstellen",
-    "starter": "Starter",
-    "starterPlugin": {
-      "name": "Projektstatistiken",
-      "badge": "starter",
-      "description": "Dateianzahl, Codezeilen, Dateityp-Aufschlüsselung und aktuelle Aktivitäten für dein Projekt.",
-      "install": "Installieren"
-    },
-    "morePlugins": "Mehr",
     "enable": "Aktivieren",
     "disable": "Deaktivieren",
     "installAriaLabel": "Git-Repository-URL des Plugins",
-    "tab": "Tab",
     "runningStatus": "läuft"
   }
 }
