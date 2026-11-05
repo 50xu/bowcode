@@ -396,7 +396,7 @@ function SidebarSessionItem({
           aria-disabled={isSelecting && !isSelectable ? true : undefined}
           className={cn(
             buttonVariants({ variant: 'ghost' }),
-            'h-7 min-h-7 w-full justify-start rounded-md px-2 py-0 text-left font-normal transition-colors hover:bg-accent',
+            'h-8 min-h-8 w-full justify-start rounded-lg px-2 py-0 text-left font-normal transition-colors hover:bg-accent',
             isSelecting ? 'pr-2' : 'pr-11',
             isSelected && 'bg-primary/10 text-primary',
              isChecked && 'bg-primary/10',

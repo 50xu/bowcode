@@ -154,7 +154,7 @@ function SidebarProjectItem({
 
   return (
     <div className={cn('min-w-0', isDeleting && 'pointer-events-none opacity-50')}>
-      <div className={cn('group flex h-11 min-w-0 items-center gap-1 rounded-md px-1 transition-colors hover:bg-accent md:h-9', isSelected && 'bg-primary/10')}
+      <div className={cn('group flex h-12 min-w-0 items-center gap-1.5 rounded-lg px-1.5 transition-colors hover:bg-accent md:h-11', isSelected && 'bg-primary/10')}
         data-testid="project-tree-row"
       >
         <button type="button" onClick={isCompact ? toggleProject : selectAndToggleProject}
@@ -165,10 +165,10 @@ function SidebarProjectItem({
           <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-90')} />
         </button>
         <button type="button" onClick={isCompact ? toggleProject : selectAndToggleProject}
-          className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-md px-0.5 text-left', isSelected && 'text-primary')}
+          className={cn('flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-0.5 text-left', isSelected && 'text-primary')}
           title={project.fullPath}
         >
-          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md bg-[var(--project-icon-bg)] text-[var(--project-icon-fg)] dark:bg-[var(--project-icon-dark-bg)] dark:text-[var(--project-icon-dark-fg)]"
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--project-icon-bg)] text-[var(--project-icon-fg)] dark:bg-[var(--project-icon-dark-bg)] dark:text-[var(--project-icon-dark-fg)]"
             style={{
               '--project-icon-bg': `hsl(${hue} 70% 92%)`,
               '--project-icon-fg': `hsl(${hue} 65% 40%)`,
@@ -194,9 +194,9 @@ function SidebarProjectItem({
                 placeholder={t('projects.projectNamePlaceholder')} autoFocus autoComplete="off"
               />
             ) : (
-              <span className={cn('block truncate text-sm font-medium leading-4', isSelected ? 'text-primary' : 'text-foreground')}>{project.displayName}</span>
+              <span className={cn('block truncate text-sm font-medium leading-5', isSelected ? 'text-primary' : 'text-foreground')}>{project.displayName}</span>
             )}
-            <span className="block truncate text-xs leading-4 text-muted-foreground" title={summary}>{summary}</span>
+            <span className="block truncate text-xs leading-4 text-muted-foreground/90" title={summary}>{summary}</span>
           </span>
         </button>
         {tasksEnabled && <TaskIndicator status={taskStatus} size="xs" className="hidden shrink-0 md:inline-flex" />}

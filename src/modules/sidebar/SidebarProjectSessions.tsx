@@ -43,7 +43,7 @@ function SessionListSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="flex h-9 items-center px-2 md:h-7">
+        <div key={index} className="flex h-9 items-center px-2 md:h-8">
           <div className="flex items-start gap-2">
             <div className="mt-0.5 h-3 w-3 animate-pulse rounded-full bg-muted" />
             <div className="flex-1 space-y-1">
@@ -119,7 +119,7 @@ export default function SidebarProjectSessions({
       : t('sessions.selectAll');
 
   return (
-    <div className="ml-5 border-l border-border pl-1 pb-1">
+    <div className="mb-1 ml-[1.1rem] mt-0.5 space-y-0.5 border-l border-border/70 pl-2">
 
       {(isSelecting || (initialSessionsLoaded && selectableSessionIds.length > 0)) && (
         <div className="px-1">
@@ -221,7 +221,7 @@ export default function SidebarProjectSessions({
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-full justify-start rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground md:h-7"
+              className="h-9 w-full justify-start rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground md:h-8"
               onClick={() => onLoadMoreSessions(project.projectId)}
               disabled={isLoadingMoreSessions}
             >

@@ -69,7 +69,7 @@ export default function SidebarProjectList({
   const showProjects = !isLoading && projects.length > 0 && filteredProjects.length > 0;
 
   return (
-      <div className="space-y-0.5 pb-safe-area-inset-bottom">
+      <div className="space-y-1 pb-safe-area-inset-bottom">
         {!showProjects
           ? state
           : filteredProjects.map((project) => {
