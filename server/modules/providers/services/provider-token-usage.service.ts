@@ -181,6 +181,35 @@ async function findCodexSessionFile(
   return null;
 }
 
+/**
+ * Used by the Codex history reader and this service's usage lookup: the
+ * context-window reading a Codex `token_count` snapshot describes.
+ *
+ * `last_token_usage` is the newest model request — its prompt plus reply is
+ * exactly what the window holds now, and it is what Codex's own UI measures.
+ * `total_token_usage` is the thread's running bill: every request summed, so
+ * it overtakes the window after a few tool calls and the meter jumped past
+ * 100% (or fell back to a raw count) on any real session. Rollouts written
+ * before Codex recorded `last_token_usage` only have the total, which is still
+ * the best reading they offer.
+ */
+export function readCodexContextUsage(tokenInfo: AnyRecord | null | undefined): TokenUsageResult | null {
+  const usage = tokenInfo?.last_token_usage ?? tokenInfo?.total_token_usage;
+  if (!usage || typeof usage !== 'object') {
+    return null;
+  }
+
+  const inputTokens = readUsageNumber(usage.input_tokens);
+  const outputTokens = readUsageNumber(usage.output_tokens);
+  return {
+    used: readUsageNumber(usage.total_tokens) || inputTokens + outputTokens,
+    total: readUsageNumber(tokenInfo?.model_context_window) || 200_000,
+    inputTokens,
+    outputTokens,
+    breakdown: { input: inputTokens, output: outputTokens },
+  };
+}
+
 /** Newest `token_count` snapshot in the given JSONL text, or null when it has none. */
 function findCodexTokenUsage(fileContent: string): TokenUsageResult | null {
   const lines = fileContent.trim().split('\n');
@@ -191,26 +220,10 @@ function findCodexTokenUsage(fileContent: string): TokenUsageResult | null {
       const tokenInfo = entry.type === 'event_msg' && entry.payload?.type === 'token_count'
         ? entry.payload.info
         : null;
-      if (!tokenInfo) {
-        continue;
+      const usage = readCodexContextUsage(tokenInfo);
+      if (usage) {
+        return usage;
       }
-
-      let inputTokens = 0;
-      let outputTokens = 0;
-      let totalTokens = 0;
-      if (tokenInfo.total_token_usage) {
-        inputTokens = readUsageNumber(tokenInfo.total_token_usage.input_tokens);
-        outputTokens = readUsageNumber(tokenInfo.total_token_usage.output_tokens);
-        totalTokens = readUsageNumber(tokenInfo.total_token_usage.total_tokens)
-          || inputTokens + outputTokens;
-      }
-      return {
-        used: totalTokens,
-        total: readUsageNumber(tokenInfo.model_context_window) || 200_000,
-        inputTokens,
-        outputTokens,
-        breakdown: { input: inputTokens, output: outputTokens },
-      };
     } catch {
       // A provider may be writing the last JSONL line while this read happens.
     }

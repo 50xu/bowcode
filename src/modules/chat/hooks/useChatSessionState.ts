@@ -1020,21 +1020,28 @@ export function useChatSessionState({
       setTokenBudget(null);
       return;
     }
+    // A response for a session the user already left must not land on the
+    // one they switched to: without this guard, quickly clicking A then B
+    // could show A's context under B whenever A's lookup finished last.
+    let isStale = false;
+    const requestedSessionId = selectedSession.id;
     const fetchInitialTokenUsage = async () => {
       try {
         // The provider module resolves storage and provider details from the session id.
-        const response = await api.providers.sessionTokenUsage(selectedSession.id);
-        if (response.ok) {
-          const payload = await response.json();
-          setTokenBudget(payload.data ?? null);
-        } else {
-          setTokenBudget(null);
+        const response = await api.providers.sessionTokenUsage(requestedSessionId);
+        const payload = response.ok ? await response.json() : null;
+        if (isStale) {
+          return;
         }
+        setTokenBudget(payload?.data ?? null);
       } catch (error) {
         console.error('Failed to fetch initial token usage:', error);
       }
     };
     fetchInitialTokenUsage();
+    return () => {
+      isStale = true;
+    };
   }, [selectedSession?.id]);
 
   // While the user reads further up, messages appended at the tail must not

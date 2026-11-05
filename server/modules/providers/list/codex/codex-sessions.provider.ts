@@ -5,6 +5,7 @@ import readline from 'node:readline';
 
 import { sessionsDb } from '@/modules/database/index.js';
 import { codexAppServer } from '@/modules/providers/list/codex/codex-app-server.client.js';
+import { readCodexContextUsage } from '@/modules/providers/services/provider-token-usage.service.js';
 import { parseFilesInputTag, toImageAttachments } from '@/shared/image-attachments.js';
 import type { IProviderSessions } from '@/shared/interfaces.js';
 import { prepareTranscriptMessages } from '@/shared/message-unification.js';
@@ -1358,11 +1359,7 @@ async function getCodexSessionMessages(sessionId: string): Promise<CodexHistoryR
     // ── event_msg ──────────────────────────────────────────────────────────
     if (entry.type === 'event_msg') {
       if (payload.type === 'token_count' && payload.info) {
-        const info = payload.info as AnyRecord;
-        if (info.total_token_usage) {
-          const usage = info.total_token_usage as AnyRecord;
-          tokenUsage = { used: usage.total_tokens || 0, total: info.model_context_window || 200000 };
-        }
+        tokenUsage = readCodexContextUsage(payload.info as AnyRecord) ?? tokenUsage;
         continue;
       }
 
