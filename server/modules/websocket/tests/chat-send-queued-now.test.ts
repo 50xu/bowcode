@@ -41,7 +41,10 @@ async function withGateway(
     const runtime = {
       hasRuntime: () => true,
       hasBackgroundWork: () => background.active,
-      run: async (_provider: string, command: string) => { runs.push(command); },
+      run: async (_provider: string, command: string, _options: unknown, writer: { send(message: unknown): void }) => {
+        runs.push(command);
+        writer.send({ kind: 'text', role: 'assistant', content: `reply to ${command}`, sessionId: 'send-now-session' });
+      },
       abort: async (_provider: string, sessionId: string) => { aborts.push(sessionId); return true; },
     } as never;
     handleChatConnection(socket as never, { user: { id: userId } } as never, {
@@ -113,5 +116,28 @@ test('send-now supersedes held background work', async () => {
     sessionDraftsDb.saveDraft(userId, 'send-now-session', { text: '', queuedMessage: { content: 'replace background work' } });
     await sendNow();
     assert.deepEqual(runs, ['replace background work']);
+  });
+});
+
+test('a queued message sent by the server streams to the socket already showing the session', async () => {
+  await withGateway(async ({ userId, socket, sendNow }) => {
+    socket.emit('message', Buffer.from(JSON.stringify({ type: 'chat.subscribe', sessions: [{ sessionId: 'send-now-session' }] })));
+    sessionDraftsDb.saveDraft(userId, 'send-now-session', { text: '', queuedMessage: { content: 'queued turn' } });
+    await sendNow();
+    // Before the fix the detached run had no audience, so this frame never
+    // reached the open tab and the transcript only updated after a reload.
+    const reply = socket.frames.find((frame) => frame.kind === 'text' && frame.content === 'reply to queued turn');
+    assert.ok(reply, 'the open socket receives the queued run\'s events');
+    assert.equal(reply.sessionId, 'send-now-session');
+    assert.ok(socket.frames.some((frame) => frame.kind === 'complete' && frame.sessionId === 'send-now-session'));
+  });
+});
+
+test('a queued run does not stream to a tab showing another session', async () => {
+  await withGateway(async ({ userId, socket, sendNow }) => {
+    socket.emit('message', Buffer.from(JSON.stringify({ type: 'chat.subscribe', sessions: [{ sessionId: 'some-other-session' }] })));
+    sessionDraftsDb.saveDraft(userId, 'send-now-session', { text: '', queuedMessage: { content: 'elsewhere' } });
+    await sendNow();
+    assert.equal(socket.frames.some((frame) => frame.kind === 'text' && frame.content === 'reply to elsewhere'), false);
   });
 });

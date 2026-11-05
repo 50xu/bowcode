@@ -688,6 +688,9 @@ function handleChatSubscribe(
   dependencies: ChatWebSocketDependencies
 ): void {
   const targets = Array.isArray(data.sessions) ? data.sessions : [];
+  // A subscribe names what this tab shows now; it replaces what it showed before.
+  const viewedSessionIds = new Set<string>();
+  viewedSessionsBySocket.set(ws, viewedSessionIds);
 
   for (const target of targets) {
     if (!target || typeof target !== 'object') {
@@ -700,6 +703,7 @@ function handleChatSubscribe(
     if (!sessionId) {
       continue;
     }
+    viewedSessionIds.add(sessionId);
 
     const lastSeqRaw = (target as AnyRecord).lastSeq;
     const lastSeq = typeof lastSeqRaw === 'number' && Number.isFinite(lastSeqRaw)
@@ -842,8 +846,29 @@ export async function runDetachedChatTurn(
     session,
     { sessionId: input.sessionId, content: input.content, options: input.options ?? {} },
     dependencies,
+    {},
+    // Nobody asked for this run over a socket (queued, send-now, scheduled), so
+    // nothing would stream it: a tab already showing the session stayed frozen
+    // until a reload re-subscribed it. Hand the stream to the open sockets of
+    // the run's user that are showing this session, before the provider emits
+    // anything. A tab that opens the session later attaches via chat.subscribe.
+    (run) => {
+      for (const connection of connectedClients) {
+        if (connection.readyState !== WS_OPEN_STATE) continue;
+        if (!viewedSessionsBySocket.get(connection)?.has(run.appSessionId)) continue;
+        const connectionUserId = connectionUserIds.get(connection);
+        if (input.userId !== null && String(connectionUserId) !== String(input.userId)) continue;
+        chatRunRegistry.attachConnection(run.appSessionId, connection);
+      }
+    },
   );
 }
+
+/** The authenticated user of each chat socket, for routing detached runs. */
+const connectionUserIds = new WeakMap<object, string | number | null>();
+
+/** The sessions each socket last subscribed to, i.e. what that tab is showing. */
+const viewedSessionsBySocket = new WeakMap<object, Set<string>>();
 
 export function handleChatConnection(
   ws: WebSocket,
@@ -854,6 +879,7 @@ export function handleChatConnection(
   connectedClients.add(ws);
 
   const userId = readRequestUserId(request);
+  connectionUserIds.set(ws, userId);
 
   ws.on('message', async (rawMessage) => {
     try {
