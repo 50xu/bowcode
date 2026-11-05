@@ -66,6 +66,45 @@ const resolveOpenCodeConfigPath = async (scope: McpScope, workspacePath: string)
   return { filePath: jsonPath, exists: false };
 };
 
+/** Keys of the v2 `mcp` object that are settings, not (deprecated) server names. */
+const OPENCODE_MCP_RESERVED_KEYS = new Set(['servers', 'timeout']);
+
+/**
+ * Converts a server entry to OpenCode v2's `mcp.servers` shape: `enabled:
+ * false` becomes `disabled: true`, a numeric `timeout` (ms per request)
+ * becomes `{ execution }`, and a string `command` plus `args` becomes one
+ * command array. Returns null for entries that are not a local or remote
+ * server, such as a bare `{ enabled }` override.
+ */
+const toOpenCodeV2ServerConfig = (rawConfig: unknown): Record<string, unknown> | null => {
+  const config = readObjectRecord(rawConfig);
+  if (!config) {
+    return null;
+  }
+
+  const isLocal = config.type === 'local' || config.command !== undefined;
+  const isRemote = !isLocal && (config.type === 'remote' || typeof config.url === 'string');
+  if (!isLocal && !isRemote) {
+    return null;
+  }
+
+  const { enabled, timeout, args, ...rest } = config;
+  const converted: Record<string, unknown> = { ...rest, type: isLocal ? 'local' : 'remote' };
+  if (isLocal && typeof config.command === 'string') {
+    converted.command = [config.command, ...(readStringArray(args) ?? [])];
+  }
+  if (enabled === false) {
+    converted.disabled = true;
+  }
+  if (typeof timeout === 'number') {
+    converted.timeout = { execution: timeout };
+  } else if (timeout !== undefined) {
+    converted.timeout = timeout;
+  }
+
+  return converted;
+};
+
 export class OpenCodeMcpProvider extends McpProvider {
   constructor() {
     super('opencode', ['user', 'project'], ['stdio', 'http']);
@@ -74,9 +113,25 @@ export class OpenCodeMcpProvider extends McpProvider {
   protected async readScopedServers(scope: McpScope, workspacePath: string): Promise<Record<string, unknown>> {
     const { filePath } = await resolveOpenCodeConfigPath(scope, workspacePath);
     const config = await readOpenCodeConfig(filePath);
-    return readObjectRecord(config.mcp) ?? {};
+    const mcp = readObjectRecord(config.mcp) ?? {};
+    const servers: Record<string, unknown> = {};
+    // Deprecated top-level `mcp.<name>` entries first, so a v2 `mcp.servers`
+    // entry of the same name wins.
+    for (const [name, rawConfig] of Object.entries(mcp)) {
+      if (!OPENCODE_MCP_RESERVED_KEYS.has(name)) {
+        servers[name] = rawConfig;
+      }
+    }
+
+    return { ...servers, ...(readObjectRecord(mcp.servers) ?? {}) };
   }
 
+  /**
+   * Writes every server into v2's `mcp.servers`, converting deprecated
+   * top-level `mcp.<name>` entries on the way and dropping them from the top
+   * level. `mcp.timeout` is kept. A bare `{ enabled }` override of a server
+   * defined elsewhere has no v2 form, so it stays where it is.
+   */
   protected async writeScopedServers(
     scope: McpScope,
     workspacePath: string,
@@ -84,7 +139,24 @@ export class OpenCodeMcpProvider extends McpProvider {
   ): Promise<void> {
     const { filePath } = await resolveOpenCodeConfigPath(scope, workspacePath);
     const config = await readOpenCodeConfig(filePath);
-    config.mcp = servers;
+    const previousMcp = readObjectRecord(config.mcp) ?? {};
+    const nextMcp: Record<string, unknown> = {};
+    const nextServers: Record<string, unknown> = {};
+
+    for (const [name, rawConfig] of Object.entries(servers)) {
+      const converted = toOpenCodeV2ServerConfig(rawConfig);
+      if (converted) {
+        nextServers[name] = converted;
+      } else if (!OPENCODE_MCP_RESERVED_KEYS.has(name)) {
+        nextMcp[name] = rawConfig;
+      }
+    }
+
+    if (previousMcp.timeout !== undefined) {
+      nextMcp.timeout = previousMcp.timeout;
+    }
+    nextMcp.servers = nextServers;
+    config.mcp = nextMcp;
     await writeOpenCodeConfig(filePath, config);
   }
 
@@ -100,7 +172,6 @@ export class OpenCodeMcpProvider extends McpProvider {
       return {
         type: 'local',
         command: [input.command, ...(input.args ?? [])],
-        enabled: true,
         environment: input.env ?? {},
       };
     }
@@ -115,7 +186,6 @@ export class OpenCodeMcpProvider extends McpProvider {
     return {
       type: 'remote',
       url: input.url,
-      enabled: true,
       headers: input.headers ?? {},
     };
   }

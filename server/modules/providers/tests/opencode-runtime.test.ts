@@ -9,10 +9,10 @@ import { fileURLToPath } from 'node:url';
 import type { ProviderPermissionDecision, ProviderRuntimeContext } from '@/shared/types.js';
 
 /**
- * Drives the OpenCode runtime and the real `@opencode-ai/sdk` against a fake
- * `opencode serve` (tests/fixtures/fake-opencode-serve.ts) found on PATH, so
- * every turn goes through the SDK's own server start, client calls and event
- * stream without a real OpenCode or model.
+ * Drives the OpenCode runtime and the real `@opencode/client` against a fake
+ * OpenCode 2 `opencode serve` (tests/fixtures/fake-opencode-serve.ts) found on
+ * PATH, so every turn goes through the runtime's own server start, the
+ * client's calls and its event stream without a real OpenCode or model.
  */
 
 // Read when the runtime module loads, so set before importing it — the
@@ -24,6 +24,7 @@ const {
   readQuestionAnswers,
   reapOrphanedOpenCodeServers,
   resolveAutomaticPermissionReply,
+  toFormAnswer,
   toOpenCodePermissionReply,
 } = await import('@/modules/providers/list/opencode/opencode-runtime.provider.js');
 const { OpenCodeSessionsProvider } = await import('@/modules/providers/list/opencode/opencode-sessions.provider.js');
@@ -80,7 +81,7 @@ before(async () => {
 
   const pathKey = findEnvKey('PATH');
   setEnv(pathKey, `${binDir}${path.delimiter}${process.env[pathKey] || ''}`);
-  // Token usage is read from ~/.local/share/opencode; keep the real one out of it.
+  // Keep the real ~/.local/share/opencode out of every test.
   setEnv('HOME', tempRoot);
   setEnv('USERPROFILE', tempRoot);
   setEnv('OPENCODE_SERVER_PASSWORD', undefined);
@@ -203,13 +204,13 @@ const kinds = (frames: Frame[]) => frames.map((frame) => frame.kind);
 const findRequest = (requests: LogEntry[], method: string, pathPattern: RegExp) =>
   requests.find((entry) => entry.method === method && pathPattern.test(entry.path));
 
-const permissionStep = (patterns: string[], always: string[], permission = 'bash', id = 'per_1') => ({
+const permissionStep = (resources: string[], save: string[], action = 'shell', id = 'per_1') => ({
   type: 'permission',
   id,
-  permission,
-  patterns,
-  always,
-  metadata: { command: patterns[0] },
+  action,
+  resources,
+  save,
+  metadata: { command: resources[0] },
 });
 
 const questionStep = {
@@ -238,16 +239,18 @@ test('a new session runs on a private, authenticated server that stops with the 
   assert.equal(turn.frames[2].content, 'assistant response');
   assert.equal(turn.frames.at(-1)?.exitCode, 0);
 
-  // Every call carried the turn's password and the chat's project directory.
+  // Every call carried the turn's password.
   assert.ok(turn.requests.length > 0);
   for (const entry of turn.requests) {
     assert.match(String(entry.authorization), /^Basic /);
-    assert.equal(entry.directory, projectDir);
   }
-  const prompt = findRequest(turn.requests, 'POST', /^\/session\/ses_new\/prompt_async$/);
-  assert.deepEqual(prompt?.body.model, { providerID: 'github-copilot', modelID: 'gpt-5.6-terra' });
-  assert.deepEqual(prompt?.body.parts, [{ type: 'text', text: 'Hi' }]);
-  assert.equal(prompt?.body.agent, undefined);
+  // The session lives in the chat's project directory and runs the chat's model.
+  const created = findRequest(turn.requests, 'POST', /^\/api\/session$/);
+  assert.deepEqual(created?.body.location, { directory: projectDir });
+  assert.deepEqual(created?.body.model, { providerID: 'github-copilot', id: 'gpt-5.6-terra' });
+  assert.equal(created?.body.agent, undefined);
+  const prompt = findRequest(turn.requests, 'POST', /^\/api\/session\/ses_new\/prompt$/);
+  assert.equal(prompt?.body.text, 'Hi');
 
   // Loopback only, with a password of its own that never stays in Bowcode's environment.
   assert.ok(turn.started?.args.includes('--hostname=127.0.0.1'));
@@ -267,9 +270,9 @@ test('an attachment-only message sends the attachment list as the prompt', async
   });
 
   assert.equal(turn.error, null);
-  const prompt = findRequest(turn.requests, 'POST', /\/prompt_async$/);
-  assert.match(prompt?.body.parts[0].text, /<files_input>/);
-  assert.match(prompt?.body.parts[0].text, /brief\.pdf/);
+  const prompt = findRequest(turn.requests, 'POST', /\/prompt$/);
+  assert.match(prompt?.body.text, /<files_input>/);
+  assert.match(prompt?.body.text, /brief\.pdf/);
 });
 
 test('a permission request reaches the chat and is answered once', async () => {
@@ -287,13 +290,13 @@ test('a permission request reaches the chat and is answered once', async () => {
 
   assert.equal(turn.error, null);
   const request = turn.frames.find((frame) => frame.kind === 'permission_request');
-  assert.equal(request?.toolName, 'bash');
+  assert.equal(request?.toolName, 'shell');
   assert.deepEqual(request?.context, { patterns: ['git status'], always: ['git status *'] });
   assert.deepEqual(request?.input, { command: 'git status', patterns: ['git status'] });
   // A client that subscribes while the prompt is open gets it replayed.
   assert.equal((pendingWhileAsked[0] as Frame | undefined)?.requestId, 'per_1');
 
-  assert.deepEqual(findRequest(turn.requests, 'POST', /^\/permission\/per_1\/reply$/)?.body, { reply: 'once' });
+  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { decision: 'once' });
   assert.ok(kinds(turn.frames).includes('permission_resolved'));
   const tool = turn.frames.find((frame) => frame.kind === 'tool_use');
   assert.equal(tool?.toolResult?.isError, false);
@@ -307,30 +310,30 @@ test('Always allow is remembered for the same chat, not for others', async () =>
     scenario: { newSessionId: 'ses_always', steps: [permissionStep(['git status'], ['git status *'])] },
     onFrame: (frame) => (frame.kind === 'permission_request' ? { allow: true, rememberEntry: 'always' } : undefined),
   });
-  assert.deepEqual(findRequest(first.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { reply: 'always' });
+  assert.deepEqual(findRequest(first.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { decision: 'always' });
 
   // The next turn's server knows nothing of it, so Bowcode answers for the chat.
   const second = await runTurn({
     appSessionId: 'app-always',
     resumeSessionId: 'ses_always',
-    scenario: { sessions: { ses_always: {} }, steps: [permissionStep(['git status --short'], ['git status *'], 'bash', 'per_2')] },
+    scenario: { sessions: { ses_always: {} }, steps: [permissionStep(['git status --short'], ['git status *'], 'shell', 'per_2')] },
     onFrame: (frame) => (frame.kind === 'permission_request' ? { allow: false } : undefined),
   });
   assert.equal(second.frames.some((frame) => frame.kind === 'permission_request'), false);
-  assert.deepEqual(findRequest(second.requests, 'POST', /\/permission\/per_2\/reply$/)?.body, { reply: 'once' });
+  assert.deepEqual(findRequest(second.requests, 'POST', /\/permission\/per_2\/reply$/)?.body, { decision: 'once' });
 
   // A command the approval does not cover is still asked.
   const uncovered = await runTurn({
     appSessionId: 'app-always',
     resumeSessionId: 'ses_always',
-    scenario: { sessions: { ses_always: {} }, steps: [permissionStep(['git push'], ['git push *'], 'bash', 'per_3')] },
+    scenario: { sessions: { ses_always: {} }, steps: [permissionStep(['git push'], ['git push *'], 'shell', 'per_3')] },
     onFrame: (frame) => (frame.kind === 'permission_request' ? { allow: true } : undefined),
   });
   assert.equal(uncovered.frames.filter((frame) => frame.kind === 'permission_request').length, 1);
 
   const otherChat = await runTurn({
     appSessionId: 'app-other',
-    scenario: { steps: [permissionStep(['git status'], ['git status *'], 'bash', 'per_4')] },
+    scenario: { steps: [permissionStep(['git status'], ['git status *'], 'shell', 'per_4')] },
     onFrame: (frame) => (frame.kind === 'permission_request' ? { allow: true } : undefined),
   });
   assert.equal(otherChat.frames.filter((frame) => frame.kind === 'permission_request').length, 1);
@@ -343,7 +346,7 @@ test('Deny rejects the request, which ends the turn like OpenCode\'s own Reject'
   });
 
   assert.equal(turn.error, null);
-  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { reply: 'reject' });
+  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { decision: 'reject' });
   assert.equal(turn.frames.find((frame) => frame.kind === 'tool_use')?.toolResult?.isError, true);
   assert.equal(turn.frames.some((frame) => frame.kind === 'text'), false);
   assert.equal(turn.frames.at(-1)?.kind, 'complete');
@@ -368,7 +371,7 @@ test('an unanswered permission is rejected once its timeout runs out', async () 
 
   const cancelled = turn.frames.find((frame) => frame.kind === 'permission_cancelled');
   assert.equal(cancelled?.reason, 'timeout');
-  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { reply: 'reject' });
+  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { decision: 'reject' });
 });
 
 test('bypassPermissions answers permissions and questions without asking anyone', async () => {
@@ -379,12 +382,9 @@ test('bypassPermissions answers permissions and questions without asking anyone'
 
   assert.equal(turn.error, null);
   assert.equal(turn.frames.some((frame) => frame.kind === 'permission_request'), false);
-  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { reply: 'once' });
-  // Unanswered, so the agent carries on instead of the turn ending.
-  assert.deepEqual(findRequest(turn.requests, 'POST', /\/question\/que_1\/reply$/)?.body, { answers: [[], []] });
-  assert.ok(turn.frames.some((frame) => frame.kind === 'text' && frame.content === 'carried on'));
-  // A bypassed turn does not touch the session's question rule.
-  assert.equal(findRequest(turn.requests, 'PATCH', /^\/session\//), undefined);
+  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { decision: 'once' });
+  // Nobody can answer, so the question form is cancelled with a note telling the agent to carry on.
+  assert.match(String(findRequest(turn.requests, 'DELETE', /\/form\/que_1$/)?.query?.message ?? ''), /not available/);
 });
 
 test('acceptEdits approves file edits and still asks for everything else', async () => {
@@ -392,20 +392,63 @@ test('acceptEdits approves file edits and still asks for everything else', async
     permissionMode: 'acceptEdits',
     scenario: { steps: [
       permissionStep(['src/app.ts'], ['*'], 'edit', 'per_edit'),
-      permissionStep(['npm install'], ['npm *'], 'bash', 'per_bash'),
+      permissionStep(['npm install'], ['npm *'], 'shell', 'per_shell'),
     ] },
     onFrame: (frame) => (frame.kind === 'permission_request' ? { allow: true } : undefined),
   });
 
   const asked = turn.frames.filter((frame) => frame.kind === 'permission_request').map((frame) => frame.toolName);
-  assert.deepEqual(asked, ['bash']);
-  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_edit\/reply$/)?.body, { reply: 'once' });
+  assert.deepEqual(asked, ['shell']);
+  assert.deepEqual(findRequest(turn.requests, 'POST', /\/permission\/per_edit\/reply$/)?.body, { decision: 'once' });
 });
 
-test('plan mode prompts the plan agent', async () => {
-  const turn = await runTurn({ permissionMode: 'plan', scenario: { steps: [{ type: 'text', text: 'a plan' }] } });
+test('plan mode runs the plan agent, and leaving it switches back to the default agent', async () => {
+  const fresh = await runTurn({ permissionMode: 'plan', scenario: { steps: [{ type: 'text', text: 'a plan' }] } });
+  assert.equal(findRequest(fresh.requests, 'POST', /^\/api\/session$/)?.body.agent, 'plan');
 
-  assert.equal(findRequest(turn.requests, 'POST', /\/prompt_async$/)?.body.agent, 'plan');
+  const intoPlan = await runTurn({
+    permissionMode: 'plan',
+    resumeSessionId: 'ses_build',
+    scenario: { sessions: { ses_build: { agent: 'build' } }, steps: [{ type: 'text', text: 'a plan' }] },
+  });
+  assert.deepEqual(findRequest(intoPlan.requests, 'POST', /^\/api\/session\/ses_build\/agent$/)?.body, { agent: 'plan' });
+
+  const outOfPlan = await runTurn({
+    resumeSessionId: 'ses_plan',
+    scenario: { defaultAgent: 'review', sessions: { ses_plan: { agent: 'plan' } }, steps: [{ type: 'text', text: 'done' }] },
+  });
+  assert.deepEqual(findRequest(outOfPlan.requests, 'POST', /^\/api\/session\/ses_plan\/agent$/)?.body, { agent: 'review' });
+
+  const stayBuild = await runTurn({
+    resumeSessionId: 'ses_build',
+    scenario: { sessions: { ses_build: { agent: 'build' } }, steps: [{ type: 'text', text: 'done' }] },
+  });
+  assert.equal(findRequest(stayBuild.requests, 'POST', /\/agent$/), undefined);
+});
+
+test('a resumed session switches to the chat\'s model only when it differs', async () => {
+  const switched = await runTurn({
+    resumeSessionId: 'ses_model',
+    scenario: { sessions: { ses_model: { model: { providerID: 'anthropic', id: 'claude-sonnet-5-5' } } }, steps: [] },
+  });
+  assert.equal(switched.frames.some((frame) => frame.kind === 'session_created'), false);
+  assert.deepEqual(
+    findRequest(switched.requests, 'POST', /^\/api\/session\/ses_model\/model$/)?.body,
+    { model: { providerID: 'github-copilot', id: 'gpt-5.6-terra' } },
+  );
+
+  const same = await runTurn({
+    resumeSessionId: 'ses_model',
+    scenario: { sessions: { ses_model: { model: { providerID: 'github-copilot', id: 'gpt-5.6-terra' } } }, steps: [] },
+  });
+  assert.equal(findRequest(same.requests, 'POST', /\/model$/), undefined);
+});
+
+test('the turn reports OpenCode\'s session token totals', async () => {
+  const turn = await runTurn({ scenario: { steps: [{ type: 'usage', input: 1200, output: 34 }, { type: 'text', text: 'ok' }] } });
+
+  const budget = turn.frames.find((frame) => frame.kind === 'status' && frame.text === 'token_budget');
+  assert.deepEqual(budget?.tokenBudget, { used: 1234, inputTokens: 1200, outputTokens: 34, breakdown: { input: 1200, output: 34 } });
 });
 
 test('a question is answered with one label list per question and shown as a question card', async () => {
@@ -421,8 +464,8 @@ test('a question is answered with one label list per question and shown as a que
   assert.deepEqual(request?.context, { answerFormat: 'label-lists' });
   assert.equal(request?.input.questions[1].multiSelect, true);
   assert.deepEqual(
-    findRequest(turn.requests, 'POST', /^\/question\/que_1\/reply$/)?.body,
-    { answers: [['Red'], ['Small', 'Large, wide']] },
+    findRequest(turn.requests, 'POST', /\/form\/que_1\/reply$/)?.body,
+    { answer: { q0: 'Red', q1: ['Small', 'Large, wide'] } },
   );
 
   const card = turn.frames.find((frame) => frame.kind === 'tool_use');
@@ -430,17 +473,17 @@ test('a question is answered with one label list per question and shown as a que
   assert.deepEqual(card?.toolInput.answers, { 'Which color?': 'Red', 'Which sizes?': 'Small, Large, wide' });
 });
 
-test('dismissing a question rejects it', async () => {
+test('dismissing a question cancels its form', async () => {
   const turn = await runTurn({
     scenario: { steps: [questionStep, { type: 'text', text: 'never reached' }] },
     onFrame: (frame) => (frame.kind === 'permission_request' ? { allow: false } : undefined),
   });
 
-  assert.ok(findRequest(turn.requests, 'POST', /^\/question\/que_1\/reject$/));
+  assert.ok(findRequest(turn.requests, 'DELETE', /\/form\/que_1$/));
   assert.equal(turn.frames.some((frame) => frame.kind === 'text'), false);
 });
 
-test('stopping a turn withdraws its prompt, aborts the session and settles after the stop', async () => {
+test('stopping a turn withdraws its prompt, interrupts the session and settles after the stop', async () => {
   let abortReturnedAt = 0;
   let abortResult: boolean | null = null;
   const turnPromise = runTurn({
@@ -462,7 +505,7 @@ test('stopping a turn withdraws its prompt, aborts the session and settles after
   assert.equal(abortResult, true);
   assert.ok(abortReturnedAt > 0 && abortReturnedAt <= settledAt, 'the turn settles only after its abort returned');
   assert.equal(turn.frames.find((frame) => frame.kind === 'permission_cancelled')?.reason, 'cancelled');
-  assert.ok(findRequest(turn.requests, 'POST', /^\/session\/[^/]+\/abort$/));
+  assert.ok(findRequest(turn.requests, 'POST', /^\/api\/session\/[^/]+\/interrupt$/));
   // The chat's abort handler sends the terminal complete, not the runtime.
   assert.equal(turn.frames.some((frame) => frame.kind === 'complete' || frame.kind === 'error'), false);
   assert.ok(await waitForExit(turn.serverPid!), 'the stopped turn\'s server process is gone');
@@ -522,8 +565,8 @@ test('requests OpenCode settles itself are withdrawn from the chat', async () =>
     scenario: { steps: [{
       type: 'parallel-permissions',
       requests: [
-        { id: 'per_a', permission: 'bash', patterns: ['npm test'], always: ['npm *'] },
-        { id: 'per_b', permission: 'bash', patterns: ['npm run lint'], always: ['npm *'] },
+        { id: 'per_a', action: 'shell', resources: ['npm test'], save: ['npm *'] },
+        { id: 'per_b', action: 'shell', resources: ['npm run lint'], save: ['npm *'] },
       ],
     }] },
     // Only the first is answered; OpenCode's reject cascade settles the second.
@@ -540,7 +583,7 @@ test('an event that cannot be handled does not end the turn', async () => {
   const turn = await runTurn({
     scenario: { steps: [{ type: 'reasoning', text: 'thinking' }, { type: 'text', text: 'still answered' }] },
     normalizeMessage: (raw, sessionId) => {
-      if ((raw as { type?: string }).type === 'reasoning') {
+      if ((raw as { item?: { type?: string } }).item?.type === 'reasoning') {
         throw new Error('cannot normalize this one');
       }
       return sessionsProvider.normalizeMessage(raw, sessionId);
@@ -613,32 +656,6 @@ test('the leftover-server sweep only trusts owner pids from its own PID namespac
   }
 });
 
-test('a session `opencode run` created gets its question tool back unless the agent denies questions', async () => {
-  const legacyRules = [
-    { permission: 'question', pattern: '*', action: 'deny' },
-    { permission: 'plan_enter', pattern: '*', action: 'deny' },
-  ];
-  const resumed = await runTurn({
-    resumeSessionId: 'ses_legacy',
-    scenario: { sessions: { ses_legacy: { permission: legacyRules } }, steps: [{ type: 'text', text: 'hi' }] },
-  });
-  assert.equal(resumed.frames.some((frame) => frame.kind === 'session_created'), false);
-  assert.deepEqual(
-    findRequest(resumed.requests, 'PATCH', /^\/session\/ses_legacy$/)?.body,
-    { permission: [{ permission: 'question', pattern: '*', action: 'allow' }] },
-  );
-
-  const userDenies = await runTurn({
-    resumeSessionId: 'ses_legacy',
-    scenario: {
-      sessions: { ses_legacy: { permission: legacyRules } },
-      agents: [{ name: 'build', permission: [{ permission: 'question', pattern: '*', action: 'deny' }] }],
-      steps: [{ type: 'text', text: 'hi' }],
-    },
-  });
-  assert.equal(findRequest(userDenies.requests, 'PATCH', /^\/session\//), undefined);
-});
-
 test('a prompt OpenCode refuses fails the turn', async () => {
   const turn = await runTurn({ scenario: { promptStatus: 400, steps: [] } });
 
@@ -648,7 +665,7 @@ test('a prompt OpenCode refuses fails the turn', async () => {
 });
 
 test('an error reported before the turn runs ends it with that error, once', async () => {
-  const turn = await runTurn({ scenario: { steps: [{ type: 'error', name: 'ProviderModelNotFoundError', message: 'Model not found: x/y' }] } });
+  const turn = await runTurn({ scenario: { steps: [{ type: 'error', errorType: 'provider.model_not_found', message: 'Model not found: x/y' }] } });
 
   assert.match(String(turn.error?.message), /Model not found/);
   assert.equal(turn.frames.filter((frame) => frame.kind === 'error').length, 1);
@@ -663,18 +680,15 @@ test('a server that dies mid-turn fails the turn', async () => {
   assert.equal(turn.frames.at(-1)?.exitCode, 1);
 });
 
-test('an OpenCode too old for permission and question replies is refused before any prompt', async () => {
-  const old = await runTurn({ scenario: { version: '1.0.200', steps: [{ type: 'text', text: 'never sent' }] } });
-  assert.match(String(old.frames.find((frame) => frame.kind === 'error')?.content), /OpenCode 1\.0\.200 is too old.*1\.1\.8/);
+test('an OpenCode older than 2 is refused before any prompt', async () => {
+  const old = await runTurn({ scenario: { version: '1.19.5', steps: [{ type: 'text', text: 'never sent' }] } });
+  assert.match(String(old.frames.find((frame) => frame.kind === 'error')?.content), /OpenCode 1\.19\.5 is too old.*needs 2 or newer/);
   assert.equal(old.frames.at(-1)?.exitCode, 1);
-  assert.equal(findRequest(old.requests, 'POST', /\/prompt_async$/), undefined);
+  assert.equal(findRequest(old.requests, 'POST', /\/prompt$/), undefined);
 
-  // 1.1.7 took one answer string per question, not label lists.
-  const oneOneSeven = await runTurn({ scenario: { version: '1.1.7', steps: [] } });
-  assert.match(String(oneOneSeven.frames.find((frame) => frame.kind === 'error')?.content), /OpenCode 1\.1\.7 is too old/);
-
+  // OpenCode 1 has no /api/info at all.
   const unversioned = await runTurn({ scenario: { version: null, steps: [] } });
-  assert.match(String(unversioned.frames.find((frame) => frame.kind === 'error')?.content), /needs OpenCode 1\.1\.8 or newer/);
+  assert.match(String(unversioned.frames.find((frame) => frame.kind === 'error')?.content), /needs OpenCode 2 or newer/);
 
   // Snapshot builds report 0.0.0 and are let through.
   const snapshot = await runTurn({ scenario: { version: '0.0.0-dev-202610300000', steps: [{ type: 'text', text: 'ok' }] } });
@@ -695,10 +709,11 @@ test('a missing CLI is reported as not installed', async () => {
 });
 
 test('permission modes map onto automatic replies', () => {
-  assert.equal(resolveAutomaticPermissionReply('bypassPermissions', 'bash'), 'once');
+  assert.equal(resolveAutomaticPermissionReply('bypassPermissions', 'shell'), 'once');
   assert.equal(resolveAutomaticPermissionReply('acceptEdits', 'edit'), 'once');
-  assert.equal(resolveAutomaticPermissionReply('acceptEdits', 'bash'), null);
-  assert.equal(resolveAutomaticPermissionReply('plan', 'bash'), null);
+  assert.equal(resolveAutomaticPermissionReply('acceptEdits', 'write'), 'once');
+  assert.equal(resolveAutomaticPermissionReply('acceptEdits', 'shell'), null);
+  assert.equal(resolveAutomaticPermissionReply('plan', 'shell'), null);
   assert.equal(resolveAutomaticPermissionReply('default', 'external_directory'), null);
   assert.equal(resolveAutomaticPermissionReply(undefined, 'bash'), null);
 
@@ -727,4 +742,25 @@ test('question answers are read as one label list per question', () => {
   assert.deepEqual(readQuestionAnswers({ answers: [['Red']] }, questions), [['Red'], []]);
   assert.deepEqual(readQuestionAnswers({ answers: { 'Which color?': 'Blue', 'Which sizes?': '' } }, questions), [['Blue'], []]);
   assert.deepEqual(readQuestionAnswers(undefined, questions), [[], []]);
+});
+
+test('picked labels become the form answer OpenCode expects', () => {
+  const form = {
+    id: 'frm_1',
+    sessionID: 'ses_1',
+    title: 'Questions',
+    fields: [
+      { key: 'q0', type: 'string', title: 'Color', options: [{ value: 'red', label: 'Red' }, { value: 'blue', label: 'Blue' }] },
+      { key: 'q1', type: 'multiselect', title: 'Sizes', options: [{ value: 's', label: 'Small' }, { value: 'l', label: 'Large' }] },
+      { key: 'q2', type: 'boolean', title: 'Sure?' },
+      { key: 'q3', type: 'string', title: 'Name' },
+    ],
+  } as unknown as Parameters<typeof toFormAnswer>[0];
+
+  assert.deepEqual(
+    toFormAnswer(form, [['Blue'], ['Small', 'Large'], ['Yes'], ['typed answer']]),
+    { q0: 'blue', q1: ['s', 'l'], q2: true, q3: 'typed answer' },
+  );
+  // A question left unanswered is left out of the answer.
+  assert.deepEqual(toFormAnswer(form, [['Red']]), { q0: 'red' });
 });

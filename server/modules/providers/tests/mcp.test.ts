@@ -182,7 +182,16 @@ test('providerMcpService handles opencode MCP config and capability validation',
     path.join(tempRoot, '.config', 'opencode', 'opencode.jsonc'),
     `{
       // Existing comments should not block OpenCode MCP reads.
-      "mcp": {}
+      "mcp": {
+        "timeout": { "startup": 5000 },
+        // Deprecated top-level entry, migrated into mcp.servers on the next write.
+        "legacy-off": { "type": "local", "command": ["legacy-mcp"], "enabled": false, "timeout": 3000 },
+        // A bare toggle of a server defined elsewhere has no v2 form.
+        "toggle-only": { "enabled": false },
+        "servers": {
+          "v2-remote": { "type": "remote", "url": "https://v2.example.com/mcp", "disabled": true }
+        }
+      }
     }\n`,
     'utf8',
   );
@@ -208,14 +217,27 @@ test('providerMcpService handles opencode MCP config and capability validation',
     });
 
     const userConfig = await readJson(path.join(tempRoot, '.config', 'opencode', 'opencode.jsonc'));
-    const userServers = userConfig.mcp as Record<string, unknown>;
+    const userMcp = userConfig.mcp as Record<string, unknown>;
+    const userServers = userMcp.servers as Record<string, unknown>;
     const userStdio = userServers['opencode-user-stdio'] as Record<string, unknown>;
     assert.equal(userStdio.type, 'local');
     assert.deepEqual(userStdio.command, ['node', 'server.js']);
     assert.deepEqual(userStdio.environment, { API_KEY: 'x' });
+    assert.equal(userStdio.enabled, undefined);
+    // The v2 entry is kept, the legacy one is converted and moved, settings stay.
+    assert.deepEqual(userServers['v2-remote'], { type: 'remote', url: 'https://v2.example.com/mcp', disabled: true });
+    assert.deepEqual(userServers['legacy-off'], {
+      type: 'local',
+      command: ['legacy-mcp'],
+      disabled: true,
+      timeout: { execution: 3000 },
+    });
+    assert.equal(userMcp['legacy-off'], undefined);
+    assert.deepEqual(userMcp['toggle-only'], { enabled: false });
+    assert.deepEqual(userMcp.timeout, { startup: 5000 });
 
     const projectConfig = await readJson(path.join(workspacePath, 'opencode.json'));
-    const projectServers = projectConfig.mcp as Record<string, unknown>;
+    const projectServers = (projectConfig.mcp as Record<string, unknown>).servers as Record<string, unknown>;
     const projectHttp = projectServers['opencode-project-http'] as Record<string, unknown>;
     assert.equal(projectHttp.type, 'remote');
     assert.equal(projectHttp.url, 'https://opencode.example.com/mcp');
@@ -223,6 +245,10 @@ test('providerMcpService handles opencode MCP config and capability validation',
     const grouped = await providerMcpService.listProviderMcpServers('opencode', { workspacePath });
     assert.ok(grouped.user.some((server) => server.name === 'opencode-user-stdio' && server.transport === 'stdio'));
     assert.ok(grouped.project.some((server) => server.name === 'opencode-project-http' && server.transport === 'http'));
+    assert.deepEqual(
+      grouped.user.map((server) => server.name).sort(),
+      ['legacy-off', 'opencode-user-stdio', 'v2-remote'],
+    );
 
     await assert.rejects(
       providerMcpService.upsertProviderMcpServer('opencode', {
@@ -287,7 +313,7 @@ test('providerMcpService global adder writes to all providers and rejects unsupp
     assert.ok((codexProject.mcp_servers as Record<string, unknown>)['global-http']);
 
     const opencodeProject = await readJson(path.join(workspacePath, 'opencode.json'));
-    assert.ok((opencodeProject.mcp as Record<string, unknown>)['global-http']);
+    assert.ok(((opencodeProject.mcp as Record<string, unknown>).servers as Record<string, unknown>)['global-http']);
 
     await assert.rejects(
       providerMcpService.addMcpServerToAllProviders({

@@ -377,18 +377,19 @@ with `chat.permission-response`. When an answer arrives it emits `permission_res
 with the same id; if the run ends or the request times out it emits `permission_cancelled`
 instead.
 
-OpenCode's runtime drives a private `opencode serve` per turn through `@opencode-ai/sdk`
-and turns the server's `permission.asked` and `question.asked` events into the same
-frames. A permission request carries OpenCode's permission name as `toolName` and, in
+OpenCode's runtime drives a private OpenCode 2 `opencode serve` per turn through `@opencode/client`
+and turns the server's `permission.asked` and `form.created` events into the same
+frames. A permission request carries OpenCode's permission action as `toolName` and, in
 `context.always`, the patterns "Always allow" approves; Allow once, Always allow and Deny
-go back as OpenCode's `once`, `always` and `reject` (a plain reject ends the turn, as
-OpenCode's own Reject does). A question arrives as an `AskUserQuestion` request with
+go back as OpenCode's `once`, `always` and `reject`. A question (OpenCode 2 asks its
+`question` tool through a form) arrives as an `AskUserQuestion` request with
 `context.answerFormat: 'label-lists'`: the panel answers with one label list per question,
-and its Dismiss rejects the question. OpenCode remembers "Always allow" only for its
-server's lifetime, so the runtime keeps the approved patterns per chat in memory and
-answers later matching requests itself. In bypassPermissions (also how `/api/agent`
-runs) every request is approved once and questions are answered as unanswered, so such a
-turn never waits for anyone. The distinction matters because the answer itself travels only on the inbound
+which becomes the form's answer, and its Dismiss cancels the form. The chat cannot tell
+whether OpenCode saved an "Always allow" rule, so the runtime also keeps the approved
+patterns per chat in memory and answers later matching requests itself. In
+bypassPermissions (also how `/api/agent` runs) every request is approved once and question
+forms are cancelled with a note telling the agent to carry on, so such a turn never waits
+for anyone. The distinction matters because the answer itself travels only on the inbound
 socket: without the outbound `permission_resolved`, the `permission_request` sitting in
 the replay buffer had nothing to retract it, so a mid-run page refresh resurrected an
 already-answered prompt — and a second tab kept it forever. `permissionPromptReplay.test.tsx`

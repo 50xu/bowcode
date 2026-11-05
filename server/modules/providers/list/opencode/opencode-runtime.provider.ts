@@ -1,29 +1,31 @@
 /**
- * OpenCode SDK Integration
- * ========================
+ * OpenCode v2 Integration
+ * =======================
  *
- * Runs OpenCode chat turns through the official `@opencode-ai/sdk`.
+ * Runs OpenCode chat turns against OpenCode 2's HTTP API through the official
+ * `@opencode/client`.
  *
- * Every turn gets its own `opencode serve`, started with the SDK's
- * `createOpencodeServer` and stopped when the turn ends. The SDK client then
- * creates or resumes the session, sends the prompt, follows the server's event
- * stream and answers the two requests OpenCode makes of its user while a turn
- * runs:
+ * Every turn gets its own `opencode serve`, started by this runtime and stopped
+ * when the turn ends. The client then creates or resumes the session, sends
+ * the prompt, follows the server's event stream and answers the two requests
+ * OpenCode makes of its user while a turn runs:
  *
  * - `permission.asked` — a tool call the user's permission rules mark `ask`
  *   (for example reading an uploaded attachment, which lives outside the
  *   project). It reaches the chat as a `permission_request`, and the chat's
  *   decision goes back as OpenCode's `once`, `always` or `reject`.
- * - `question.asked` — the agent's `question` tool. It reaches the chat as an
- *   AskUserQuestion prompt; the picked labels go back as the answers, and
- *   Dismiss rejects the question.
+ * - `form.created` — a form the agent wants filled in, which is how OpenCode 2
+ *   delivers its `question` tool. It reaches the chat as an AskUserQuestion
+ *   prompt; the picked labels go back as the form's answer, and Dismiss
+ *   cancels the form.
  *
- * A server per turn, rather than one shared server, is deliberate: OpenCode
- * reads its config, credentials and MCP servers when a project is first opened
- * and does not notice later edits, so a long-lived server would keep running
- * with whatever was configured when it started. A fresh server per turn picks
- * up the current config exactly like the `opencode run` process it replaces.
- * The server is private to its turn, so every request it raises is the turn's.
+ * A server per turn, rather than OpenCode's shared background service, is
+ * deliberate: the turn's server reads the current config, credentials and MCP
+ * servers when it starts, it is private to its turn so every request it raises
+ * is the turn's, and stopping it is the reliable way to end a stopped turn.
+ *
+ * Only OpenCode 2 is supported: OpenCode 1's API, events and database are
+ * different, and a 1.x server is refused before any prompt is sent.
  *
  * ## Usage
  *
@@ -32,23 +34,21 @@
  * - opencodeRuntime.permissions - Answer or list the prompts a turn is waiting on
  */
 
+import type { ChildProcess } from 'node:child_process';
 import crypto from 'node:crypto';
-import fsSync from 'node:fs';
 import { readdir, readFile, readlink } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
-import { createOpencodeClient, createOpencodeServer } from '@opencode-ai/sdk/v2';
+import spawn from 'cross-spawn';
+import { OpenCode } from '@opencode/client';
 import type {
-  Config as OpenCodeConfig,
-  Event as OpenCodeEvent,
-  OpencodeClient,
-  Part as OpenCodePart,
+  FormInfo,
+  OpenCodeClient,
+  OpenCodeEvent,
   PermissionRequest as OpenCodePermissionRequest,
-  PermissionRuleset as OpenCodePermissionRuleset,
-  QuestionRequest as OpenCodeQuestionRequest,
-} from '@opencode-ai/sdk/v2';
+  TokenUsageInfo,
+} from '@opencode/client';
 
 // eslint-disable-next-line boundaries/no-unknown -- Shared configuration helper is not classified by the legacy boundary map.
 import { readEnv } from '@/shared/env.js';
@@ -66,10 +66,7 @@ import {
 import {
   createCompleteMessage,
   createNormalizedMessage,
-  getOpenCodeDatabasePath,
   readObjectRecord,
-  stripJsonComments,
-  stripTrailingCommas,
 } from '@/shared/utils.js';
 import type {
   AnyRecord,
@@ -88,21 +85,14 @@ const reportRunFailed = notifyRunFailed as (input: AnyRecord) => void;
 
 const PROVIDER = 'opencode';
 
-const NOT_INSTALLED_MESSAGE = 'OpenCode CLI is not installed. Install it from https://opencode.ai/docs/';
+const NOT_INSTALLED_MESSAGE = 'OpenCode CLI is not installed. Install OpenCode 2 or newer from https://opencode.ai/docs/';
+
+/** Oldest OpenCode major version whose API this runtime speaks. */
+const MIN_OPENCODE_MAJOR_VERSION = 2;
 
 /**
- * First OpenCode release with both APIs the runtime answers through: the
- * permission requests (`permission.asked` and its reply route, 1.0.224) and
- * questions answered with one label list per question (1.1.8; 1.1.7 took one
- * string per question). An older server would wait forever for a reply the
- * runtime cannot give, so it is refused up front instead.
- */
-const MIN_OPENCODE_VERSION = '1.1.8';
-
-/**
- * How long `opencode serve` may take to print its address. The SDK's own
- * default is 5 s, which a first start (database migration, plugin install) or a
- * busy machine can exceed.
+ * How long `opencode serve` may take to print its address. A first start
+ * (database migration, plugin install) or a busy machine can take a while.
  */
 const SERVER_START_TIMEOUT_MS = 60_000;
 
@@ -121,8 +111,20 @@ const EVENT_STREAM_CONNECT_TIMEOUT_MS = SERVER_START_TIMEOUT_MS;
  */
 const OWNER_PID_ENV = 'BOWCODE_OPENCODE_OWNER_PID';
 
-/** How long stopping a turn waits for OpenCode's session abort before stopping the server anyway. */
+/** How long stopping a turn waits for OpenCode's interrupt before stopping the server anyway. */
 const SESSION_ABORT_TIMEOUT_MS = 5_000;
+
+/** How long a stopped server may take to exit before it is killed. */
+const SERVER_STOP_GRACE_MS = 3_000;
+
+/** Line `opencode serve` prints once it accepts connections. */
+const SERVER_LISTENING_PATTERN = /listening on\s+(https?:\/\/\S+)/i;
+
+/**
+ * Told to the agent when nobody can answer its question (bypassPermissions,
+ * /api/agent runs), so it carries on instead of waiting.
+ */
+const UNANSWERED_QUESTION_MESSAGE = 'The user is not available to answer questions right now. Continue with your best judgment.';
 
 const readTimeoutFromEnv = (name: string, fallback: number): number => {
   const parsed = Number.parseInt(name.startsWith('BOWCODE_') ? readEnv(name as `BOWCODE_${string}`) ?? '' : process.env[name] ?? '', 10);
@@ -148,9 +150,13 @@ const QUESTION_TIMEOUT_MS = readTimeoutFromEnv('OPENCODE_QUESTION_TIMEOUT_MS', 3
  */
 const MAX_REMEMBERED_APPROVAL_SESSIONS = 500;
 
+/** Permission actions acceptEdits approves without asking: OpenCode's file-changing tools. */
+const OPENCODE_EDIT_ACTIONS = new Set(['edit', 'write', 'patch', 'apply_patch']);
+
 /** How a chat's decision reaches OpenCode's permission API. */
 type OpenCodePermissionReply = 'once' | 'always' | 'reject';
 
+/** A running `opencode serve` owned by one turn. */
 type OpenCodeServer = { url: string; close(): void };
 
 /** One running turn, keyed in `activeTurns` by the session it runs for. */
@@ -159,10 +165,10 @@ type OpenCodeTurn = {
   /** Ends the event stream and stops a server that is still starting. */
   abortController: AbortController;
   server: OpenCodeServer | null;
-  client: OpencodeClient | null;
+  client: OpenCodeClient | null;
   providerSessionId: string | null;
   aborted: boolean;
-  /** Settles once a requested stop has finished (session aborted, server stopped). */
+  /** Settles once a requested stop has finished (session interrupted, server stopped). */
   abortFinished: Promise<void> | null;
   /** Wakes a turn that is waiting for OpenCode to finish. */
   finish(): void;
@@ -183,7 +189,7 @@ type PendingOpenCodePrompt = {
   settle(reason?: string): void;
 };
 
-/** A rule an "Always allow" approved: OpenCode permission plus one of its `always` patterns. */
+/** A rule an "Always allow" approved: OpenCode action plus one of its `save` patterns. */
 type RememberedApproval = {
   permission: string;
   pattern: string;
@@ -191,10 +197,10 @@ type RememberedApproval = {
 
 const activeTurns = new Map<string, OpenCodeTurn>();
 const pendingPrompts = new Map<string, PendingOpenCodePrompt>();
-// "Always allow" is remembered by OpenCode only in its server's memory, and a
-// turn's server stops with the turn. The approved patterns are kept here per
-// chat instead (in memory, never persisted), so a later turn in the same chat
-// is not asked again for what the user already allowed always.
+// "Always allow" is remembered by OpenCode per project only when it saves the
+// rule, and the chat cannot tell whether it did. The approved patterns are
+// kept here per chat as well (in memory, never persisted), so a later turn in
+// the same chat is not asked again for what the user already allowed always.
 const rememberedApprovals = new Map<string, RememberedApproval[]>();
 
 // ---------------------------------------------------------------------------
@@ -206,7 +212,7 @@ const rememberedApprovals = new Map<string, RememberedApproval[]>();
  * or null when the chat has to ask.
  *
  * - bypassPermissions → `once` for everything, like `opencode run --auto`.
- * - acceptEdits       → `once` for file edits; everything else is asked.
+ * - acceptEdits       → `once` for file edits and writes; everything else is asked.
  * - plan / default    → asked (plan's own agent already denies edits).
  *
  * Only `ask` rules produce a request at all: what the user's OpenCode config
@@ -222,7 +228,7 @@ export function resolveAutomaticPermissionReply(
     return 'once';
   }
 
-  if (permissionMode === 'acceptEdits' && permission === 'edit') {
+  if (permissionMode === 'acceptEdits' && OPENCODE_EDIT_ACTIONS.has(permission)) {
     return 'once';
   }
 
@@ -259,9 +265,13 @@ function resolveOpenCodeEffort(
 
 /**
  * Splits a `provider/model` id the way `opencode run --model` does: at the first
- * slash, so model ids that contain slashes themselves stay whole.
+ * slash, so model ids that contain slashes themselves stay whole. The effort
+ * the chat picked rides along as OpenCode's model variant.
  */
-function parseOpenCodeModel(model: string | undefined): { providerID: string; modelID: string } | undefined {
+function parseOpenCodeModel(
+  model: string | undefined,
+  variant: string | undefined,
+): { providerID: string; id: string; variant?: string } | undefined {
   if (!model) {
     return undefined;
   }
@@ -271,8 +281,13 @@ function parseOpenCodeModel(model: string | undefined): { providerID: string; mo
     return undefined;
   }
 
-  return { providerID: model.slice(0, separator), modelID: model.slice(separator + 1) };
+  return {
+    providerID: model.slice(0, separator),
+    id: model.slice(separator + 1),
+    ...(variant ? { variant } : {}),
+  };
 }
+
 
 // ---------------------------------------------------------------------------
 // Permission rules and "Always allow" memory
@@ -342,69 +357,33 @@ function rememberApprovals(chatKey: string, permission: string, patterns: string
   }
 }
 
-/**
- * Whether a ruleset denies a permission outright, the test OpenCode uses to
- * hide a tool: the last rule naming the permission denies every pattern.
- */
-function deniesEveryPattern(ruleset: OpenCodePermissionRuleset | undefined, permission: string): boolean {
-  const rule = ruleset?.filter((candidate) => matchesOpenCodeWildcard(permission, candidate.permission)).at(-1);
-  return rule?.pattern === '*' && rule.action === 'deny';
+// ---------------------------------------------------------------------------
+// Questions (forms)
+// ---------------------------------------------------------------------------
+
+/** The fields of a form the chat can show as questions: everything but external links. */
+function readQuestionFields(form: FormInfo) {
+  return form.fields.filter((field) => field.type !== 'external' && !('hidden' in field && field.hidden));
 }
 
 /**
- * Re-enables the question tool on a session created by `opencode run`.
- *
- * Before this runtime, chats ran through `opencode run`, which creates every
- * session with a `question: deny` rule because nobody could answer there. The
- * chat can answer now, so a resumed session gets one `question: allow` rule
- * appended — OpenCode's session update appends rules, it cannot remove one —
- * but only when the agent's own rules, which include the user's config, do not
- * deny questions themselves.
+ * Shapes an OpenCode form as the input of the chat's AskUserQuestion panel.
+ * OpenCode's `question` tool turns each question into one field: the header
+ * becomes the field title and the question its description. A `multiselect`
+ * field is Claude's `multiSelect`; `custom: false` hides the typed answer.
  */
-async function allowQuestionsOnLegacySession(
-  client: OpencodeClient,
-  providerSessionId: string,
-  agentName: string | undefined,
-): Promise<void> {
-  const session = (await client.session.get({ sessionID: providerSessionId })).data;
-  if (!deniesEveryPattern(session?.permission, 'question')) {
-    return;
-  }
-
-  const [agents, config] = await Promise.all([
-    client.app.agents().then((result) => result.data ?? []),
-    agentName ? Promise.resolve(undefined) : client.config.get().then((result) => result.data),
-  ]);
-  const effectiveAgentName = agentName ?? config?.default_agent ?? 'build';
-  const agent = agents.find((candidate) => candidate.name === effectiveAgentName);
-  if (!agent || deniesEveryPattern(agent.permission, 'question')) {
-    return;
-  }
-
-  await client.session.update({
-    sessionID: providerSessionId,
-    permission: [{ permission: 'question', pattern: '*', action: 'allow' }],
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Questions
-// ---------------------------------------------------------------------------
-
-/**
- * Shapes an OpenCode question request as the input of the chat's
- * AskUserQuestion panel. `multiple` is OpenCode's name for Claude's
- * `multiSelect`; `custom: false` hides the typed answer.
- */
-function toAskUserQuestionInput(request: OpenCodeQuestionRequest): AnyRecord {
+function toAskUserQuestionInput(form: FormInfo): AnyRecord {
   return {
-    questions: request.questions.map((question) => ({
-      question: question.question,
-      header: question.header,
-      options: question.options.map((option) => ({ label: option.label, description: option.description })),
-      multiSelect: question.multiple === true,
-      ...(question.custom === false ? { custom: false } : {}),
-    })),
+    questions: readQuestionFields(form).map((field) => {
+      const options = 'options' in field && Array.isArray(field.options) ? field.options : [];
+      return {
+        question: field.description || field.title || form.title,
+        header: field.title ?? '',
+        options: options.map((option) => ({ label: option.label ?? String(option.value), description: option.description ?? '' })),
+        multiSelect: field.type === 'multiselect',
+        ...('custom' in field && field.custom === false ? { custom: false } : {}),
+      };
+    }),
   };
 }
 
@@ -435,66 +414,74 @@ export function readQuestionAnswers(
   return questions.map((question) => toLabels(keyedAnswers?.[question.question]));
 }
 
+/**
+ * Builds a form answer from the labels the chat picked, one list per shown
+ * field. A picked label goes back as its option's value (a typed answer as
+ * itself); a multiselect field takes the whole list, any other field the first
+ * label, and a boolean field `true` for a yes-like label.
+ *
+ * Exported for tests only.
+ */
+export function toFormAnswer(
+  form: FormInfo,
+  labelLists: string[][],
+): Record<string, string | number | boolean | string[]> {
+  const answer: Record<string, string | number | boolean | string[]> = {};
+  readQuestionFields(form).forEach((field, index) => {
+    const options = 'options' in field && Array.isArray(field.options) ? field.options : [];
+    const values = (labelLists[index] ?? []).map((label) => {
+      const option = options.find((candidate) => candidate.label === label || String(candidate.value) === label);
+      return option ? String(option.value) : label;
+    });
+    if (values.length === 0) {
+      return;
+    }
+
+    if (field.type === 'multiselect') {
+      answer[field.key] = values;
+    } else if (field.type === 'boolean') {
+      answer[field.key] = /^(true|yes|y|1|ok)$/i.test(values[0].trim());
+    } else if (field.type === 'number' || field.type === 'integer') {
+      const parsed = Number(values[0]);
+      answer[field.key] = Number.isFinite(parsed) ? parsed : values[0];
+    } else {
+      answer[field.key] = values[0];
+    }
+  });
+  return answer;
+}
+
 // ---------------------------------------------------------------------------
 // Token usage
 // ---------------------------------------------------------------------------
 
-function readOpenCodeTokenUsage(sessionId: string | null) {
-  const dbPath = getOpenCodeDatabasePath();
-  if (!sessionId || !fsSync.existsSync(dbPath)) {
+/**
+ * Turns OpenCode's running session totals (`session.usage.updated`) into the
+ * chat's token budget. Cache reads count as input, the way the history reader
+ * reports them.
+ */
+function toTokenBudget(tokens: TokenUsageInfo | null) {
+  if (!tokens) {
     return null;
   }
 
-  let db: Database.Database | null = null;
-  try {
-    db = new Database(dbPath, { readonly: true, fileMustExist: true });
-    const columns = db.prepare('PRAGMA table_info(session)').all() as Array<{ name: string }>;
-    const columnNames = new Set(columns.map((column) => column.name));
-    const requiredColumns = ['tokens_input', 'tokens_output', 'tokens_reasoning', 'tokens_cache_read', 'tokens_cache_write'];
-    if (!requiredColumns.every((column) => columnNames.has(column))) {
-      return null;
-    }
-
-    const row = db.prepare(`
-      SELECT
-        tokens_input AS inputTokens,
-        tokens_output AS outputTokens,
-        tokens_reasoning AS reasoningTokens,
-        tokens_cache_read AS cacheReadTokens,
-        tokens_cache_write AS cacheWriteTokens
-      FROM session
-      WHERE id = ?
-    `).get(sessionId) as AnyRecord | undefined;
-
-    if (!row) {
-      return null;
-    }
-
-    const inputTokens = Number(row.inputTokens || 0) + Number(row.cacheReadTokens || 0);
-    const outputTokens = Number(row.outputTokens || 0);
-    const used = Number(row.inputTokens || 0)
-      + outputTokens
-      + Number(row.reasoningTokens || 0)
-      + Number(row.cacheReadTokens || 0)
-      + Number(row.cacheWriteTokens || 0);
-    if (used <= 0) {
-      return null;
-    }
-
-    return {
-      used,
-      inputTokens,
-      outputTokens,
-      breakdown: {
-        input: inputTokens,
-        output: outputTokens,
-      },
-    };
-  } catch {
+  const inputTokens = (tokens.input || 0) + (tokens.cache?.read || 0);
+  const outputTokens = tokens.output || 0;
+  const used = (tokens.input || 0)
+    + outputTokens
+    + (tokens.reasoning || 0)
+    + (tokens.cache?.read || 0)
+    + (tokens.cache?.write || 0);
+  if (used <= 0) {
     return null;
-  } finally {
-    db?.close();
   }
+
+  return {
+    used,
+    inputTokens,
+    outputTokens,
+    breakdown: { input: inputTokens, output: outputTokens },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -505,8 +492,7 @@ let exitHookInstalled = false;
 
 /**
  * Stops the servers of turns still running when Bowcode exits. The shutdown
- * handlers end with `process.exit`, which runs this synchronously; the SDK
- * signals its child at once (a process-tree kill on Windows).
+ * handlers end with `process.exit`, which runs this synchronously.
  */
 function installExitHook(): void {
   if (exitHookInstalled) {
@@ -522,26 +508,6 @@ function installExitHook(): void {
   });
 }
 
-/**
- * Inline config from `OPENCODE_CONFIG_CONTENT`. The SDK hands the server its
- * own `config` option through that same variable, which would otherwise
- * replace a value the user set.
- */
-function readInlineConfig(): OpenCodeConfig | undefined {
-  const raw = process.env.OPENCODE_CONFIG_CONTENT;
-  if (!raw) {
-    return undefined;
-  }
-
-  try {
-    // OpenCode accepts JSONC here, like in its config files.
-    return readObjectRecord(JSON.parse(stripTrailingCommas(stripJsonComments(raw)))) as OpenCodeConfig | null ?? undefined;
-  } catch (error) {
-    console.warn('[OpenCode] OPENCODE_CONFIG_CONTENT is not valid JSON, so the chat\'s OpenCode server runs without it:', readErrorMessage(error));
-    return undefined;
-  }
-}
-
 const isProcessAlive = (pid: number): boolean => {
   try {
     process.kill(pid, 0);
@@ -555,7 +521,7 @@ const isProcessAlive = (pid: number): boolean => {
 /**
  * Stops turn servers that a Bowcode process started and never stopped because
  * it was killed (SIGKILL, the OOM killer) before its exit hook could run. Such a
- * server never exits by itself, unlike the `opencode run` process it replaces.
+ * server never exits by itself.
  *
  * A process is only stopped when its environment names a Bowcode owner that
  * is gone and its arguments are a turn server's (`serve --hostname=127.0.0.1
@@ -622,10 +588,10 @@ export async function reapOrphanedOpenCodeServers(procRoot = '/proc'): Promise<n
 /**
  * Reserves a free loopback port for a turn's server.
  *
- * Every turn's server gets a port of its own instead of OpenCode's preferred
- * 4096: consecutive turns on the same address would let Node's fetch reuse a
- * kept-alive connection to the previous turn's server, which has just been
- * stopped, and the new turn's first request would fail.
+ * Every turn's server gets a port of its own: consecutive turns on the same
+ * address would let Node's fetch reuse a kept-alive connection to the previous
+ * turn's server, which has just been stopped, and the new turn's first
+ * request would fail.
  */
 function reserveFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -640,54 +606,104 @@ function reserveFreePort(): Promise<number> {
   });
 }
 
+/** Stops a turn server: SIGTERM first, SIGKILL if it has not exited after a grace period. */
+function stopServerProcess(child: ChildProcess): void {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+
+  try {
+    child.kill('SIGTERM');
+  } catch {
+    return;
+  }
+
+  const forceKill = setTimeout(() => {
+    if (child.exitCode === null && child.signalCode === null) {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        // Gone already.
+      }
+    }
+  }, SERVER_STOP_GRACE_MS);
+  forceKill.unref();
+  child.once('exit', () => clearTimeout(forceKill));
+}
+
 /**
- * Starts a private `opencode serve` for one turn through the SDK.
+ * Starts a private `opencode serve` for one turn.
  *
- * The server listens on loopback only, and a random Basic-auth password keeps
- * other local processes and web pages from driving it. OpenCode reads that
- * password from `OPENCODE_SERVER_PASSWORD` only, and the SDK builds the child's
- * environment from `process.env` in the same synchronous step that spawns it,
- * so the variables are set just around that call and restored right after.
- * The question tool is switched on explicitly, since the chat can answer it.
+ * The server listens on loopback only, and a random Basic-auth password
+ * (`OPENCODE_SERVER_PASSWORD`) keeps other local processes and web pages from
+ * driving it. Resolves once the server prints the address it listens on.
  */
 async function startOpenCodeServer(signal: AbortSignal): Promise<{ server: OpenCodeServer; password: string }> {
   const port = await reserveFreePort();
   const password = crypto.randomBytes(24).toString('base64url');
-  const childEnv: Record<string, string> = {
-    OPENCODE_SERVER_PASSWORD: password,
-    OPENCODE_SERVER_USERNAME: 'opencode',
-    [OWNER_PID_ENV]: String(process.pid),
-  };
-  if (process.env.OPENCODE_ENABLE_QUESTION_TOOL === undefined) {
-    childEnv.OPENCODE_ENABLE_QUESTION_TOOL = 'true';
-  }
+  const child = spawn('opencode', ['serve', '--hostname=127.0.0.1', `--port=${port}`], {
+    env: {
+      ...process.env,
+      OPENCODE_SERVER_PASSWORD: password,
+      OPENCODE_SERVER_USERNAME: 'opencode',
+      [OWNER_PID_ENV]: String(process.pid),
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
-  const previousEnv = new Map<string, string | undefined>();
-  for (const [name, value] of Object.entries(childEnv)) {
-    previousEnv.set(name, process.env[name]);
-    process.env[name] = value;
-  }
-
-  let starting: Promise<OpenCodeServer>;
-  try {
-    starting = createOpencodeServer({
-      hostname: '127.0.0.1',
-      port,
-      timeout: SERVER_START_TIMEOUT_MS,
-      signal,
-      config: readInlineConfig(),
-    });
-  } finally {
-    for (const [name, value] of previousEnv) {
-      if (value === undefined) {
-        delete process.env[name];
-      } else {
-        process.env[name] = value;
+  const url = await new Promise<string>((resolve, reject) => {
+    let output = '';
+    let settled = false;
+    const finish = (error: Error | null, address?: string) => {
+      if (settled) {
+        return;
       }
-    }
-  }
+      settled = true;
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      child.stdout?.off('data', onData);
+      child.stderr?.off('data', onData);
+      if (error) {
+        stopServerProcess(child);
+        reject(error);
+      } else {
+        resolve(address!);
+      }
+    };
+    const onData = (chunk: Buffer) => {
+      output = `${output}${chunk.toString()}`.slice(-8_192);
+      const match = SERVER_LISTENING_PATTERN.exec(output);
+      if (match) {
+        finish(null, match[1].replace(/\/+$/, ''));
+      }
+    };
+    const onAbort = () => finish(new Error('aborted'));
+    const timer = setTimeout(
+      () => finish(new Error(`The OpenCode server did not start within ${SERVER_START_TIMEOUT_MS / 1000} s.`)),
+      SERVER_START_TIMEOUT_MS,
+    );
 
-  return { server: await starting, password };
+    child.stdout?.on('data', onData);
+    child.stderr?.on('data', onData);
+    child.once('error', (error) => finish(error));
+    child.once('exit', (code, exitSignal) => {
+      const lastLines = output.trim().split(/\r?\n/).slice(-5).join('\n');
+      finish(new Error(
+        `The OpenCode server exited before it started (${exitSignal ?? `code ${code}`})${lastLines ? `: ${lastLines}` : '.'}`,
+      ));
+    });
+    if (signal.aborted) {
+      onAbort();
+    } else {
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+  });
+
+  // Keep draining the pipes so a chatty server never blocks on a full pipe.
+  child.stdout?.resume();
+  child.stderr?.resume();
+
+  return { server: { url, close: () => stopServerProcess(child) }, password };
 }
 
 /**
@@ -701,66 +717,43 @@ function isRetryableStartFailure(error: unknown): boolean {
 }
 
 function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
   const record = readObjectRecord(error);
-  const data = readObjectRecord(record?.data);
-  if (typeof data?.message === 'string' && data.message) {
-    return data.message;
-  }
   if (typeof record?.message === 'string' && record.message) {
     return record.message;
   }
-  if (typeof record?.name === 'string' && record.name) {
-    return record.name;
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof record?._tag === 'string' && record._tag) {
+    return record._tag;
   }
   return String(error);
 }
 
-/** Whether an SDK call failed because OpenCode no longer knows the request (already settled). */
+/** Whether a client call failed because OpenCode no longer knows the request (already settled). */
 function isNotFoundError(error: unknown): boolean {
+  const record = readObjectRecord(error);
   const cause = readObjectRecord(error instanceof Error ? error.cause : undefined);
-  return cause?.status === 404;
+  return cause?.status === 404 || (typeof record?._tag === 'string' && /NotFound/i.test(record._tag));
 }
 
-/**
- * Whether a reported OpenCode version is at least `minimum`. Snapshot and
- * development builds (`0.0.0-…`) and unparsable versions are let through.
- */
-function isSupportedOpenCodeVersion(version: string, minimum: string): boolean {
-  const parse = (value: string) => /^(\d+)\.(\d+)\.(\d+)/.exec(value)?.slice(1).map(Number);
-  const reported = parse(version);
-  const required = parse(minimum);
-  if (!reported || !required || reported.every((part) => part === 0)) {
-    return true;
-  }
-
-  for (let index = 0; index < 3; index += 1) {
-    if (reported[index] !== required[index]) {
-      return reported[index] > required[index];
-    }
-  }
-  return true;
-}
-
-/** Refuses an OpenCode too old to send the requests this runtime answers. */
-async function assertSupportedOpenCode(client: OpencodeClient): Promise<void> {
+/** Refuses an OpenCode older than 2, whose API this runtime does not speak. */
+async function assertSupportedOpenCode(client: OpenCodeClient): Promise<void> {
   const upgradeHint = 'Update it, for example with `opencode upgrade`.';
   let version: string | undefined;
   try {
-    version = (await client.global.health()).data?.version;
+    version = (await client.server.info()).version;
   } catch (error) {
-    // `/global/health` itself only exists from 1.0.224 on.
     throw new Error(
-      `Bowcode needs OpenCode ${MIN_OPENCODE_VERSION} or newer, and this OpenCode did not report its version `
+      `Bowcode needs OpenCode ${MIN_OPENCODE_MAJOR_VERSION} or newer, and this OpenCode did not report its version `
       + `(${readErrorMessage(error)}). ${upgradeHint}`,
     );
   }
 
-  if (version && !isSupportedOpenCodeVersion(version, MIN_OPENCODE_VERSION)) {
-    throw new Error(`OpenCode ${version} is too old for Bowcode, which needs ${MIN_OPENCODE_VERSION} or newer. ${upgradeHint}`);
+  const major = Number(/^(\d+)\./.exec(version ?? '')?.[1]);
+  // Snapshot and development builds (`0.0.0-…`) and unparsable versions are let through.
+  if (Number.isInteger(major) && major > 0 && major < MIN_OPENCODE_MAJOR_VERSION) {
+    throw new Error(`OpenCode ${version} is too old for Bowcode, which needs ${MIN_OPENCODE_MAJOR_VERSION} or newer. ${upgradeHint}`);
   }
 }
 
@@ -778,6 +771,9 @@ const nextMacrotask = () => new Promise<void>((resolve) => setImmediate(resolve)
 // ---------------------------------------------------------------------------
 // Turn
 // ---------------------------------------------------------------------------
+
+/** What the runtime remembers of a tool call until it finishes. */
+type PendingToolCall = { name: string; input: AnyRecord };
 
 /**
  * Runs one OpenCode turn. Resolves when the turn completed, rejects when it
@@ -832,8 +828,7 @@ async function runOpenCodeTurn(
   const send = (message: unknown) => writer.send(message);
   const sentErrors = new Set<string>();
   const sendError = (content: string) => {
-    // OpenCode can report one failure more than once (a prompt that fails
-    // before it runs is published twice); the chat shows it once.
+    // OpenCode can report one failure more than once; the chat shows it once.
     if (sentErrors.has(content)) {
       return;
     }
@@ -848,9 +843,9 @@ async function runOpenCodeTurn(
   const notify = (event: AnyRecord) => notifyUserIfEnabled({ userId, event: notificationEvent(event) });
 
   const turnPromptIds = new Set<string>();
-  const userMessageIds = new Set<string>();
-  const emittedParts = new Set<string>();
-  let sawBusy = false;
+  const toolCalls = new Map<string, PendingToolCall>();
+  let latestTokens: TokenUsageInfo | null = null;
+  let promptSent = false;
   let turnEnded = false;
   let turnError: string | null = null;
 
@@ -881,9 +876,9 @@ async function runOpenCodeTurn(
     }));
   };
 
-  const replyToPermission = async (requestId: string, reply: OpenCodePermissionReply) => {
+  const replyToPermission = async (request: OpenCodePermissionRequest, reply: OpenCodePermissionReply) => {
     try {
-      await turn.client!.permission.reply({ requestID: requestId, reply });
+      await turn.client!.permission.reply({ sessionID: request.sessionID, requestID: request.id, decision: reply });
     } catch (error) {
       // Already settled by OpenCode itself (its cascade after another reply).
       if (isNotFoundError(error) || turn.aborted || turnEnded) {
@@ -893,12 +888,12 @@ async function runOpenCodeTurn(
     }
   };
 
-  const replyToQuestion = async (requestId: string, answers: string[][] | null) => {
+  const replyToForm = async (form: FormInfo, labelLists: string[][] | null, cancelMessage?: string) => {
     try {
-      if (answers) {
-        await turn.client!.question.reply({ requestID: requestId, answers });
+      if (labelLists) {
+        await turn.client!.session.form.reply({ sessionID: form.sessionID, formID: form.id, answer: toFormAnswer(form, labelLists) });
       } else {
-        await turn.client!.question.reject({ requestID: requestId });
+        await turn.client!.session.form.cancel({ sessionID: form.sessionID, formID: form.id, message: cancelMessage });
       }
     } catch (error) {
       if (isNotFoundError(error) || turn.aborted || turnEnded) {
@@ -975,31 +970,35 @@ async function runOpenCodeTurn(
 
   const handlePermissionAsked = (request: OpenCodePermissionRequest) => {
     // A stopping or finished turn asks nobody; its server is about to go.
+    // The server is private to the turn, so its subagents' requests are the
+    // turn's too and are asked in the same chat.
     if (turn.aborted || turnEnded) {
       return;
     }
-    const automaticReply = resolveAutomaticPermissionReply(permissionMode, request.permission)
-      ?? (isCoveredByApprovals(rememberedApprovals.get(approvalsKey()), request.permission, request.patterns) ? 'once' : null);
+    const resources = request.resources ?? [];
+    const save = request.save ?? [];
+    const automaticReply = resolveAutomaticPermissionReply(permissionMode, request.action)
+      ?? (isCoveredByApprovals(rememberedApprovals.get(approvalsKey()), request.action, resources) ? 'once' : null);
     if (automaticReply) {
-      void replyToPermission(request.id, automaticReply);
+      void replyToPermission(request, automaticReply);
       return;
     }
 
     askChat({
       requestId: request.id,
-      toolName: request.permission,
-      input: { ...request.metadata, patterns: request.patterns },
+      toolName: request.action,
+      input: { ...request.metadata, patterns: resources, ...(request.message ? { message: request.message } : {}) },
       // `always` is what "Always allow" approves; the chat shows it beside the button.
-      context: { patterns: request.patterns, always: request.always },
+      context: { patterns: resources, always: save },
       timeoutMs: TOOL_APPROVAL_TIMEOUT_MS,
       onAnswer: (decision) => {
         const reply = toOpenCodePermissionReply(decision);
         if (reply === 'always') {
-          rememberApprovals(approvalsKey(), request.permission, request.always);
+          rememberApprovals(approvalsKey(), request.action, save.length > 0 ? save : resources);
         }
-        void replyToPermission(request.id, reply);
+        void replyToPermission(request, reply);
       },
-      onTimeout: () => void replyToPermission(request.id, 'reject'),
+      onTimeout: () => void replyToPermission(request, 'reject'),
     });
 
     notify({
@@ -1007,40 +1006,42 @@ async function runOpenCodeTurn(
       sessionId: turnSessionId(),
       kind: 'action_required',
       code: 'permission.required',
-      meta: { toolName: request.permission, sessionName: sessionSummary },
+      meta: { toolName: request.action, sessionName: sessionSummary },
       severity: 'warning',
       requiresUserAction: true,
       dedupeKey: `opencode:permission:${turnSessionId()}:${request.id}`,
     });
   };
 
-  const handleQuestionAsked = (request: OpenCodeQuestionRequest) => {
+  const handleFormCreated = (form: FormInfo) => {
     if (turn.aborted || turnEnded) {
       return;
     }
-    // Nobody is asked in bypassPermissions (also how /api/agent runs), and a
-    // dismissed question would end the turn, so the agent is told the
-    // questions went unanswered and carries on.
-    if (permissionMode === 'bypassPermissions' || request.questions.length === 0) {
-      void replyToQuestion(request.id, request.questions.map(() => []));
+    const questions = readQuestionFields(form);
+    // Nobody is asked in bypassPermissions (also how /api/agent runs): the
+    // agent is told the questions went unanswered and carries on.
+    if (permissionMode === 'bypassPermissions' || questions.length === 0) {
+      void replyToForm(form, null, UNANSWERED_QUESTION_MESSAGE);
       return;
     }
 
+    const input = toAskUserQuestionInput(form);
     askChat({
-      requestId: request.id,
+      requestId: form.id,
       toolName: 'AskUserQuestion',
-      input: toAskUserQuestionInput(request),
+      input,
       // Tells the panel to answer with one label list per question and to
-      // offer Dismiss, which rejects the question in OpenCode.
+      // offer Dismiss, which cancels the form in OpenCode.
       context: { answerFormat: 'label-lists' },
       timeoutMs: QUESTION_TIMEOUT_MS,
       onAnswer: (decision) => {
-        void replyToQuestion(
-          request.id,
-          decision.allow ? readQuestionAnswers(decision.updatedInput, request.questions) : null,
+        void replyToForm(
+          form,
+          decision.allow ? readQuestionAnswers(decision.updatedInput, input.questions as Array<{ question: string }>) : null,
+          decision.allow ? undefined : 'The user dismissed the question.',
         );
       },
-      onTimeout: () => void replyToQuestion(request.id, null),
+      onTimeout: () => void replyToForm(form, null, 'The user did not answer in time.'),
     });
 
     notify({
@@ -1048,101 +1049,144 @@ async function runOpenCodeTurn(
       sessionId: turnSessionId(),
       kind: 'action_required',
       code: 'agent.notification',
-      meta: { message: request.questions[0]?.question || 'OpenCode has a question for you', sessionName: sessionSummary },
+      meta: { message: (input.questions as AnyRecord[])[0]?.question || 'OpenCode has a question for you', sessionName: sessionSummary },
       severity: 'warning',
       requiresUserAction: true,
-      dedupeKey: `opencode:question:${turnSessionId()}:${request.id}`,
+      dedupeKey: `opencode:question:${turnSessionId()}:${form.id}`,
     });
   };
 
   /**
-   * Forwards one finished part of the chat's own session in the shape
-   * `opencode run --format json` printed (`{ type, timestamp, sessionID, part }`),
-   * so the shared normalizer turns it into the same chat messages as before.
-   * Subagent sessions are left out, as `run` left them out: their work shows
-   * inside the `task` call that spawned them.
+   * Hands one finished piece of the chat's own session to the shared
+   * normalizer in the shape the history reader sees it in (an assistant
+   * message content item), so a live turn and a reload render the same rows.
+   * Subagent sessions are left out: their work shows inside the subagent call.
    */
-  const forwardPart = (part: OpenCodePart) => {
-    let lineType: string | null = null;
-    if (part.type === 'text' && part.time?.end && !userMessageIds.has(part.messageID)) {
-      lineType = 'text';
-    } else if (part.type === 'reasoning' && part.time?.end) {
-      lineType = 'reasoning';
-    } else if (part.type === 'tool' && (part.state.status === 'completed' || part.state.status === 'error')) {
-      lineType = 'tool_use';
-    } else if (part.type === 'step-finish') {
-      lineType = 'step_finish';
-    }
-
-    if (!lineType || emittedParts.has(part.id)) {
-      return;
-    }
-    emittedParts.add(part.id);
-
+  const forward = (raw: AnyRecord) => {
     for (const message of context.normalizeMessage(
-      { type: lineType, timestamp: Date.now(), sessionID: part.sessionID, part },
+      { timestamp: Date.now(), sessionID: turn.providerSessionId, ...raw },
       turnSessionId(),
     )) {
       send(message);
     }
   };
 
+  const forwardToolResult = (
+    assistantMessageID: string,
+    toolId: string,
+    state: { status: 'completed' | 'error'; content?: unknown; error?: unknown; metadata?: unknown },
+  ) => {
+    const call = toolCalls.get(toolId);
+    toolCalls.delete(toolId);
+    forward({
+      type: 'opencode.v2.content',
+      messageID: assistantMessageID,
+      item: {
+        type: 'tool',
+        id: toolId,
+        name: call?.name ?? 'tool',
+        state: { input: call?.input ?? {}, ...state },
+      },
+    });
+  };
+
   const handleEvent = (event: OpenCodeEvent) => {
+    const data = readObjectRecord((event as { data?: unknown }).data) ?? {};
+
     switch (event.type) {
-      case 'message.updated': {
-        if (event.properties.info.role === 'user') {
-          userMessageIds.add(event.properties.info.id);
-        }
-        return;
-      }
-      case 'message.part.updated': {
-        if (event.properties.part.sessionID === turn.providerSessionId) {
-          forwardPart(event.properties.part);
-        }
-        return;
-      }
       case 'permission.asked': {
-        handlePermissionAsked(event.properties);
+        handlePermissionAsked(data as unknown as OpenCodePermissionRequest);
         return;
       }
-      case 'question.asked': {
-        handleQuestionAsked(event.properties);
+      case 'form.created': {
+        const form = readObjectRecord(data.form);
+        if (form) {
+          handleFormCreated(form as unknown as FormInfo);
+        }
         return;
       }
-      case 'permission.replied':
-      case 'question.replied':
-      case 'question.rejected': {
+      case 'permission.replied': {
         // Settled without the chat: OpenCode answers the rest of a session's
         // prompts itself after an Always allow or a Deny.
-        pendingPrompts.get(event.properties.requestID)?.settle();
+        pendingPrompts.get(String(data.requestID))?.settle();
         return;
       }
-      case 'session.error': {
-        const { sessionID, error } = event.properties;
-        if (!sessionID || sessionID !== turn.providerSessionId || !error || turnEnded) {
+      case 'form.replied':
+      case 'form.cancelled': {
+        pendingPrompts.get(String(data.id))?.settle();
+        return;
+      }
+      default:
+        break;
+    }
+
+    // Everything below concerns the chat's own session only.
+    if (!turn.providerSessionId || data.sessionID !== turn.providerSessionId) {
+      return;
+    }
+
+    switch (event.type) {
+      case 'session.text.ended':
+      case 'session.reasoning.ended': {
+        forward({
+          type: 'opencode.v2.content',
+          messageID: data.assistantMessageID,
+          ordinal: data.ordinal,
+          item: { type: event.type === 'session.text.ended' ? 'text' : 'reasoning', text: data.text },
+        });
+        return;
+      }
+      case 'session.tool.input.started': {
+        toolCalls.set(String(data.id), { name: String(data.name ?? 'tool'), input: {} });
+        return;
+      }
+      case 'session.tool.called': {
+        const call = toolCalls.get(String(data.id));
+        toolCalls.set(String(data.id), { name: call?.name ?? 'tool', input: readObjectRecord(data.input) ?? {} });
+        return;
+      }
+      case 'session.tool.success': {
+        forwardToolResult(String(data.assistantMessageID), String(data.id), {
+          status: 'completed',
+          content: data.content,
+          metadata: data.metadata,
+        });
+        return;
+      }
+      case 'session.tool.failed': {
+        forwardToolResult(String(data.assistantMessageID), String(data.id), {
+          status: 'error',
+          content: data.content,
+          error: data.error,
+          metadata: data.metadata,
+        });
+        return;
+      }
+      case 'session.step.ended': {
+        forward({ type: 'opencode.v2.step_end', messageID: data.assistantMessageID });
+        return;
+      }
+      case 'session.usage.updated': {
+        latestTokens = (readObjectRecord(data.tokens) as TokenUsageInfo | null) ?? latestTokens;
+        return;
+      }
+      case 'session.execution.succeeded':
+      case 'session.execution.interrupted': {
+        if (promptSent) {
+          turnDone();
+        }
+        return;
+      }
+      case 'session.execution.failed': {
+        if (!promptSent || turnEnded) {
           return;
         }
-        // The abort of a stopped turn is not an error worth a message.
-        if (error.name !== 'MessageAbortedError') {
-          const message = readErrorMessage(error);
+        if (!turn.aborted) {
+          const message = readErrorMessage(data.error) || 'OpenCode run failed';
           sendError(message);
           turnError ??= message;
         }
-        // A prompt that fails before its loop starts never reports busy/idle.
-        if (!sawBusy) {
-          turnDone();
-        }
-        return;
-      }
-      case 'session.status': {
-        if (event.properties.sessionID !== turn.providerSessionId) {
-          return;
-        }
-        if (event.properties.status.type === 'busy') {
-          sawBusy = true;
-        } else if (event.properties.status.type === 'idle' && sawBusy) {
-          turnDone();
-        }
+        turnDone();
         return;
       }
       default:
@@ -1176,7 +1220,7 @@ async function runOpenCodeTurn(
     } catch (error) {
       console.warn('[OpenCode] Unable to load provider models for effort validation:', error);
     }
-    const variant = resolveOpenCodeEffort(resolvedModel, effort, effortModels);
+    const modelRef = parseOpenCodeModel(resolvedModel, resolveOpenCodeEffort(resolvedModel, effort, effortModels));
 
     if (turn.aborted) {
       throw new Error('aborted');
@@ -1195,25 +1239,17 @@ async function runOpenCodeTurn(
       throw new Error('aborted');
     }
 
-    const client = createOpencodeClient({
+    const client = OpenCode.make({
       baseUrl: started.server.url,
-      directory: workingDir,
       headers: { Authorization: `Basic ${Buffer.from(`opencode:${started.password}`).toString('base64')}` },
-      throwOnError: true,
     });
     turn.client = client;
     await assertSupportedOpenCode(client);
 
     // Subscribe before anything is sent, so no event of the turn is missed.
-    // One attempt only: a private server that drops the stream has stopped.
+    // A private server that drops the stream has stopped.
     let streamError: unknown = null;
-    const { stream } = await client.event.subscribe({}, {
-      signal: turn.abortController.signal,
-      sseMaxRetryAttempts: 1,
-      onSseError: (error: unknown) => {
-        streamError = error;
-      },
-    });
+    const stream = client.event.subscribe({ signal: turn.abortController.signal });
     eventLoop = (async () => {
       try {
         for await (const event of stream) {
@@ -1245,18 +1281,36 @@ async function runOpenCodeTurn(
       }),
     ]);
 
-    const agent = permissionMode === 'plan' ? 'plan' : undefined;
+    // Plan mode runs OpenCode's read-only plan agent; leaving it switches a
+    // session back to the default agent.
+    const wantsPlanAgent = permissionMode === 'plan';
     if (turn.providerSessionId) {
-      if (permissionMode !== 'bypassPermissions') {
-        try {
-          await allowQuestionsOnLegacySession(client, turn.providerSessionId, agent);
-        } catch (error) {
-          // A session OpenCode does not know fails the prompt below with its own error.
-          console.warn('[OpenCode] Could not check the session for a question rule:', readErrorMessage(error));
-        }
+      const existing = await client.session.get({ sessionID: turn.providerSessionId });
+      if (wantsPlanAgent && existing.agent !== 'plan') {
+        await client.session.switchAgent({ sessionID: turn.providerSessionId, agent: 'plan' });
+      } else if (!wantsPlanAgent && existing.agent === 'plan') {
+        // Config sources come in load order, so the last one naming a default agent wins.
+        const configEntries = await client.config.get().catch(() => []);
+        const defaultAgent = configEntries.map((entry) => ('info' in entry ? entry.info?.default_agent : undefined)).filter(Boolean).at(-1);
+        await client.session.switchAgent({
+          sessionID: turn.providerSessionId,
+          agent: defaultAgent && defaultAgent !== 'plan' ? defaultAgent : 'build',
+        });
+      }
+      const current = existing.model;
+      if (modelRef && (
+        current?.providerID !== modelRef.providerID
+        || current?.id !== modelRef.id
+        || (modelRef.variant !== undefined && current?.variant !== modelRef.variant)
+      )) {
+        await client.session.switchModel({ sessionID: turn.providerSessionId, model: modelRef });
       }
     } else {
-      const created = (await client.session.create({})).data;
+      const created = await client.session.create({
+        location: { directory: workingDir },
+        ...(modelRef ? { model: modelRef } : {}),
+        ...(wantsPlanAgent ? { agent: 'plan' } : {}),
+      });
       if (!created?.id) {
         throw new Error('OpenCode did not create a session.');
       }
@@ -1266,12 +1320,10 @@ async function runOpenCodeTurn(
     if (turn.aborted) {
       throw new Error('aborted');
     }
-    await client.session.promptAsync({
+    promptSent = true;
+    await client.session.prompt({
       sessionID: turn.providerSessionId!,
-      agent,
-      model: parseOpenCodeModel(resolvedModel),
-      variant,
-      parts: [{ type: 'text', text: promptWithAttachments }],
+      text: promptWithAttachments,
     });
 
     await turnFinished;
@@ -1318,8 +1370,7 @@ async function runOpenCodeTurn(
     return;
   }
 
-  // OpenCode's own database is keyed by the provider-native id.
-  const tokenBudget = readOpenCodeTokenUsage(turn.providerSessionId);
+  const tokenBudget = toTokenBudget(latestTokens);
   if (tokenBudget) {
     send(createNormalizedMessage({
       kind: 'status',
@@ -1354,9 +1405,10 @@ async function runOpenCodeTurn(
 }
 
 /**
- * Stops the turn running for a session: withdraws its open prompts, aborts the
- * OpenCode session so a running tool command ends too, then stops the server.
- * The caller sends the terminal `complete` (aborted: true) once this returns.
+ * Stops the turn running for a session: withdraws its open prompts, interrupts
+ * the OpenCode session so a running tool command ends too, then stops the
+ * server. The caller sends the terminal `complete` (aborted: true) once this
+ * returns.
  */
 async function abortOpenCodeSession(sessionId: string): Promise<boolean> {
   const turn = activeTurns.get(sessionId);
@@ -1383,12 +1435,12 @@ async function abortOpenCodeSession(sessionId: string): Promise<boolean> {
     if (turn.client && turn.providerSessionId) {
       try {
         await withTimeout(
-          turn.client.session.abort({ sessionID: turn.providerSessionId }),
+          turn.client.session.interrupt({ sessionID: turn.providerSessionId }),
           SESSION_ABORT_TIMEOUT_MS,
-          'OpenCode did not confirm the abort in time.',
+          'OpenCode did not confirm the interrupt in time.',
         );
       } catch (error) {
-        console.warn('[OpenCode] Session abort failed, stopping the server:', readErrorMessage(error));
+        console.warn('[OpenCode] Session interrupt failed, stopping the server:', readErrorMessage(error));
       }
     }
 

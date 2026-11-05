@@ -80,7 +80,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const permissionScenario = (id: string, extra: Frame = {}) => JSON.stringify({
   ...extra,
-  steps: [{ type: 'permission', id, permission: 'bash', patterns: ['sleep 100'], always: ['sleep *'] }],
+  steps: [{ type: 'permission', id, action: 'shell', resources: ['sleep 100'], save: ['sleep *'] }],
 });
 
 /** A chat gateway on a temp database, with a fake `opencode` first on PATH. */
@@ -184,7 +184,8 @@ test('a second stop neither ends the turn early nor the next turn later', async 
     assert.equal(firstComplete.exitCode, 0, 'the turn is reported stopped only once its stop has finished');
 
     // The next message, sent the moment the chat sees the turn end.
-    process.env.FAKE_OPENCODE_SCENARIO = permissionScenario('per_second');
+    // The resumed session is known to the new turn's server, as OpenCode keeps it in its database.
+    process.env.FAKE_OPENCODE_SCENARIO = permissionScenario('per_second', { sessions: { ses_fake_new: {} } });
     sendFrame(socket, { type: 'chat.send', sessionId: SESSION_ID, content: 'Again', options: { model: 'fake/model' } });
     await waitForFrame(socket, (frame) => frame.kind === 'permission_request' && frame.requestId === 'per_second');
     await delay(1000);

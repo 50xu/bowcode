@@ -18,8 +18,9 @@ import {
   generateMessageId,
   getOpenCodeDatabasePath,
   normalizeProviderTimestamp,
-  readObjectRecord,
   readJsonRecord,
+  readObjectRecord,
+  readOpenCodeSessionTokenUsage,
   readOptionalString,
   sliceTailPage,
   truncateSubagentActivity,
@@ -28,27 +29,46 @@ import {
 
 const PROVIDER = 'opencode';
 
-/** OpenCode's tool for spawning a subagent; it runs in a child session of the caller. */
-const SUBAGENT_TOOL_NAME = 'task';
+/** OpenCode v2's tool for spawning a subagent; it runs in a child session of the caller. */
+const SUBAGENT_TOOL_NAME = 'subagent';
+
+/** OpenCode's ask-the-user tool. */
+const QUESTION_TOOL_NAME = 'question';
 
 /** Upper bound on how much of a subagent's timeline is sent to the client, as for Claude and Codex. */
 const MAX_TRANSMITTED_SUBAGENT_ACTIVITIES = 200;
 
-type OpenCodeHistoryRow = {
-  message_id: string;
-  message_time_created: number | null;
-  message_data: string | null;
-  part_id: string | null;
-  part_time_created: number | null;
-  part_data: string | null;
+/** One `session_message` row of OpenCode v2's database. */
+type OpenCodeMessageRow = {
+  id: string;
+  type: string;
+  time_created: number | null;
+  data: string | null;
 };
 
-type OpenCodeTokenTotals = {
-  inputTokens: number;
-  outputTokens: number;
-  reasoningTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
+/** The child-session columns a subagent container reads. */
+type OpenCodeChildSessionRow = {
+  model: string | null;
+  idle_outcome: string | null;
+  time_busy: number | null;
+  time_idle: number | null;
+};
+
+/**
+ * How a background subagent finished, as the `synthetic` message OpenCode
+ * delivers to the parent session reports it (`metadata.state` + the wrapped answer).
+ */
+type OpenCodeSubagentCompletion = {
+  state: string | undefined;
+  text: string;
+};
+
+/** Context a tool row needs beyond its own content item. */
+type OpenCodeToolContext = {
+  db: Database.Database | null;
+  runIsLive: boolean;
+  /** Background subagent completions by child session id (history only). */
+  subagentCompletions?: Map<string, OpenCodeSubagentCompletion>;
 };
 
 const openOpenCodeDatabase = (): Database.Database | null => {
@@ -60,7 +80,18 @@ const openOpenCodeDatabase = (): Database.Database | null => {
   return new Database(dbPath, { readonly: true, fileMustExist: true });
 };
 
-const formatToolContent = (value: unknown): string => {
+/** Opens the shared database for a live event, or null when it cannot be read right now. */
+const openOpenCodeDatabaseForLiveEvent = (): Database.Database | null => {
+  try {
+    return openOpenCodeDatabase();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.warn('[OpenCodeProvider] Failed to open opencode.db for a live event:', reason);
+    return null;
+  }
+};
+
+const formatUnknown = (value: unknown): string => {
   if (value === undefined || value === null) {
     return '';
   }
@@ -76,58 +107,124 @@ const formatToolContent = (value: unknown): string => {
   }
 };
 
-const extractText = (value: unknown): string => {
-  if (typeof value === 'string') {
-    return unwrapJsonStringLiteral(value);
+/** Reads a v2 error object (`{ type, message }`) as display text. */
+const readErrorMessage = (error: unknown): string | undefined => {
+  if (typeof error === 'string') {
+    return error.trim() ? error : undefined;
   }
 
-  const record = readObjectRecord(value);
-  const text = readOptionalString(record?.text)
-    ?? readOptionalString(record?.content)
-    ?? '';
-  return unwrapJsonStringLiteral(text);
-};
-
-const hasUserRole = (value: unknown): boolean => {
-  const record = readObjectRecord(value);
-  return readOptionalString(record?.role) === 'user';
-};
-
-// `opencode run --format json` nests each event's payload under `part`; older builds sent it flat.
-const readEventPart = (raw: AnyRecord): AnyRecord => readObjectRecord(raw.part) ?? {};
-
-// Error events carry an object (`{ name, data }`), not a string.
-const readEventError = (value: unknown): string | undefined => {
-  const record = readObjectRecord(value);
+  const record = readObjectRecord(error);
   if (!record) {
-    return readOptionalString(value);
+    return undefined;
   }
 
-  const data = readObjectRecord(record.data);
-  const message = readOptionalString(data?.message) ?? readOptionalString(record.message);
-  if (message) {
-    return message;
-  }
-
-  const name = readOptionalString(record.name);
-  const providerId = readOptionalString(data?.providerID) ?? readOptionalString(record.providerID);
-  const modelId = readOptionalString(data?.modelID) ?? readOptionalString(record.modelID);
-  if (providerId && modelId) {
-    return `${name ?? 'Error'}: ${providerId}/${modelId}`;
-  }
-
-  const details = data ? JSON.stringify(data).slice(0, 200) : '';
-  return [name, details].filter(Boolean).join(': ') || undefined;
+  return readOptionalString(record.message)
+    ?? readOptionalString(readObjectRecord(record.data)?.message)
+    ?? (readOptionalString(record.type) ?? readOptionalString(record.name))
+    ?? (formatUnknown(record) || undefined);
 };
 
-const isUserTextEcho = (raw: AnyRecord): boolean => {
-  return readOptionalString(raw.role) === 'user'
-    || hasUserRole(raw.message)
-    || hasUserRole(raw.part);
+/**
+ * Whether an error only records that a turn or tool was stopped. Stopping a
+ * turn interrupts the OpenCode session, which stores an `aborted` error on the
+ * step it interrupted; the live chat never shows it as a failure, so the
+ * history does not either.
+ */
+const isInterruptionError = (error: unknown): boolean =>
+  readOptionalString(readObjectRecord(error)?.type) === 'aborted';
+
+/** Joins the text blocks of a v2 tool result. */
+const readToolContentText = (state: AnyRecord): string => {
+  if (!Array.isArray(state.content)) {
+    return '';
+  }
+
+  return state.content
+    .map((block) => readOptionalString(readObjectRecord(block)?.text) ?? '')
+    .filter((text) => text.length > 0)
+    .join('\n');
 };
 
-/** OpenCode's ask-the-user tool. */
-const QUESTION_TOOL_NAME = 'question';
+/** A finished tool's result, or undefined while it has not finished. */
+const readToolResult = (state: AnyRecord): { content: string; isError: boolean } | undefined => {
+  const status = readOptionalString(state.status);
+  if (status === 'completed') {
+    return { content: readToolContentText(state), isError: false };
+  }
+
+  if (status === 'error') {
+    return { content: readErrorMessage(state.error) ?? readToolContentText(state), isError: true };
+  }
+
+  return undefined;
+};
+
+/**
+ * Maps an OpenCode v2 tool call onto the tool names and input keys the chat
+ * already renders for Claude (`Bash`, `Read`, `Edit`, ...). The original input
+ * keys are kept, so nothing OpenCode recorded is lost; the mapped keys are
+ * added on top. Unknown tools keep their OpenCode name and input. Shared by the
+ * live normalizer, the history reader and the subagent timeline, so all three
+ * render one call the same way.
+ */
+const mapOpenCodeToolCall = (name: string, rawInput: unknown): { toolName: string; toolInput: unknown } => {
+  const input = readObjectRecord(rawInput);
+  if (!input) {
+    return { toolName: name, toolInput: rawInput ?? {} };
+  }
+
+  switch (name) {
+    case 'shell':
+      return {
+        toolName: 'Bash',
+        toolInput: { ...input, command: input.command, description: input.description },
+      };
+    case 'read':
+      return {
+        toolName: 'Read',
+        toolInput: { ...input, file_path: input.path ?? input.filePath, offset: input.offset, limit: input.limit },
+      };
+    case 'edit':
+      return {
+        toolName: 'Edit',
+        toolInput: {
+          ...input,
+          file_path: input.path ?? input.filePath,
+          old_string: input.oldString,
+          new_string: input.newString,
+          ...(input.replaceAll !== undefined ? { replace_all: input.replaceAll } : {}),
+        },
+      };
+    case 'write':
+      return {
+        toolName: 'Write',
+        toolInput: { ...input, file_path: input.path ?? input.filePath, content: input.content },
+      };
+    case 'grep':
+      return {
+        toolName: 'Grep',
+        toolInput: { ...input, ...(input.include !== undefined ? { glob: input.include } : {}) },
+      };
+    case 'glob':
+      return { toolName: 'Glob', toolInput: { ...input } };
+    case 'webfetch':
+      return { toolName: 'WebFetch', toolInput: { ...input, url: input.url } };
+    case 'websearch':
+      return { toolName: 'WebSearch', toolInput: { ...input, query: input.query } };
+    case SUBAGENT_TOOL_NAME:
+      return {
+        toolName: 'Task',
+        toolInput: {
+          ...input,
+          subagent_type: input.agent,
+          description: input.description,
+          prompt: input.prompt,
+        },
+      };
+    default:
+      return { toolName: name, toolInput: input };
+  }
+};
 
 /**
  * Rewrites a `question` call onto the AskUserQuestion card the chat already
@@ -137,7 +234,8 @@ const QUESTION_TOOL_NAME = 'question';
  * keyed by question text, the shape the card reads.
  */
 const toAskUserQuestionCall = (toolMessage: NormalizedMessage, toolState: AnyRecord): void => {
-  const input = readObjectRecord(toolState.input) ?? readObjectRecord(toolMessage.toolInput);
+  toolMessage.toolName = 'AskUserQuestion';
+  const input = readObjectRecord(toolState.input);
   if (!input || !Array.isArray(input.questions)) {
     return;
   }
@@ -162,189 +260,61 @@ const toAskUserQuestionCall = (toolMessage: NormalizedMessage, toolState: AnyRec
     return { ...rest, multiSelect: multiple === true };
   });
 
-  toolMessage.toolName = 'AskUserQuestion';
   toolMessage.toolInput = Object.keys(answers).length > 0
     ? { ...input, questions, answers }
     : { ...input, questions };
 };
 
 /**
- * Whether an assistant message's error only records that its turn was stopped.
- * Stopping a turn aborts the OpenCode session, which stores this error on the
- * message it interrupted; the live chat never shows it as a failure, so the
- * history does not either.
- */
-const isStoppedTurnError = (error: unknown): boolean =>
-  readOptionalString(readObjectRecord(error)?.name) === 'MessageAbortedError';
-
-const buildTokenUsage = (totals: OpenCodeTokenTotals | undefined): AnyRecord | undefined => {
-  if (!totals) {
-    return undefined;
-  }
-
-  const inputTokens = totals.inputTokens;
-  const displayInputTokens = inputTokens + totals.cacheReadTokens;
-  const outputTokens = totals.outputTokens;
-  const used = inputTokens
-    + outputTokens
-    + totals.reasoningTokens
-    + totals.cacheReadTokens
-    + totals.cacheWriteTokens;
-
-  if (used <= 0) {
-    return undefined;
-  }
-
-  return {
-    used,
-    inputTokens: displayInputTokens,
-    outputTokens,
-    breakdown: {
-      input: displayInputTokens,
-      output: outputTokens,
-    },
-  };
-};
-
-const readOpenCodeSessionColumnTokenUsage = (
-  db: Database.Database,
-  sessionId: string,
-): AnyRecord | undefined => {
-  const columns = db.prepare('PRAGMA table_info(session)').all() as { name: string }[];
-  const columnNames = new Set(columns.map((column) => column.name));
-  const requiredColumns = ['tokens_input', 'tokens_output', 'tokens_reasoning', 'tokens_cache_read', 'tokens_cache_write'];
-  if (!requiredColumns.every((column) => columnNames.has(column))) {
-    return undefined;
-  }
-
-  const row = db.prepare(`
-    SELECT
-      tokens_input AS inputTokens,
-      tokens_output AS outputTokens,
-      tokens_reasoning AS reasoningTokens,
-      tokens_cache_read AS cacheReadTokens,
-      tokens_cache_write AS cacheWriteTokens
-    FROM session
-    WHERE id = ?
-  `).get(sessionId) as OpenCodeTokenTotals | undefined;
-
-  if (!row) {
-    return undefined;
-  }
-
-  return buildTokenUsage({
-    inputTokens: Number(row.inputTokens ?? 0),
-    outputTokens: Number(row.outputTokens ?? 0),
-    reasoningTokens: Number(row.reasoningTokens ?? 0),
-    cacheReadTokens: Number(row.cacheReadTokens ?? 0),
-    cacheWriteTokens: Number(row.cacheWriteTokens ?? 0),
-  });
-};
-
-/**
- * OpenCode stores per-message token counts on assistant `message.data` objects
- * (see MessageV2.Assistant). Older DBs also had session-level counters; this
- * matches current `opencode.db` layouts that only persist message JSON.
- */
-const aggregateOpenCodeSessionTokenUsage = (
-  db: Database.Database,
-  sessionId: string,
-): AnyRecord | undefined => {
-  const sessionColumnUsage = readOpenCodeSessionColumnTokenUsage(db, sessionId);
-  if (sessionColumnUsage) {
-    return sessionColumnUsage;
-  }
-
-  const rows = db.prepare('SELECT data FROM message WHERE session_id = ?').all(sessionId) as { data: string }[];
-
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let reasoningTokens = 0;
-  let cacheReadTokens = 0;
-  let cacheWriteTokens = 0;
-
-  for (const row of rows) {
-    const info = readJsonRecord(row.data);
-    if (readOptionalString(info?.role) !== 'assistant') {
-      continue;
-    }
-
-    const tokens = readObjectRecord(info?.tokens);
-    if (!tokens) {
-      continue;
-    }
-
-    inputTokens += Number(tokens.input ?? 0);
-    outputTokens += Number(tokens.output ?? 0);
-    reasoningTokens += Number(tokens.reasoning ?? 0);
-    const cache = readObjectRecord(tokens.cache);
-    cacheReadTokens += Number(cache?.read ?? 0);
-    cacheWriteTokens += Number(cache?.write ?? 0);
-  }
-
-  return buildTokenUsage({
-    inputTokens,
-    outputTokens,
-    reasoningTokens,
-    cacheReadTokens,
-    cacheWriteTokens,
-  });
-};
-
-const readToolResult = (state: AnyRecord): SubagentActivity['toolResult'] => {
-  const status = readOptionalString(state.status);
-  if (status !== 'completed' && status !== 'error') {
-    return null;
-  }
-
-  return {
-    content: formatToolContent(state.output ?? state.error),
-    isError: status === 'error',
-  };
-};
-
-/**
- * Flattens the child session a `task` call spawned into the shared subagent
- * timeline. OpenCode keeps it in the same database as the parent.
+ * Flattens the child session a `subagent` call spawned into the shared
+ * subagent timeline. OpenCode keeps it in the same database as the parent;
+ * only the child's assistant content is activity (its user prompt is the
+ * call's own input).
  */
 const readOpenCodeSubagentActivity = (
   db: Database.Database,
   childSessionId: string,
 ): SubagentActivity[] => {
   const rows = db.prepare(`
-    SELECT p.data AS part_data, p.time_created AS part_time_created
-    FROM part p
-    INNER JOIN message m
-      ON m.id = p.message_id
-     AND m.session_id = p.session_id
-    WHERE p.session_id = ?
-      AND json_extract(m.data, '$.role') = 'assistant'
-    ORDER BY COALESCE(m.time_created, 0), m.id, COALESCE(p.time_created, 0), p.id
-  `).all(childSessionId) as { part_data: string | null; part_time_created: number | null }[];
+    SELECT time_created, data
+    FROM session_message
+    WHERE session_id = ?
+      AND type = 'assistant'
+    ORDER BY seq
+  `).all(childSessionId) as { time_created: number | null; data: string | null }[];
 
   const activity: SubagentActivity[] = [];
   for (const row of rows) {
-    const partData = readJsonRecord(row.part_data) ?? {};
-    const timestamp = normalizeProviderTimestamp(row.part_time_created);
-    const partType = readOptionalString(partData.type);
+    const data = readJsonRecord(row.data) ?? {};
+    const timestamp = normalizeProviderTimestamp(row.time_created);
+    const content = Array.isArray(data.content) ? data.content : [];
 
-    if (partType === 'tool') {
-      const state = readObjectRecord(partData.state) ?? {};
-      activity.push({
-        kind: 'tool',
-        toolId: readOptionalString(partData.callID) ?? readOptionalString(partData.id),
-        toolName: readOptionalString(partData.tool) ?? 'Tool',
-        toolInput: state.input ?? {},
-        toolResult: readToolResult(state),
-        timestamp,
-      });
-      continue;
-    }
+    for (const entry of content) {
+      const item = readObjectRecord(entry);
+      const itemType = readOptionalString(item?.type);
+      if (!item || !itemType) {
+        continue;
+      }
 
-    if (partType === 'text' || partType === 'reasoning') {
-      const content = extractText(partData);
-      if (content.trim()) {
-        activity.push({ kind: partType === 'text' ? 'text' : 'thinking', content, timestamp });
+      if (itemType === 'tool') {
+        const state = readObjectRecord(item.state) ?? {};
+        const { toolName, toolInput } = mapOpenCodeToolCall(readOptionalString(item.name) ?? 'Tool', state.input);
+        activity.push({
+          kind: 'tool',
+          toolId: readOptionalString(item.id),
+          toolName,
+          toolInput,
+          toolResult: readToolResult(state) ?? null,
+          timestamp,
+        });
+        continue;
+      }
+
+      if (itemType === 'text' || itemType === 'reasoning') {
+        const text = readOptionalString(item.text) ?? '';
+        if (text.trim()) {
+          activity.push({ kind: itemType === 'text' ? 'text' : 'thinking', content: text, timestamp });
+        }
       }
     }
   }
@@ -352,53 +322,105 @@ const readOpenCodeSubagentActivity = (
   return activity;
 };
 
-// The task tool wraps the subagent's answer as `<task …><task_result>…</task_result></task>`.
-const TASK_OUTPUT_PATTERN = /<task_(result|error)>\n?([\s\S]*?)\n?<\/task_\1>/;
+// Subagent answers come wrapped as `<subagent sessionID="…" state="…">…</subagent>`.
+const SUBAGENT_OUTPUT_PATTERN = /^\s*<subagent\b[^>]*>\n?([\s\S]*?)\n?<\/subagent>\s*$/;
 
-const unwrapTaskOutput = (content: string): string => {
-  const match = TASK_OUTPUT_PATTERN.exec(content);
-  return match ? match[2] : content;
+const unwrapSubagentOutput = (content: string): string => {
+  const match = SUBAGENT_OUTPUT_PATTERN.exec(content);
+  return match ? match[1] : content;
+};
+
+const readChildSession = (db: Database.Database, childSessionId: string): OpenCodeChildSessionRow | undefined =>
+  db.prepare(`
+    SELECT model, idle_outcome, time_busy, time_idle
+    FROM session_v2
+    WHERE id = ?
+  `).get(childSessionId) as OpenCodeChildSessionRow | undefined;
+
+/** Maps a background subagent's reported state (synthetic message or idle outcome) to a status. */
+const toSubagentStatus = (state: string | null | undefined): SubagentInfo['status'] | undefined => {
+  switch (state) {
+    case 'completed':
+    case 'succeeded':
+      return 'completed';
+    case 'error':
+    case 'failed':
+      return 'failed';
+    case 'cancelled':
+    case 'interrupted':
+      return 'stopped';
+    default:
+      return undefined;
+  }
 };
 
 /**
- * Turns a `task` tool row into a subagent container, the way Claude's `Agent`
- * rows are: identity from the call, timeline from the child session.
+ * Turns a `subagent` tool row into a subagent container, the way Claude's
+ * `Agent` rows are: identity from the call, timeline from the child session.
  *
- * `runIsLive` says whether a run of this session is still in progress: a task
- * without a result outside one was stopped and will never report.
+ * A foreground subagent's call finishes with its answer. A background one
+ * (`metadata.status: 'running'`) returns at once; its outcome arrives later as
+ * a `synthetic` message in the parent (history passes those in) or shows on
+ * the child session row. `runIsLive` says whether a run of this session is
+ * still in progress: an unfinished call outside one was stopped.
  */
 const attachOpenCodeSubagent = (
   message: NormalizedMessage,
   state: AnyRecord,
-  db: Database.Database | null,
-  runIsLive: boolean,
+  context: OpenCodeToolContext,
 ): void => {
-  if (message.toolName !== SUBAGENT_TOOL_NAME) {
-    return;
-  }
-
   const input = readObjectRecord(state.input) ?? {};
   const metadata = readObjectRecord(state.metadata) ?? {};
-  const childSessionId = readOptionalString(metadata.sessionId);
-  const toolResult = message.toolResult;
-  let status: SubagentInfo['status'] = runIsLive ? 'running' : 'stopped';
-  if (metadata.interrupted === true) {
-    status = 'stopped';
-  } else if (toolResult) {
-    status = toolResult.isError ? 'failed' : 'completed';
+  const childSessionId = readOptionalString(metadata.sessionID) ?? readOptionalString(input.sessionID);
+  const toolStatus = readOptionalString(state.status);
+  const { db, runIsLive } = context;
+
+  let childSession: OpenCodeChildSessionRow | undefined;
+  if (db && childSessionId) {
+    try {
+      childSession = readChildSession(db, childSessionId);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.warn(`[OpenCodeProvider] Failed to read subagent session ${childSessionId}:`, reason);
+    }
   }
 
-  if (toolResult?.content) {
-    toolResult.content = unwrapTaskOutput(toolResult.content);
+  let status: SubagentInfo['status'] = runIsLive ? 'running' : 'stopped';
+  if (toolStatus === 'error') {
+    status = isInterruptionError(state.error) ? 'stopped' : 'failed';
+  } else if (toolStatus === 'completed') {
+    const metadataStatus = readOptionalString(metadata.status);
+    if (metadataStatus === 'running') {
+      const completion = childSessionId ? context.subagentCompletions?.get(childSessionId) : undefined;
+      const childBusy = childSession?.time_busy != null
+        && (childSession.time_idle == null || childSession.time_busy > childSession.time_idle);
+      if (completion) {
+        status = toSubagentStatus(completion.state) ?? 'completed';
+        message.toolResult = { content: completion.text, isError: status === 'failed' };
+      } else if (childBusy) {
+        status = 'running';
+      } else {
+        status = toSubagentStatus(childSession?.idle_outcome) ?? status;
+      }
+    } else {
+      status = toSubagentStatus(metadataStatus) ?? 'completed';
+    }
+  }
+
+  if (message.toolResult?.content) {
+    message.toolResult.content = unwrapSubagentOutput(message.toolResult.content);
   }
 
   const subagent: SubagentInfo = {
     id: childSessionId ?? message.toolId ?? message.id,
-    type: readOptionalString(input.subagent_type),
+    type: readOptionalString(input.agent),
     description: readOptionalString(input.description),
     status,
-    model: readOptionalString(readObjectRecord(metadata.model)?.modelID),
   };
+  const model = readOptionalString(readJsonRecord(childSession?.model)?.id);
+  if (model) {
+    subagent.model = model;
+  }
 
   if (db && childSessionId) {
     try {
@@ -419,23 +441,105 @@ const attachOpenCodeSubagent = (
   message.subagent = subagent;
 };
 
-/** Opens the shared database for a live event, or null when it cannot be read right now. */
-const openOpenCodeDatabaseForLiveEvent = (): Database.Database | null => {
-  try {
-    return openOpenCodeDatabase();
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    console.warn('[OpenCodeProvider] Failed to open opencode.db for a live event:', reason);
-    return null;
+/**
+ * Normalizes one item of an assistant message's `content` (text, reasoning or
+ * tool). Live events and the history reader both go through here, with the
+ * same ids: `${messageID}_${ordinal}` for text and reasoning, where the ordinal
+ * is the item's index in the content array, and `${messageID}_${toolCallId}`
+ * for tools.
+ */
+const normalizeContentItem = (
+  item: AnyRecord,
+  messageId: string,
+  ordinal: number | undefined,
+  sessionId: string,
+  timestamp: string,
+  context: OpenCodeToolContext,
+): NormalizedMessage[] => {
+  const itemType = readOptionalString(item.type);
+  const ordinalId = ordinal === undefined ? generateMessageId('opencode') : `${messageId}_${ordinal}`;
+
+  if (itemType === 'text' || itemType === 'reasoning') {
+    const content = unwrapJsonStringLiteral(readOptionalString(item.text) ?? '');
+    if (!content.trim()) {
+      return [];
+    }
+
+    return [createNormalizedMessage({
+      id: ordinalId,
+      sessionId,
+      timestamp,
+      provider: PROVIDER,
+      kind: itemType === 'text' ? 'text' : 'thinking',
+      ...(itemType === 'text' ? { role: 'assistant' as const } : {}),
+      content,
+    })];
   }
+
+  if (itemType !== 'tool') {
+    return [];
+  }
+
+  const state = readObjectRecord(item.state) ?? {};
+  const rawName = readOptionalString(item.name) ?? 'Tool';
+  const toolCallId = readOptionalString(item.id);
+  const { toolName, toolInput } = mapOpenCodeToolCall(rawName, state.input);
+  const toolMessage = createNormalizedMessage({
+    id: toolCallId ? `${messageId}_${toolCallId}` : ordinalId,
+    sessionId,
+    timestamp,
+    provider: PROVIDER,
+    kind: 'tool_use',
+    toolName,
+    toolInput,
+    toolId: toolCallId ?? ordinalId,
+  });
+
+  const toolResult = readToolResult(state);
+  if (toolResult) {
+    toolMessage.toolResult = toolResult;
+  }
+
+  if (rawName === QUESTION_TOOL_NAME) {
+    toAskUserQuestionCall(toolMessage, state);
+  }
+
+  if (rawName === SUBAGENT_TOOL_NAME) {
+    attachOpenCodeSubagent(toolMessage, state, context);
+  }
+
+  return [toolMessage];
+};
+
+/** Collects how each background subagent finished, from the parent's `synthetic` messages. */
+const collectSubagentCompletions = (rows: OpenCodeMessageRow[]): Map<string, OpenCodeSubagentCompletion> => {
+  const completions = new Map<string, OpenCodeSubagentCompletion>();
+  for (const row of rows) {
+    if (row.type !== 'synthetic') {
+      continue;
+    }
+
+    const data = readJsonRecord(row.data);
+    const metadata = readObjectRecord(data?.metadata);
+    const childId = readOptionalString(metadata?.childID);
+    if (readOptionalString(metadata?.source) !== 'subagent' || !childId) {
+      continue;
+    }
+
+    completions.set(childId, {
+      state: readOptionalString(metadata?.state),
+      text: readOptionalString(data?.text) ?? '',
+    });
+  }
+
+  return completions;
 };
 
 export class OpenCodeSessionsProvider implements IProviderSessions {
   /**
-   * Normalizes live OpenCode events into frontend messages. The OpenCode
-   * runtime forwards each finished part in the shape `opencode run --format json`
-   * printed (`{ type, timestamp, sessionID, part }`), so sessions recorded
-   * before the SDK runtime and live turns go through the same mapping.
+   * Normalizes live OpenCode v2 events, as the OpenCode runtime forwards them:
+   * `opencode.v2.content` (one finished assistant content item),
+   * `opencode.v2.step_end` (a step finished) and `error`.
    */
   normalizeMessage(rawMessage: unknown, sessionId: string | null): NormalizedMessage[] {
     const raw = readObjectRecord(rawMessage);
@@ -443,130 +547,40 @@ export class OpenCodeSessionsProvider implements IProviderSessions {
       return [];
     }
 
-    const type = readOptionalString(raw.type) ?? readOptionalString(raw.event);
-    const eventSessionId = readOptionalString(raw.sessionID) ?? readOptionalString(raw.sessionId) ?? sessionId;
-    const timestamp = normalizeProviderTimestamp(raw.time ?? raw.timestamp);
-    const part = readEventPart(raw);
-    const toolState = readObjectRecord(part.state) ?? {};
-    const partMessageId = readOptionalString(part.messageID);
-    const partId = readOptionalString(part.id);
-    // Same id the history reader gives this part, so a reload does not duplicate it.
-    const baseId = (partMessageId && partId ? `${partMessageId}_${partId}` : undefined)
-      ?? readOptionalString(raw.id)
-      ?? readOptionalString(raw.messageID)
-      ?? generateMessageId('opencode');
+    const type = readOptionalString(raw.type);
+    const eventSessionId = readOptionalString(raw.sessionID) ?? sessionId ?? '';
+    const timestamp = normalizeProviderTimestamp(raw.timestamp ?? raw.time);
+    const messageId = readOptionalString(raw.messageID);
 
-    if (type === 'text') {
-      // The client already renders an optimistic user bubble, so provider user
-      // echoes must not be streamed back as assistant text.
-      if (isUserTextEcho(raw)) {
+    if (type === 'opencode.v2.content') {
+      const item = readObjectRecord(raw.item);
+      if (!item) {
         return [];
       }
 
-      const content = extractText(raw.text ?? raw.delta ?? raw.message ?? part.text);
-      if (!content.trim()) {
-        return [];
-      }
-
-      // A nested text part arrives once, complete: as its own assistant row it
-      // keeps the history id instead of merging with the next part's stream.
-      if (typeof part.text === 'string') {
-        return [createNormalizedMessage({
-          id: baseId,
-          sessionId: eventSessionId,
+      const ordinal = typeof raw.ordinal === 'number' ? raw.ordinal : undefined;
+      const isSubagent = readOptionalString(item.type) === 'tool'
+        && readOptionalString(item.name) === SUBAGENT_TOOL_NAME;
+      // A subagent call is forwarded once it has finished, so its child
+      // session is in the database by now.
+      const db = isSubagent ? openOpenCodeDatabaseForLiveEvent() : null;
+      try {
+        return normalizeContentItem(
+          item,
+          messageId ?? generateMessageId('opencode'),
+          messageId ? ordinal : undefined,
+          eventSessionId,
           timestamp,
-          provider: PROVIDER,
-          kind: 'text',
-          role: 'assistant',
-          content,
-        })];
+          { db, runIsLive: true },
+        );
+      } finally {
+        db?.close();
       }
-
-      return [createNormalizedMessage({
-        id: baseId,
-        sessionId: eventSessionId,
-        timestamp,
-        provider: PROVIDER,
-        kind: 'stream_delta',
-        content,
-      })];
     }
 
-    if (type === 'reasoning') {
-      const content = extractText(raw.text ?? raw.delta ?? raw.message ?? part.text);
-      if (!content.trim()) {
-        return [];
-      }
-
+    if (type === 'opencode.v2.step_end') {
       return [createNormalizedMessage({
-        id: baseId,
-        sessionId: eventSessionId,
-        timestamp,
-        provider: PROVIDER,
-        kind: 'thinking',
-        content,
-      })];
-    }
-
-    if (type === 'tool_use') {
-      const toolName = readOptionalString(raw.tool) ?? readOptionalString(raw.name) ?? readOptionalString(part.tool) ?? 'Tool';
-      const toolId = readOptionalString(raw.callID) ?? readOptionalString(raw.toolCallId) ?? readOptionalString(part.callID) ?? baseId;
-      const toolMessage = createNormalizedMessage({
-        id: baseId,
-        sessionId: eventSessionId,
-        timestamp,
-        provider: PROVIDER,
-        kind: 'tool_use',
-        toolName,
-        toolInput: raw.input ?? raw.arguments ?? toolState.input ?? {},
-        toolId,
-      });
-
-      const toolStatus = readOptionalString(toolState.status);
-      if (raw.output !== undefined || raw.error !== undefined) {
-        toolMessage.toolResult = {
-          content: formatToolContent(raw.output ?? raw.error),
-          isError: raw.error !== undefined,
-        };
-      } else if (toolStatus === 'completed' || toolStatus === 'error') {
-        toolMessage.toolResult = {
-          content: formatToolContent(toolState.output ?? toolState.error),
-          isError: toolStatus === 'error',
-        };
-      }
-
-      if (toolName === QUESTION_TOOL_NAME) {
-        toAskUserQuestionCall(toolMessage, toolState);
-      }
-
-      if (toolName === SUBAGENT_TOOL_NAME) {
-        // A task is forwarded only once it has finished, so its child session
-        // is complete in the database by now.
-        const db = openOpenCodeDatabaseForLiveEvent();
-        try {
-          attachOpenCodeSubagent(toolMessage, toolState, db, true);
-        } finally {
-          db?.close();
-        }
-      }
-
-      return [toolMessage];
-    }
-
-    if (type === 'error') {
-      return [createNormalizedMessage({
-        id: baseId,
-        sessionId: eventSessionId,
-        timestamp,
-        provider: PROVIDER,
-        kind: 'error',
-        content: readEventError(raw.error) ?? readOptionalString(raw.message) ?? 'Unknown OpenCode error',
-      })];
-    }
-
-    if (type === 'step_finish') {
-      return [createNormalizedMessage({
-        id: baseId,
+        id: messageId ? `${messageId}_end` : generateMessageId('opencode'),
         sessionId: eventSessionId,
         timestamp,
         provider: PROVIDER,
@@ -574,11 +588,22 @@ export class OpenCodeSessionsProvider implements IProviderSessions {
       })];
     }
 
+    if (type === 'error') {
+      return [createNormalizedMessage({
+        id: generateMessageId('opencode'),
+        sessionId: eventSessionId,
+        timestamp,
+        provider: PROVIDER,
+        kind: 'error',
+        content: readErrorMessage(raw.message) ?? readErrorMessage(raw.error) ?? 'Unknown OpenCode error',
+      })];
+    }
+
     return [];
   }
 
   /**
-   * Loads OpenCode history from the shared SQLite session database.
+   * Loads OpenCode history from the shared SQLite database (`session_message`).
    */
   async fetchHistory(
     sessionId: string,
@@ -595,27 +620,14 @@ export class OpenCodeSessionsProvider implements IProviderSessions {
 
     try {
       const rows = db.prepare(`
-        SELECT
-          m.id AS message_id,
-          m.time_created AS message_time_created,
-          m.data AS message_data,
-          p.id AS part_id,
-          p.time_created AS part_time_created,
-          p.data AS part_data
-        FROM message m
-        LEFT JOIN part p
-          ON p.session_id = m.session_id
-         AND p.message_id = m.id
-        WHERE m.session_id = ?
-        ORDER BY
-          COALESCE(m.time_created, 0),
-          m.id,
-          COALESCE(p.time_created, 0),
-          p.id
-      `).all(providerSessionId) as OpenCodeHistoryRow[];
+        SELECT id, type, time_created, data
+        FROM session_message
+        WHERE session_id = ?
+        ORDER BY seq
+      `).all(providerSessionId) as OpenCodeMessageRow[];
 
       const normalized = this.normalizeHistoryRows(rows, sessionId, db);
-      const tokenUsage = aggregateOpenCodeSessionTokenUsage(db, providerSessionId);
+      const tokenUsage = readOpenCodeSessionTokenUsage(providerSessionId) ?? undefined;
 
       const normalizedOffset = Math.max(0, offset);
       const normalizedLimit = limit === null ? null : Math.max(0, limit);
@@ -640,71 +652,43 @@ export class OpenCodeSessionsProvider implements IProviderSessions {
   }
 
   private normalizeHistoryRows(
-    rows: OpenCodeHistoryRow[],
+    rows: OpenCodeMessageRow[],
     sessionId: string,
     db: Database.Database,
   ): NormalizedMessage[] {
     const normalized: NormalizedMessage[] = [];
-    const emittedMessageErrors = new Set<string>();
-    const runIsLive = isOpenCodeSessionActive(sessionId);
+    const context: OpenCodeToolContext = {
+      db,
+      runIsLive: isOpenCodeSessionActive(sessionId),
+      subagentCompletions: collectSubagentCompletions(rows),
+    };
 
     for (const row of rows) {
-      const timestamp = normalizeProviderTimestamp(row.part_time_created ?? row.message_time_created);
-      const baseId = `${row.message_id}_${row.part_id ?? normalized.length}`;
-      const messageInfo = readJsonRecord(row.message_data);
-      const messageRole = readOptionalString(messageInfo?.role);
-
-      if (
-        messageInfo
-        && messageRole === 'assistant'
-        && messageInfo.error != null
-        && !emittedMessageErrors.has(row.message_id)
-      ) {
-        emittedMessageErrors.add(row.message_id);
-        if (!isStoppedTurnError(messageInfo.error)) {
-          normalized.push(createNormalizedMessage({
-            id: `${baseId}_error`,
-            sessionId,
-            timestamp,
-            provider: PROVIDER,
-            kind: 'error',
-            content: formatToolContent(messageInfo.error),
-          }));
-        }
-      }
-
-      if (!row.part_id) {
+      const data = readJsonRecord(row.data);
+      if (!data) {
         continue;
       }
 
-      const partData = readJsonRecord(row.part_data) ?? {};
-      const partType = readOptionalString(partData.type);
-      if (!partType) {
-        continue;
-      }
+      const timestamp = normalizeProviderTimestamp(row.time_created);
 
-      if (partType === 'text') {
-        const rawContent = extractText(partData);
-        // User prompts sent with attachments carry an <images_input> path
-        // list; strip it for display and surface the paths as images.
-        const parsedImages = messageRole === 'user'
-          ? parseImagesInputTag(rawContent)
-          : { text: rawContent, attachments: [] };
-        const parsedFiles = messageRole === 'user'
-          ? parseFilesInputTag(parsedImages.text)
-          : { text: rawContent, attachments: [] };
+      if (row.type === 'user') {
+        const rawContent = unwrapJsonStringLiteral(readOptionalString(data.text) ?? '');
+        // Prompts sent with attachments carry <images_input>/<files_input>
+        // path lists; strip them for display and surface the paths.
+        const parsedImages = parseImagesInputTag(rawContent);
+        const parsedFiles = parseFilesInputTag(parsedImages.text);
         if (
           parsedFiles.text.trim()
           || parsedImages.attachments.length > 0
           || parsedFiles.attachments.length > 0
         ) {
           normalized.push(createNormalizedMessage({
-            id: baseId,
+            id: row.id,
             sessionId,
             timestamp,
             provider: PROVIDER,
             kind: 'text',
-            role: messageRole === 'user' ? 'user' : 'assistant',
+            role: 'user',
             content: parsedFiles.text,
             images: parsedImages.attachments.length > 0 ? parsedImages.attachments : undefined,
             files: parsedFiles.attachments.length > 0 ? parsedFiles.attachments : undefined,
@@ -713,72 +697,39 @@ export class OpenCodeSessionsProvider implements IProviderSessions {
         continue;
       }
 
-      if (partType === 'reasoning') {
-        const content = extractText(partData);
-        if (content.trim()) {
+      if (row.type === 'assistant') {
+        const content = Array.isArray(data.content) ? data.content : [];
+        content.forEach((entry, ordinal) => {
+          const item = readObjectRecord(entry);
+          if (item) {
+            normalized.push(...normalizeContentItem(item, row.id, ordinal, sessionId, timestamp, context));
+          }
+        });
+
+        if (data.error != null && !isInterruptionError(data.error)) {
           normalized.push(createNormalizedMessage({
-            id: baseId,
+            id: `${row.id}_error`,
             sessionId,
             timestamp,
             provider: PROVIDER,
-            kind: 'thinking',
-            content,
+            kind: 'error',
+            content: readErrorMessage(data.error) ?? 'Unknown OpenCode error',
           }));
         }
         continue;
       }
 
-      if (partType === 'tool') {
-        const state = readObjectRecord(partData.state) ?? {};
-        const status = readOptionalString(state.status);
-        const toolMessage = createNormalizedMessage({
-          id: baseId,
-          sessionId,
-          timestamp,
-          provider: PROVIDER,
-          kind: 'tool_use',
-          toolName: readOptionalString(partData.tool) ?? 'Tool',
-          toolInput: state.input ?? partData.input ?? {},
-          toolId: readOptionalString(partData.callID) ?? row.part_id,
-        });
-
-        if (status === 'completed' || status === 'error') {
-          toolMessage.toolResult = {
-            content: formatToolContent(state.output ?? state.error),
-            isError: status === 'error',
-          };
-        }
-
-        if (toolMessage.toolName === QUESTION_TOOL_NAME) {
-          toAskUserQuestionCall(toolMessage, state);
-        }
-
-        attachOpenCodeSubagent(toolMessage, state, db, runIsLive);
-        normalized.push(toolMessage);
-        continue;
-      }
-
-      if (partType === 'step-finish') {
+      if (row.type === 'compaction' && readOptionalString(data.status) === 'completed') {
+        const trigger = readOptionalString(data.reason) === 'manual' ? 'manual' : 'auto';
         normalized.push(createNormalizedMessage({
-          id: baseId,
+          id: `${row.id}_compact`,
           sessionId,
           timestamp,
           provider: PROVIDER,
-          kind: 'stream_end',
-        }));
-        continue;
-      }
-
-      if (partType === 'patch' || partType === 'agent') {
-        normalized.push(createNormalizedMessage({
-          id: baseId,
-          sessionId,
-          timestamp,
-          provider: PROVIDER,
-          kind: 'tool_use',
-          toolName: partType === 'patch' ? 'Patch' : 'Agent',
-          toolInput: partData,
-          toolId: row.part_id,
+          kind: 'text',
+          role: 'assistant',
+          content: `Compacted · ${trigger}`,
+          compact: { phase: 'done', trigger },
         }));
       }
     }

@@ -16,6 +16,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
+import Database from 'better-sqlite3';
 import spawn from 'cross-spawn';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
@@ -26,6 +27,8 @@ import type {
   AppErrorOptions,
   CliVersionProbe,
   NormalizedMessage,
+  OpenCodeCredential,
+  OpenCodeSessionTokenUsage,
   ProviderCurrentActiveModel,
   ProviderModelsDefinition,
   ProviderSkillSource,
@@ -1032,13 +1035,76 @@ export function readJsonRecord(value: unknown): AnyRecord | null {
 /**
  * Resolves the OpenCode SQLite session database path.
  *
- * OpenCode stores session, message, part, and project metadata in one shared
- * `opencode.db` file under its XDG data directory. Provider readers and
+ * OpenCode v2 stores sessions (`session_v2`), their messages (`session_message`),
+ * projects and credentials in one shared `opencode.db` file under its XDG data directory. Provider readers and
  * synchronizers should use this path for read-only access and should never store
  * it as a deletable transcript path for an individual app session row.
  */
 export function getOpenCodeDatabasePath(): string {
   return path.join(os.homedir(), '.local', 'share', 'opencode', 'opencode.db');
+}
+
+/**
+ * Reads the cumulative token usage OpenCode v2 stores on a session's
+ * `session_v2` row (`tokens_input`, `tokens_output`, `tokens_reasoning`,
+ * `tokens_cache_read`, `tokens_cache_write`).
+ *
+ * Consumed by the OpenCode history reader (usage returned with each history
+ * page) and the OpenCode runtime (usage pushed after a turn). `sessionId` is the
+ * OpenCode-native session id, not the app session id. `databasePath` defaults to
+ * the shared `opencode.db`; it is opened read-only and closed before returning.
+ *
+ * Returns null when the database or the row does not exist, when every counter
+ * is zero (nothing to show yet), or when the database cannot be read, so
+ * callers can simply skip reporting usage.
+ */
+export function readOpenCodeSessionTokenUsage(
+  sessionId: string,
+  databasePath: string = getOpenCodeDatabasePath(),
+): OpenCodeSessionTokenUsage | null {
+  if (!sessionId || !fs.existsSync(databasePath)) {
+    return null;
+  }
+
+  let database: Database.Database | null = null;
+  try {
+    database = new Database(databasePath, { readonly: true, fileMustExist: true });
+    const row = database.prepare(`
+      SELECT
+        tokens_input AS input,
+        tokens_output AS output,
+        tokens_reasoning AS reasoning,
+        tokens_cache_read AS cacheRead,
+        tokens_cache_write AS cacheWrite
+      FROM session_v2
+      WHERE id = ?
+    `).get(sessionId) as Record<'input' | 'output' | 'reasoning' | 'cacheRead' | 'cacheWrite', unknown> | undefined;
+    if (!row) {
+      return null;
+    }
+
+    const count = (value: unknown): number => {
+      const numeric = Number(value ?? 0);
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+    };
+    const inputTokens = count(row.input) + count(row.cacheRead);
+    const outputTokens = count(row.output);
+    const used = inputTokens + outputTokens + count(row.reasoning) + count(row.cacheWrite);
+    if (used <= 0) {
+      return null;
+    }
+
+    return {
+      used,
+      inputTokens,
+      outputTokens,
+      breakdown: { input: inputTokens, output: outputTokens },
+    };
+  } catch {
+    return null;
+  } finally {
+    database?.close();
+  }
 }
 
 /**
@@ -1135,6 +1201,101 @@ export function stripJsonComments(content: string): string {
  */
 export function stripTrailingCommas(content: string): string {
   return content.replace(/,\s*([}\]])/g, '$1');
+}
+
+// ---------------------------
+//----------------- OPENCODE PROVIDER CONNECTION UTILITIES ------------
+/**
+ * Lists the active credentials OpenCode v2 keeps in the `credential` table of
+ * its shared `opencode.db` (v2 replaced the old `auth.json` with this table).
+ *
+ * Consumed by the OpenCode auth facet (is any credential stored?) and the
+ * OpenCode models facet (which upstream providers are connected?). Only the
+ * integration id and label are read; secret values never leave the database.
+ * Rows with `active = 0` are skipped. Returns an empty list when the database,
+ * the table or a readable row is missing.
+ */
+export function readOpenCodeCredentials(
+  databasePath: string = getOpenCodeDatabasePath(),
+): OpenCodeCredential[] {
+  if (!fs.existsSync(databasePath)) {
+    return [];
+  }
+
+  let database: Database.Database | null = null;
+  try {
+    database = new Database(databasePath, { readonly: true, fileMustExist: true });
+    const rows = database.prepare(`
+      SELECT integration_id AS integrationId, label
+      FROM credential
+      WHERE active IS NULL OR active != 0
+      ORDER BY time_created
+    `).all() as Array<{ integrationId: unknown; label: unknown }>;
+    return rows.map((row) => ({
+      integrationId: typeof row.integrationId === 'string' && row.integrationId.trim() ? row.integrationId : null,
+      label: typeof row.label === 'string' ? row.label : '',
+    }));
+  } catch {
+    return [];
+  } finally {
+    database?.close();
+  }
+}
+
+/** Global OpenCode config files, in the order the CLI loads them. */
+const OPENCODE_GLOBAL_CONFIG_FILES = ['config.json', 'opencode.json', 'opencode.jsonc'];
+
+const readOpenCodeConfigText = (content: string): Record<string, unknown> | null => {
+  try {
+    return readObjectRecord(JSON.parse(stripTrailingCommas(stripJsonComments(content))));
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Lists the provider ids declared in the user's global OpenCode config.
+ *
+ * Reads `~/.config/opencode/{config.json,opencode.json,opencode.jsonc}` plus a
+ * custom config passed through `OPENCODE_CONFIG` (a file path) or
+ * `OPENCODE_CONFIG_CONTENT` (inline JSON), all as JSONC. Both the v2 `providers`
+ * key and the legacy `provider` key count. Consumed by the OpenCode auth facet
+ * (a configured provider means OpenCode can run) and the OpenCode models facet
+ * (which providers the static catalog may offer). Project-level config is not
+ * visible here. Unreadable or malformed sources contribute nothing.
+ */
+export async function readOpenCodeConfiguredProviderIds(): Promise<string[]> {
+  const sources: string[] = [];
+  const configDir = path.join(os.homedir(), '.config', 'opencode');
+  const customConfigPath = process.env.OPENCODE_CONFIG?.trim();
+  const filePaths = [
+    ...OPENCODE_GLOBAL_CONFIG_FILES.map((fileName) => path.join(configDir, fileName)),
+    ...(customConfigPath ? [customConfigPath] : []),
+  ];
+  for (const filePath of filePaths) {
+    try {
+      sources.push(await readFile(filePath, 'utf8'));
+    } catch {
+      // A missing or unreadable file declares nothing.
+    }
+  }
+
+  const inlineConfig = process.env.OPENCODE_CONFIG_CONTENT?.trim();
+  if (inlineConfig) {
+    sources.push(inlineConfig);
+  }
+
+  const providerIds = new Set<string>();
+  for (const source of sources) {
+    const config = readOpenCodeConfigText(source);
+    for (const key of ['providers', 'provider']) {
+      for (const providerId of Object.keys(readObjectRecord(config?.[key]) ?? {})) {
+        providerIds.add(providerId);
+      }
+    }
+  }
+
+  return [...providerIds];
 }
 
 // ---------------------------

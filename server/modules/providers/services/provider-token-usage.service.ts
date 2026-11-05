@@ -344,30 +344,10 @@ function claudeEntriesHaveUsage(entries: AnyRecord[]): boolean {
   return entries.some((entry) => entry?.type === 'assistant' && entry.message?.usage);
 }
 
+/** Reads the cumulative counters OpenCode v2 keeps on the session's `session_v2` row. */
 function readOpenCodeTokenUsage(databasePath: string, providerSessionId: string): TokenUsageResult {
   const database = new Database(databasePath, { readonly: true, fileMustExist: true });
   try {
-    const columns = database.prepare('PRAGMA table_info(session)').all() as Array<{ name: string }>;
-    const columnNames = new Set(columns.map((column) => column.name));
-    const requiredColumns = [
-      'tokens_input',
-      'tokens_output',
-      'tokens_reasoning',
-      'tokens_cache_read',
-      'tokens_cache_write',
-    ];
-
-    if (!requiredColumns.every((column) => columnNames.has(column))) {
-      return {
-        used: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-        breakdown: { input: 0, output: 0 },
-        unsupported: true,
-        message: 'Token usage tracking is not available in this OpenCode database schema',
-      };
-    }
-
     const row = database.prepare(`
       SELECT
         tokens_input AS inputTokens,
@@ -375,7 +355,7 @@ function readOpenCodeTokenUsage(databasePath: string, providerSessionId: string)
         tokens_reasoning AS reasoningTokens,
         tokens_cache_read AS cacheReadTokens,
         tokens_cache_write AS cacheWriteTokens
-      FROM session
+      FROM session_v2
       WHERE id = ?
     `).get(providerSessionId) as OpenCodeTokenRow | undefined;
 

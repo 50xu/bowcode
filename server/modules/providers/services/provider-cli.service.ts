@@ -55,7 +55,8 @@ const CLI_UPDATERS: Partial<Record<LLMProvider, CliUpdater>> = {
   opencode: {
     resolveCommand: () => 'opencode',
     args: ['upgrade'],
-    npmPackage: 'opencode-ai',
+    // OpenCode 2 ships as @opencode/cli; the old `opencode-ai` package stays on 1.x.
+    npmPackage: '@opencode/cli',
   },
 };
 

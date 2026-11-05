@@ -1,7 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-
 import Database from 'better-sqlite3';
 import spawn from 'cross-spawn';
 
@@ -15,6 +11,8 @@ import {
   buildDefaultProviderCurrentActiveModel,
   getOpenCodeDatabasePath,
   readObjectRecord,
+  readOpenCodeConfiguredProviderIds,
+  readOpenCodeCredentials,
   readOptionalString,
 } from '@/shared/utils.js';
 
@@ -294,9 +292,6 @@ export const OPENCODE_PREDEFINED_MODELS: ProviderModelsDefinition = {
   DEFAULT: 'opencode/gpt-5.6-terra',
 };
 
-/** Global OpenCode config files, in the order the CLI loads them. */
-const OPENCODE_CONFIG_FILES = ['config.json', 'opencode.json', 'opencode.jsonc'];
-
 /** Provider API keys OpenCode reads straight from the environment. */
 const OPENCODE_ENV_PROVIDER_IDS: Record<string, string> = {
   OPENCODE_API_KEY: 'opencode',
@@ -371,29 +366,16 @@ const readInstalledOpenCodeModels = async (): Promise<string[]> => new Promise((
   });
 });
 
-const readOpenCodeJsonFile = async (filePath: string): Promise<Record<string, unknown> | null> => {
-  try {
-    return readObjectRecord(JSON.parse(await readFile(filePath, 'utf8')));
-  } catch {
-    // Missing, unreadable, or comment-bearing (.jsonc) files simply contribute
-    // nothing; the auth store is the authoritative source below.
-    return null;
-  }
-};
-
 /**
- * Lists the upstream providers this OpenCode install can actually route to.
+ * Lists the upstream providers this OpenCode install can route to.
  *
  * OpenCode resolves `<providerID>/<modelID>` against the providers the user has
- * connected, and rejects anything else outright - `Model
- * opencode/claude-sonnet-4-6 is not valid` is what a run gets for asking for an
- * OpenCode Zen model on a machine that only has an Anthropic key. The curated
- * catalog spans every provider OpenCode can address, so it has to be narrowed
- * to this machine's providers before it reaches the model picker.
- *
- * Custom config passed through `OPENCODE_CONFIG` (a file path) or
- * `OPENCODE_CONFIG_CONTENT` (inline JSON) is read too, so providers declared
- * there are not filtered out of the CLI listing.
+ * connected and rejects anything else outright. The curated catalog spans
+ * every provider OpenCode can address, so when the CLI listing is unavailable
+ * it has to be narrowed to this machine's providers: credentials stored in
+ * OpenCode v2's `credential` table, providers declared in the global config
+ * (`providers`, or the legacy `provider`, including `OPENCODE_CONFIG` and
+ * `OPENCODE_CONFIG_CONTENT`), and provider API keys in the environment.
  *
  * Returns null when nothing can be read. Providers declared only in a
  * project-level `opencode.json` are not visible here, so callers retain the
@@ -401,40 +383,15 @@ const readOpenCodeJsonFile = async (filePath: string): Promise<Record<string, un
  */
 const readConnectedOpenCodeProviderIds = async (): Promise<Set<string> | null> => {
   const providerIds = new Set<string>();
-  const configDir = path.join(os.homedir(), '.config', 'opencode');
 
-  const auth = await readOpenCodeJsonFile(
-    path.join(os.homedir(), '.local', 'share', 'opencode', 'auth.json'),
-  );
-  for (const [providerId, credential] of Object.entries(auth ?? {})) {
-    if (readObjectRecord(credential)) {
-      providerIds.add(providerId);
+  for (const credential of readOpenCodeCredentials()) {
+    if (credential.integrationId) {
+      providerIds.add(credential.integrationId);
     }
   }
 
-  const configs: Array<Record<string, unknown> | null> = [];
-  for (const configFile of OPENCODE_CONFIG_FILES) {
-    configs.push(await readOpenCodeJsonFile(path.join(configDir, configFile)));
-  }
-
-  const customConfigPath = readOptionalString(process.env.OPENCODE_CONFIG);
-  if (customConfigPath) {
-    configs.push(await readOpenCodeJsonFile(customConfigPath));
-  }
-
-  const inlineConfig = readOptionalString(process.env.OPENCODE_CONFIG_CONTENT);
-  if (inlineConfig) {
-    try {
-      configs.push(readObjectRecord(JSON.parse(inlineConfig)));
-    } catch {
-      // Malformed inline config contributes nothing, like an unreadable file.
-    }
-  }
-
-  for (const config of configs) {
-    for (const providerId of Object.keys(readObjectRecord(config?.provider) ?? {})) {
-      providerIds.add(providerId);
-    }
+  for (const providerId of await readOpenCodeConfiguredProviderIds()) {
+    providerIds.add(providerId);
   }
 
   for (const [envKey, providerId] of Object.entries(OPENCODE_ENV_PROVIDER_IDS)) {
@@ -477,12 +434,15 @@ const OPENCODE_PREDEFINED_OPTIONS_BY_VALUE = new Map(
   OPENCODE_PREDEFINED_MODELS.OPTIONS.map((option) => [option.value, option]),
 );
 
+/**
+ * Builds the catalog from the CLI listing. OpenCode v2's `opencode models`
+ * lists only models it can route right now (connected providers plus the free
+ * OpenCode Zen models that need no key), so the listing is used as is.
+ */
 const createDiscoveredOpenCodeModels = (
   modelReferences: string[],
-  connectedProviderIds: Set<string> | null,
 ): ProviderModelsDefinition | null => {
   const options = modelReferences
-    .filter((model) => !connectedProviderIds || connectedProviderIds.has(model.split('/')[0]))
     .map((value) => {
       const predefined = OPENCODE_PREDEFINED_OPTIONS_BY_VALUE.get(value);
       if (predefined) {
@@ -591,11 +551,7 @@ export class OpenCodeProviderModels implements IProviderModels {
   }
 
   async getSupportedModels(): Promise<ProviderModelsDefinition> {
-    const [connectedProviderIds, modelReferences] = await Promise.all([
-      readConnectedOpenCodeProviderIds(),
-      this.readModelReferences(),
-    ]);
-    const discovered = createDiscoveredOpenCodeModels(modelReferences, connectedProviderIds);
+    const discovered = createDiscoveredOpenCodeModels(await this.readModelReferences());
     if (discovered) {
       return discovered;
     }
@@ -603,7 +559,10 @@ export class OpenCodeProviderModels implements IProviderModels {
     // Discovery can fail when the CLI is not installed or is upgraded. Keep
     // known static options only for connected providers; an unknown provider
     // gets an empty picker instead of a misleading foreign-provider catalog.
-    return filterOpenCodeModelsByProvider(OPENCODE_PREDEFINED_MODELS, connectedProviderIds);
+    return filterOpenCodeModelsByProvider(
+      OPENCODE_PREDEFINED_MODELS,
+      await readConnectedOpenCodeProviderIds(),
+    );
   }
 
   async getCurrentActiveModel(sessionId?: string): Promise<ProviderCurrentActiveModel> {
@@ -611,7 +570,7 @@ export class OpenCodeProviderModels implements IProviderModels {
       return buildDefaultProviderCurrentActiveModel(await this.getSupportedModels());
     }
 
-    // OpenCode's `session` table is keyed by its own session id, so the stable
+    // OpenCode's `session_v2` table is keyed by its own session id, so the stable
     // app id has to be translated first; sessions discovered on disk store the
     // provider id in both columns and resolve to themselves.
     const providerSessionId = sessionsDb.getSessionById(sessionId)?.provider_session_id ?? sessionId;
@@ -629,7 +588,7 @@ export class OpenCodeProviderModels implements IProviderModels {
             s.directory AS directory,
             s.time_updated AS timeUpdated,
             s.time_created AS timeCreated
-          FROM session s
+          FROM session_v2 s
           WHERE s.id = ?
           ORDER BY COALESCE(s.time_updated, s.time_created, 0) DESC
           LIMIT 1

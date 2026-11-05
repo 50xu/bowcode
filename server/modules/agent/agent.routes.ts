@@ -621,11 +621,11 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
    *                        which is the first custom model while "Use only my models" is on.
    *
    *                        Claude models: 'default', 'sonnet', 'opus', 'haiku', 'sonnet[1m]', 'opus[1m]', 'fable'
-   *                        Codex models: 'gpt-5.4' (default), 'gpt-5.5', 'gpt-5.4-mini'
+   *                        Codex models: 'gpt-6.1-sol' (default), 'gpt-6.1-terra', 'gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna', ...
    *
    * @param {string} effort - (Optional) Reasoning effort for providers/models that support it.
    *                          Claude supports: 'low', 'medium', 'high', 'xhigh', 'max' depending on model.
-   *                          Codex supports: 'low', 'medium', 'high', 'xhigh'.
+   *                          Codex supports: 'low', 'medium', 'high', 'xhigh', and on most models 'max' / 'ultra'.
    *                          'default' or omission lets the provider decide.
    *
    * @param {boolean} cleanup - (Optional) Auto-cleanup project directory after completion.

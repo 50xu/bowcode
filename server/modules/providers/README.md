@@ -144,7 +144,7 @@ Current MCP formats in this repo are:
 | --- | --- | --- | --- |
 | Claude | `.mcp.json` in user / local / project locations | `user`, `local`, `project` | `stdio`, `http`, `sse` |
 | Codex | `.codex/config.toml` | `user`, `project` | `stdio`, `http` |
-| OpenCode | `~/.config/opencode/opencode.json` or `<workspace>/opencode.json` (`.jsonc` is read when present) | `user`, `project` | `stdio`, `http` |
+| OpenCode | `mcp.servers` in `~/.config/opencode/opencode.json` or `<workspace>/opencode.json` (`.jsonc` is read when present). Deprecated top-level `mcp.<name>` entries are read and migrated into `mcp.servers` (v2 shape: `disabled`, `timeout.execution`) on the next write | `user`, `project` | `stdio`, `http` |
 
 5. Implement skills.
 
@@ -206,7 +206,7 @@ Current session sync roots are:
 | --- | --- | --- |
 | Claude | `~/.claude/projects/**/*.jsonl` | Uses `~/.claude/history.jsonl` for name lookup and the trailing `ai-title`, `last-prompt`, or `custom-title` entries for title recovery. |
 | Codex | `~/.codex/sessions/**/*.jsonl` | Uses `~/.codex/session_index.jsonl` for title lookup and the last `task_complete` message for a fallback title. |
-| OpenCode | `~/.local/share/opencode/opencode.db` | Reads active sessions/messages/parts from OpenCode's shared SQLite database and stores `jsonl_path` as `null` so deleting one app session cannot remove the shared DB. |
+| OpenCode | `~/.local/share/opencode/opencode.db` | OpenCode v2 only: indexes top-level, unarchived `session_v2` rows (directory falls back to `project.worktree`; title falls back to the first `user` row of `session_message`), reads history from `session_message` ordered by `seq` and token usage from the `session_v2` counters. Stores `jsonl_path` as `null` so deleting one app session cannot remove the shared DB. |
 
 8. Register the provider.
 

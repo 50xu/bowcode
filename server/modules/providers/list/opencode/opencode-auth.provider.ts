@@ -1,10 +1,10 @@
-import { readFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-
 import type { IProviderAuth } from '@/shared/interfaces.js';
 import type { CliVersionProbe, ProviderAuthStatus } from '@/shared/types.js';
-import { probeCliVersion, readObjectRecord, readOptionalString } from '@/shared/utils.js';
+import {
+  probeCliVersion,
+  readOpenCodeConfiguredProviderIds,
+  readOpenCodeCredentials,
+} from '@/shared/utils.js';
 
 type OpenCodeCredentialsStatus = {
   authenticated: boolean;
@@ -51,41 +51,27 @@ export class OpenCodeProviderAuth implements IProviderAuth {
   }
 
   /**
-   * Reads OpenCode's auth store or falls back to provider API key environment variables.
+   * Reads OpenCode v2's credential store (the `credential` table of
+   * `opencode.db`), then providers declared in the global config, then
+   * provider API key environment variables.
    */
   private async checkCredentials(): Promise<OpenCodeCredentialsStatus> {
-    try {
-      const authPath = path.join(os.homedir(), '.local', 'share', 'opencode', 'auth.json');
-      const content = await readFile(authPath, 'utf8');
-      const auth = readObjectRecord(JSON.parse(content)) ?? {};
+    const [credential] = readOpenCodeCredentials();
+    if (credential) {
+      return {
+        authenticated: true,
+        email: credential.integrationId ? `${credential.integrationId} credentials` : credential.label || null,
+        method: 'credentials_store',
+      };
+    }
 
-      for (const [providerId, providerAuth] of Object.entries(auth)) {
-        const providerRecord = readObjectRecord(providerAuth);
-        if (!providerRecord) {
-          continue;
-        }
-
-        const hasCredential = Object.values(providerRecord).some(
-          (value) => readOptionalString(value) !== undefined || Boolean(readObjectRecord(value)),
-        );
-        if (hasCredential) {
-          return {
-            authenticated: true,
-            email: `${providerId} credentials`,
-            method: 'credentials_file',
-          };
-        }
-      }
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code !== 'ENOENT') {
-        return {
-          authenticated: false,
-          email: null,
-          method: null,
-          error: error instanceof Error ? error.message : 'Failed to read OpenCode auth',
-        };
-      }
+    const [configuredProviderId] = await readOpenCodeConfiguredProviderIds();
+    if (configuredProviderId) {
+      return {
+        authenticated: true,
+        email: `${configuredProviderId} provider`,
+        method: 'config',
+      };
     }
 
     const envCredential = OPENCODE_ENV_CREDENTIAL_KEYS.find((key) => process.env[key]?.trim());

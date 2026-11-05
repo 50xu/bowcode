@@ -33,7 +33,8 @@ type OpenCodeChildSessionRow = {
 };
 
 /**
- * Session indexer for OpenCode's SQLite-backed session store.
+ * Session indexer for OpenCode v2's SQLite-backed session store: top-level,
+ * unarchived `session_v2` rows, titled from the row or the first `user` message.
  */
 export class OpenCodeSessionSynchronizer implements IProviderSessionSynchronizer {
   private readonly provider = 'opencode' as const;
@@ -88,7 +89,7 @@ export class OpenCodeSessionSynchronizer implements IProviderSessionSynchronizer
           s.time_created AS time_created,
           s.time_updated AS time_updated,
           p.worktree AS worktree
-        FROM session s
+        FROM session_v2 s
         LEFT JOIN project p ON p.id = s.project_id
         WHERE s.time_archived IS NULL
           AND s.parent_id IS NULL
@@ -124,7 +125,7 @@ export class OpenCodeSessionSynchronizer implements IProviderSessionSynchronizer
   private pruneChildSessions(db: Database.Database): void {
     const childSessions = db.prepare(`
       SELECT id
-      FROM session
+      FROM session_v2
       WHERE parent_id IS NOT NULL
     `).all() as OpenCodeChildSessionRow[];
 
@@ -183,15 +184,11 @@ export class OpenCodeSessionSynchronizer implements IProviderSessionSynchronizer
   private readFirstUserText(db: Database.Database, sessionId: string): string | undefined {
     try {
       const row = db.prepare(`
-        SELECT p.data AS data
-        FROM message m
-        INNER JOIN part p
-          ON p.session_id = m.session_id
-         AND p.message_id = m.id
-        WHERE m.session_id = ?
-          AND json_extract(m.data, '$.role') = 'user'
-          AND json_extract(p.data, '$.type') = 'text'
-        ORDER BY COALESCE(m.time_created, 0), COALESCE(p.time_created, 0)
+        SELECT data
+        FROM session_message
+        WHERE session_id = ?
+          AND type = 'user'
+        ORDER BY seq
         LIMIT 1
       `).get(sessionId) as { data: string | null } | undefined;
 

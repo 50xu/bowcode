@@ -699,6 +699,37 @@ export type FetchHistoryResult = {
   tokenUsage?: unknown;
 };
 
+/**
+ * Cumulative token usage of one OpenCode v2 session, read from the counters
+ * OpenCode keeps on its `session_v2` row.
+ *
+ * `inputTokens` (and `breakdown.input`) count fresh input plus cache reads,
+ * the prompt the model actually saw; `used` adds every counter (input,
+ * output, reasoning, cache read and cache write). Produced by
+ * `readOpenCodeSessionTokenUsage` for the OpenCode history reader and runtime.
+ */
+/**
+ * One active credential from OpenCode v2's `credential` table, without its
+ * secret value. Produced by `readOpenCodeCredentials` for the OpenCode auth and
+ * models facets.
+ */
+export type OpenCodeCredential = {
+  /** Upstream provider/integration the credential belongs to (e.g. `anthropic`); null when unset. */
+  integrationId: string | null;
+  /** User-facing name OpenCode stores for the credential. */
+  label: string;
+};
+
+export type OpenCodeSessionTokenUsage = {
+  used: number;
+  inputTokens: number;
+  outputTokens: number;
+  breakdown: {
+    input: number;
+    output: number;
+  };
+};
+
 // ---------------------------
 //----------------- PROVIDER SKILL TYPES ------------
 /**
