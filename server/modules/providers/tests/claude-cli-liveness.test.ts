@@ -99,3 +99,28 @@ test('a leftover server-owned process holding a session is found and stopped; ex
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('on macOS, server-spawned CLI processes are owned via the ppid chain instead of /proc', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'claude-darwin-'));
+  try {
+    for (const [pid, entrypoint] of [[301, 'bowcode'], [302, 'bowcode'], [303, 'bowcode'], [304, 'cli']] as const) {
+      await writeFile(path.join(directory, `${pid}.json`), JSON.stringify({
+        pid, sessionId: `session-${pid}`, entrypoint, status: 'busy', cwd: '/work', startedAt: 10,
+      }));
+    }
+    // 301 is a direct child, 302 sits behind a wrapper (3020), 303 and 304 belong to other parents.
+    const parents: Record<number, number> = { 301: process.pid, 302: 3020, 3020: process.pid, 303: 1, 304: process.pid };
+    const options = {
+      registryDirectory: directory,
+      platform: 'darwin' as const,
+      readProcStat: async () => { throw new Error('no /proc on macOS'); },
+      readParentPid: async (pid: number) => parents[pid] ?? NaN,
+      kill: (_pid: number, _signal: NodeJS.Signals | 0) => {},
+    };
+    const external = await listExternalClaudeCliSessions(options);
+    assert.deepEqual(external.map((session) => session.pid).sort(), [303, 304]);
+    assert.deepEqual((await findOwnedClaudeCliSessions('session-302', options)).map((session) => session.pid), [302]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

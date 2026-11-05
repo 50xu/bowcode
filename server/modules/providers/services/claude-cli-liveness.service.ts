@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -21,6 +22,9 @@ type RegistryAccess = {
   registryDirectory?: string;
   readProcStat?: (pid: number) => Promise<string>;
   kill?: (pid: number, signal: NodeJS.Signals | 0) => void;
+  /** Parent pid lookup used off Linux (macOS has no /proc); NaN when unknown. */
+  readParentPid?: (pid: number) => Promise<number>;
+  platform?: NodeJS.Platform;
 };
 
 const registryDirectory = () => path.join(os.homedir(), '.claude', 'sessions');
@@ -31,7 +35,33 @@ function access(options: RegistryAccess) {
     directory: options.registryDirectory ?? registryDirectory(),
     readProcStat: options.readProcStat ?? ((pid: number) => fsp.readFile(`/proc/${pid}/stat`, 'utf8')),
     kill: options.kill ?? ((pid: number, signal: NodeJS.Signals | 0) => process.kill(pid, signal)),
+    readParentPid: options.readParentPid ?? readParentPidWithPs,
+    platform: options.platform ?? process.platform,
   };
+}
+
+function readParentPidWithPs(pid: number): Promise<number> {
+  return new Promise((resolve) => {
+    execFile('ps', ['-o', 'ppid=', '-p', String(pid)], { timeout: 2_000 }, (error, stdout) => {
+      resolve(error ? NaN : Number(String(stdout).trim()));
+    });
+  });
+}
+
+// The SDK may launch the CLI through a short wrapper chain, so on macOS the
+// server owns a record when its pid is any near ancestor of the CLI process.
+const MAX_ANCESTOR_DEPTH = 6;
+
+async function isDescendantOfServer(pid: number, options: RegistryAccess): Promise<boolean> {
+  const { readParentPid } = access(options);
+  let current = pid;
+  for (let depth = 0; depth < MAX_ANCESTOR_DEPTH && current > 1; depth += 1) {
+    const parent = await readParentPid(current);
+    if (!Number.isInteger(parent) || parent <= 1) return false;
+    if (parent === process.pid) return true;
+    current = parent;
+  }
+  return false;
 }
 
 // The comm field can contain ')' and spaces. The fields following its last ')'
@@ -46,7 +76,7 @@ async function isRecordedProcessAlive(pid: number, procStart: unknown, options: 
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code !== 'EPERM') return false;
   }
-  if (process.platform !== 'linux' || typeof procStart !== 'string' || !procStart) return true;
+  if (access(options).platform !== 'linux' || typeof procStart !== 'string' || !procStart) return true;
   try {
     return procFields(await access(options).readProcStat(pid))[19] === procStart;
   } catch {
@@ -100,7 +130,10 @@ async function readRegistry(options: RegistryAccess): Promise<RegistryRecord[]> 
 }
 
 async function isExternal(record: RegistryRecord, options: RegistryAccess): Promise<boolean> {
-  if (record.entrypoint !== 'bowcode' || process.platform !== 'linux') return true;
+  if (record.entrypoint !== 'bowcode') return true;
+  const { platform } = access(options);
+  if (platform === 'darwin') return !(await isDescendantOfServer(record.pid, options));
+  if (platform !== 'linux') return true;
   try {
     return Number(procFields(await access(options).readProcStat(record.pid))[1]) !== process.pid;
   } catch {
