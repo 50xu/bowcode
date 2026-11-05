@@ -23,6 +23,8 @@ vi.mock('@/shared/api', () => ({
     projectTaskmaster: () => Promise.resolve({ ok: false }),
     sessionDetails: () => Promise.resolve({ ok: false }),
     projectSessions: () => Promise.resolve({ ok: false }),
+    // SessionProtectionProvider's running-sessions poll; nothing is running.
+    runningSessions: () => Promise.resolve({ ok: false }),
   },
 }));
 
@@ -55,9 +57,11 @@ const emit = (event: { kind: string }) => {
 };
 
 const renderProjectsState = async () => {
-  const { useProjectsState } = await import(
-    '@/modules/project-workspace/hooks/useProjectsState'
-  );
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useProjectsState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/project-workspace/hooks/useProjectsState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
 
   return renderHook(() =>
     useProjectsState({
@@ -70,6 +74,7 @@ const renderProjectsState = async () => {
       isMobile: false,
       isSessionProcessing: () => false,
     }),
+    { wrapper: SessionProtectionProvider },
   );
 };
 
@@ -220,9 +225,11 @@ test('a superseded first load never renders the sidebar as empty', async () => {
     return { ok: true, json: async () => [buildProject()] };
   });
 
-  const { useProjectsState } = await import(
-    '@/modules/project-workspace/hooks/useProjectsState'
-  );
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useProjectsState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/project-workspace/hooks/useProjectsState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
 
   // Every render the sidebar would have seen. The bug is not a final state but a
   // frame: `isLoadingProjects` went false while `projects` was still empty, so
@@ -245,7 +252,7 @@ test('a superseded first load never renders the sidebar as empty', async () => {
       projectCount: state.projects.length,
     });
     return state;
-  });
+  }, { wrapper: SessionProtectionProvider });
 
   let releaseRefresh: (() => void) | null = null;
   const refreshInFlight = new Promise<void>((resolve) => {

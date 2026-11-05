@@ -17,6 +17,8 @@ vi.mock('@/shared/api', () => ({
     providers: {
       sessionTokenUsage: () => Promise.resolve({ ok: false, json: async () => ({}) }),
     },
+    // SessionProtectionProvider's running-sessions poll; nothing is running.
+    runningSessions: () => Promise.resolve({ ok: false }),
   },
 }));
 
@@ -97,7 +99,11 @@ async function renderChatSessionState(options: {
   session: ProjectSession;
   store: ReturnType<typeof createStore>;
 }) {
-  const { useChatSessionState } = await import('@/modules/chat/hooks/useChatSessionState');
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useChatSessionState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/chat/hooks/useChatSessionState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
 
   return renderHook(
     ({ session }: { session: ProjectSession }) =>
@@ -112,7 +118,7 @@ async function renderChatSessionState(options: {
         lastSeqRef: { current: new Map() },
         sessionStore: options.store as never,
       }),
-    { initialProps: { session: options.session } },
+    { initialProps: { session: options.session }, wrapper: SessionProtectionProvider },
   );
 }
 

@@ -24,6 +24,8 @@ vi.mock('@/shared/api', () => ({
     projectTaskmaster: () => Promise.resolve({ ok: false }),
     sessionDetails: () => Promise.resolve({ ok: false }),
     projectSessions: () => Promise.resolve({ ok: false }),
+    // SessionProtectionProvider's running-sessions poll; nothing is running.
+    runningSessions: () => Promise.resolve({ ok: false }),
   },
 }));
 
@@ -42,9 +44,11 @@ type ServerEventListener = (event: { kind: string }) => void;
 const listeners = new Set<ServerEventListener>();
 
 const renderProjectsState = async (wrapper?: (props: { children: ReactNode }) => ReactNode) => {
-  const { useProjectsState } = await import(
-    '@/modules/project-workspace/hooks/useProjectsState'
-  );
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useProjectsState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/project-workspace/hooks/useProjectsState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
 
   return renderHook(
     () =>
@@ -58,7 +62,13 @@ const renderProjectsState = async (wrapper?: (props: { children: ReactNode }) =>
         isMobile: false,
         isSessionProcessing: () => false,
       }),
-    wrapper ? { wrapper } : undefined,
+    {
+      // StrictMode, when asked for, sits outside the provider as it does in the app.
+      wrapper: ({ children }: { children: ReactNode }) => {
+        const tree = <SessionProtectionProvider>{children}</SessionProtectionProvider>;
+        return wrapper ? wrapper({ children: tree }) : tree;
+      },
+    },
   );
 };
 

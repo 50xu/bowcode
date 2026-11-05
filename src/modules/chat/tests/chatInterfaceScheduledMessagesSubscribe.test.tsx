@@ -34,11 +34,13 @@ vi.mock('@/shared/context/WebSocketContext', () => ({
 }));
 vi.mock('@/shared/context/SessionProtectionContext', () => ({
   useProcessingSessions: () => new Map(),
+  useExternalSessionHolders: () => new Map(),
   useSessionProtectionActions: () => ({
     markSessionProcessing: () => {},
     markSessionIdle: () => {},
     markSessionBackground: () => {},
     getSessionActivity: () => null,
+    markSessionTakenOver: () => {},
   }),
 }));
 vi.mock('@/modules/task-master', () => ({

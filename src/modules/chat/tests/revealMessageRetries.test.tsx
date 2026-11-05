@@ -14,7 +14,11 @@ import type { Project, ProjectSession } from '@/shared/types';
  */
 
 vi.mock('@/shared/api', () => ({
-  api: { providers: { sessionTokenUsage: () => Promise.resolve({ ok: false, json: async () => ({}) }) } },
+  api: {
+    providers: { sessionTokenUsage: () => Promise.resolve({ ok: false, json: async () => ({}) }) },
+    // SessionProtectionProvider's running-sessions poll; nothing is running.
+    runningSessions: () => Promise.resolve({ ok: false }),
+  },
 }));
 
 const project: Project = { projectId: 'project-1', path: '/repo', fullPath: '/repo', displayName: 'Repo', isStarred: false };
@@ -56,7 +60,11 @@ afterEach(() => {
 });
 
 test('revealing a row not yet rendered waits for it instead of scrolling to its neighbour', async () => {
-  const { useChatSessionState } = await import('@/modules/chat/hooks/useChatSessionState');
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useChatSessionState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/chat/hooks/useChatSessionState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
   const hook = renderHook(() =>
     useChatSessionState({
       isActive: true,
@@ -69,6 +77,7 @@ test('revealing a row not yet rendered waits for it instead of scrolling to its 
       lastSeqRef: { current: new Map() },
       sessionStore: store as never,
     }),
+    { wrapper: SessionProtectionProvider },
   );
   const container = document.createElement('div');
   const neighbour = row('2026-08-21T10:32:09.000Z');
@@ -95,7 +104,11 @@ test('revealing a row not yet rendered waits for it instead of scrolling to its 
 });
 
 test('the last attempt settles for the nearest row, for a hit collapsed inside a tool group', async () => {
-  const { useChatSessionState } = await import('@/modules/chat/hooks/useChatSessionState');
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useChatSessionState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/chat/hooks/useChatSessionState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
   const hook = renderHook(() =>
     useChatSessionState({
       isActive: true,
@@ -108,6 +121,7 @@ test('the last attempt settles for the nearest row, for a hit collapsed inside a
       lastSeqRef: { current: new Map() },
       sessionStore: store as never,
     }),
+    { wrapper: SessionProtectionProvider },
   );
   const container = document.createElement('div');
   const group = row('2026-08-21T10:32:09.000Z');

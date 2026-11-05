@@ -18,6 +18,8 @@ vi.mock('@/shared/api', () => ({
     providers: {
       sessionTokenUsage: () => Promise.resolve({ ok: false, json: async () => ({}) }),
     },
+    // SessionProtectionProvider's running-sessions poll; nothing is running.
+    runningSessions: () => Promise.resolve({ ok: false }),
   },
 }));
 
@@ -44,7 +46,11 @@ const store = {
 };
 
 async function renderWith(processingSessions: SessionActivityMap) {
-  const { useChatSessionState } = await import('@/modules/chat/hooks/useChatSessionState');
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useChatSessionState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/chat/hooks/useChatSessionState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
   const resetStreamingState = vi.fn();
   const hook = renderHook(
     ({ selectedSession }: { selectedSession: ProjectSession | null }) =>
@@ -60,7 +66,7 @@ async function renderWith(processingSessions: SessionActivityMap) {
         sessionStore: store as never,
         processingSessions,
       }),
-    { initialProps: { selectedSession: session as ProjectSession | null } },
+    { initialProps: { selectedSession: session as ProjectSession | null }, wrapper: SessionProtectionProvider },
   );
   assert.equal(hook.result.current.currentSessionId, 'session-a');
   resetStreamingState.mockClear();

@@ -23,6 +23,8 @@ vi.mock('@/shared/api', () => ({
     projectTaskmaster: () => Promise.resolve({ ok: false }),
     sessionDetails: () => Promise.resolve({ ok: false }),
     projectSessions: () => Promise.resolve({ ok: false }),
+    // SessionProtectionProvider's running-sessions poll; nothing is running.
+    runningSessions: () => Promise.resolve({ ok: false }),
   },
 }));
 
@@ -41,7 +43,11 @@ const buildProject = (overrides: Partial<Project> = {}): Project => ({
 });
 
 const renderProjectsState = async () => {
-  const { useProjectsState } = await import('@/modules/project-workspace/hooks/useProjectsState');
+  // Imported with the hook so both share the module graph `vi.resetModules` rebuilds per test.
+  const [{ useProjectsState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/project-workspace/hooks/useProjectsState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
 
   return renderHook(() =>
     useProjectsState({
@@ -51,6 +57,7 @@ const renderProjectsState = async () => {
       isMobile: false,
       isSessionProcessing: () => false,
     }),
+    { wrapper: SessionProtectionProvider },
   );
 };
 
