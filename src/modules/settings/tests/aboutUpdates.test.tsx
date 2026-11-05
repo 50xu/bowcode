@@ -38,6 +38,9 @@ it('shows an available update and release notes, and checks again on demand', as
   expect(screen.getByRole('link', { name: /View release notes/ }).getAttribute('href')).toBe(status.releaseUrl);
   fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
   await waitFor(() => expect(api.updates.get).toHaveBeenCalledTimes(2));
+  // The mount check may use the server cache; the manual check forces a fresh lookup.
+  expect(api.updates.get).toHaveBeenNthCalledWith(1, { force: false });
+  expect(api.updates.get).toHaveBeenNthCalledWith(2, { force: true });
 });
 
 it('requires confirmation before applying an update', async () => {

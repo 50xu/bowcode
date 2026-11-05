@@ -36,9 +36,10 @@ export default function AboutTab() {
     return () => { mounted.current = false; };
   }, []);
 
-  const checkUpdates = useCallback(async () => {
+  // Only the explicit button forces a fresh GitHub lookup; the mount check may use the cache.
+  const checkUpdates = useCallback(async (force = false) => {
     try {
-      const status = await api.updates.get();
+      const status = await api.updates.get({ force });
       if (mounted.current) {
         setUpdate(status);
         setCheckError(status.error ?? null);
@@ -128,7 +129,7 @@ export default function AboutTab() {
               {t('about.update.updateNow')}
             </button>
           )}
-          <button type="button" disabled={checking || updating} onClick={() => { setChecking(true); void checkUpdates(); }} className="rounded-md border border-border px-3 py-1.5 text-foreground disabled:opacity-50">
+          <button type="button" disabled={checking || updating} onClick={() => { setChecking(true); void checkUpdates(true); }} className="rounded-md border border-border px-3 py-1.5 text-foreground disabled:opacity-50">
             {t('about.update.checkAgain')}
           </button>
         </div>

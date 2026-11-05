@@ -3,6 +3,10 @@ import path from 'node:path';
 import { isNewerVersion } from '@/shared/utils.js';
 
 const RELEASES_URL = 'https://api.github.com/repos/50xu/bowcode/releases/latest';
+// One unauthenticated GitHub call per window stays far below the 60/hour limit.
+const RELEASE_CACHE_TTL_MS = 15 * 60_000;
+// Failures expire sooner so a brief network error does not hide a release.
+const FAILED_CHECK_CACHE_TTL_MS = 60_000;
 
 type Release = { tag_name?: string; html_url?: string };
 type UpdatesDependencies = {
@@ -34,8 +38,9 @@ export function createUpdatesService(dependencies: UpdatesDependencies) {
   const canSelfUpdate = installMode === 'npm' && dependencies.exists(unitPath);
 
   return {
-    async check() {
-      if (!cached || cached.expires <= dependencies.now()) {
+    /** `force` skips the cache for the user's explicit "Check for updates" action. */
+    async check(options: { force?: boolean } = {}) {
+      if (options.force || !cached || cached.expires <= dependencies.now()) {
         const checkedAt = new Date(dependencies.now()).toISOString();
         try {
           const response = await dependencies.fetchRelease(RELEASES_URL);
@@ -43,9 +48,9 @@ export function createUpdatesService(dependencies: UpdatesDependencies) {
           const release = await response.json();
           const latest = release.tag_name?.replace(/^v/, '') ?? null;
           if (!latest || !/^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/.test(latest)) throw new Error('Invalid release version');
-          cached = { latest, releaseUrl: release.html_url ?? null, checkedAt, expires: dependencies.now() + 3_600_000 };
+          cached = { latest, releaseUrl: release.html_url ?? null, checkedAt, expires: dependencies.now() + RELEASE_CACHE_TTL_MS };
         } catch (error) {
-          cached = { latest: null, releaseUrl: null, error: error instanceof Error ? error.message : String(error), checkedAt, expires: dependencies.now() + 3_600_000 };
+          cached = { latest: null, releaseUrl: null, error: error instanceof Error ? error.message : String(error), checkedAt, expires: dependencies.now() + FAILED_CHECK_CACHE_TTL_MS };
         }
       }
       return {

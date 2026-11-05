@@ -26,7 +26,7 @@ function harness(overrides: { git?: boolean; service?: boolean; fail?: boolean }
   return { service, calls, setNow: (value: number) => { now = value; }, getFetches: () => fetches };
 }
 
-test('caches release metadata for one hour and reports update availability', async () => {
+test('caches release metadata for 15 minutes and reports update availability', async () => {
   const h = harness({ service: true });
   const first = await h.service.check();
   assert.equal(first.latest, '1.39.0');
@@ -34,7 +34,24 @@ test('caches release metadata for one hour and reports update availability', asy
   assert.equal(first.canSelfUpdate, true);
   await h.service.check();
   assert.equal(h.getFetches(), 1);
-  h.setNow(3_600_001);
+  h.setNow(900_001);
+  await h.service.check();
+  assert.equal(h.getFetches(), 2);
+});
+
+test('a forced check bypasses a fresh cache', async () => {
+  const h = harness();
+  await h.service.check();
+  await h.service.check({ force: true });
+  assert.equal(h.getFetches(), 2);
+});
+
+test('failed checks are cached briefly so a transient error does not hide releases', async () => {
+  const h = harness({ fail: true });
+  await h.service.check();
+  await h.service.check();
+  assert.equal(h.getFetches(), 1);
+  h.setNow(60_001);
   await h.service.check();
   assert.equal(h.getFetches(), 2);
 });

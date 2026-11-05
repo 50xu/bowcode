@@ -217,8 +217,9 @@ export const api = {
 
   // Application updates. Health stays unauthenticated while the server restarts.
   updates: {
-    get: async () => {
-      const response = await get('/api/updates');
+    // `force` bypasses the server's release cache for an explicit user check.
+    get: async (options: { force?: boolean } = {}) => {
+      const response = await get(options.force ? '/api/updates?force=1' : '/api/updates');
       return readApiJson<AppUpdateStatus>(response);
     },
     apply: () => post('/api/updates/apply'),
