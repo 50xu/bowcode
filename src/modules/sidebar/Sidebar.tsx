@@ -35,6 +35,8 @@ type SidebarProps = {
   settingsInitialTab: string;
   onCloseSettings: () => void;
   isMobile: boolean;
+  /** Passed by the mobile drawer host so the hide button can close the drawer. */
+  onCloseMobileSidebar?: () => void;
 };
 
 type TaskMasterSidebarContext = {
@@ -62,6 +64,7 @@ function Sidebar({
   settingsInitialTab,
   onCloseSettings,
   isMobile,
+  onCloseMobileSidebar,
 }: SidebarProps) {
   const { t } = useTranslation(['sidebar', 'common']);
   const { isPWA } = useDeviceSettings({ trackMobile: false });
@@ -161,6 +164,7 @@ function Sidebar({
     setSidebarVisible: (visible) => setPreference('sidebarVisible', visible),
     sidebarVisible,
     keepProjectsExpanded: preferences.keepProjectsExpanded,
+    onCloseMobileSidebar,
   });
 
   useEffect(() => {

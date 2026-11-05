@@ -39,6 +39,10 @@ function ProjectSidebarRegion({
     setSidebarOpen(false);
   }, [setSidebarOpen]);
 
+  const closeMobileSidebar = useCallback(() => {
+    setSidebarOpen(false);
+  }, [setSidebarOpen]);
+
   const handleBackdropTouch = useCallback((event: ReactTouchEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -163,7 +167,7 @@ function ProjectSidebarRegion({
         onClick={(event) => event.stopPropagation()}
         onTouchStart={(event) => event.stopPropagation()}
       >
-        <Sidebar {...sidebarSharedProps} />
+        <Sidebar {...sidebarSharedProps} onCloseMobileSidebar={closeMobileSidebar} />
       </div>
     </div>
   );

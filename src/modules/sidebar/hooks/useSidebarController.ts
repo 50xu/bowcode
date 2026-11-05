@@ -74,6 +74,8 @@ type UseSidebarControllerArgs = {
   setSidebarVisible: (visible: boolean) => void;
   sidebarVisible: boolean;
   keepProjectsExpanded?: boolean;
+  /** Closes the mobile drawer; the hide button calls it instead of collapsing the desktop sidebar. */
+  onCloseMobileSidebar?: () => void;
 };
 
 /** Used by Sidebar to coordinate project navigation, expansion and session actions. */
@@ -96,6 +98,7 @@ export function useSidebarController({
   setSidebarVisible,
   sidebarVisible,
   keepProjectsExpanded = false,
+  onCloseMobileSidebar,
 }: UseSidebarControllerArgs) {
   const paletteOps = usePaletteOps();
   // Remember whether a saved set existed before the first persistence effect.
@@ -1286,9 +1289,16 @@ export function useSidebarController({
     [onSessionSelect, t],
   );
 
+  // On mobile the sidebar is a drawer driven by its own open state, and
+  // `sidebarVisible` is ignored there: writing it would leave the drawer open
+  // and quietly hide the docked sidebar the next time the app is on desktop.
   const collapseSidebar = useCallback(() => {
+    if (isMobile) {
+      onCloseMobileSidebar?.();
+      return;
+    }
     setSidebarVisible(false);
-  }, [setSidebarVisible]);
+  }, [isMobile, onCloseMobileSidebar, setSidebarVisible]);
 
   const expandSidebar = useCallback(() => {
     setSidebarVisible(true);
