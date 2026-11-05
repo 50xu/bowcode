@@ -44,8 +44,8 @@ case "$(uname -s)" in
 esac
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1 ||
-   ! node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1; then
-  echo 'Node.js 22+ and npm are required. Install Node.js via nvm (https://github.com/nvm-sh/nvm), mise (https://mise.jdx.dev), or Homebrew (brew install node), then retry.' >&2
+   ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 22) ? 0 : 1)' >/dev/null 2>&1; then
+  echo 'Node.js 22.22+ (24 or 26 recommended) and npm are required. Install Node.js via nvm (https://github.com/nvm-sh/nvm), mise (https://mise.jdx.dev), or Homebrew (brew install node), then retry.' >&2
   exit 1
 fi
 

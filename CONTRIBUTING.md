@@ -10,7 +10,7 @@ Thanks for your interest in contributing to Bowcode! Before you start, please ta
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 22 or later
+- [Node.js](https://nodejs.org/) 22.22 or later (26 recommended)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
 
 ## Getting Started

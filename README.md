@@ -74,7 +74,7 @@ Per-agent permission modes, MCP servers, skills and models, plus web push notifi
 
 ## Install
 
-You need **Linux or macOS**, **Node.js 22+**, and at least one agent CLI installed and signed in ([Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex) or [OpenCode](https://opencode.ai) 2 or newer).
+You need **Linux or macOS**, **Node.js 22.22+** (24 or 26 recommended), and at least one agent CLI installed and signed in ([Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex) or [OpenCode](https://opencode.ai) 2 or newer).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/50xu/bowcode/main/install.sh | bash
