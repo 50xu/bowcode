@@ -299,10 +299,9 @@ function ChatMessagesPane({
             const rowCount = groupedVisibleMessages.length;
 
             return groupedVisibleMessages.map((item, index) => {
-              // Rows near the tail mount their content on first commit so the
-              // initial scroll-to-bottom measures real heights; older rows
-              // start as placeholders and mount when scrolled toward.
-              const initiallyNearViewport = index >= rowCount - INITIAL_MOUNTED_TAIL_ROWS;
+              // Mount both the newest rows and newly prepended rows with real
+              // heights immediately; middle rows can remain lazy placeholders.
+              const initiallyNearViewport = index < 40 || index >= rowCount - INITIAL_MOUNTED_TAIL_ROWS;
 
               if (isToolGroupItem(item)) {
                 const groupPrevMessage = prevMessage;
