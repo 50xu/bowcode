@@ -33,7 +33,6 @@ import { settingsRoutes } from './modules/settings/index.js';
 import { settingsSyncRoutes } from './modules/settings-sync/index.js';
 import { createAgentModule } from './modules/agent/index.js';
 import projectModuleRoutes from './modules/projects/projects.routes.js';
-import notificationRoutes from './modules/notifications/notifications.routes.js';
 import { userRoutes } from './modules/user/index.js';
 import {
     getPluginPort,
@@ -178,7 +177,6 @@ app.use('/api/updates', authenticateToken, updatesRoutes);
 app.use('/api/settings', authenticateToken, settingsRoutes);
 app.use('/api/settings-sync', authenticateToken, settingsSyncRoutes);
 
-app.use('/api/notifications', authenticateToken, notificationRoutes);
 
 // User API Routes (protected)
 app.use('/api/user', authenticateToken, userRoutes);

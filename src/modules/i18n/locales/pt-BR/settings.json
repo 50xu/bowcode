@@ -147,13 +147,6 @@
       "unsupported": "Notificações push não são suportadas neste navegador.",
       "denied": "Notificações push estão bloqueadas. Permita nas configurações do seu navegador."
     },
-    "desktop": {
-      "title": "Notificar este app desktop",
-      "enable": "Ativar notificações",
-      "disable": "Desativar notificações",
-      "enabled": "As notificações estão ativadas para este app desktop",
-      "unsupported": "Notificações desktop não são suportadas neste sistema."
-    },
     "sound": {
       "title": "Som",
       "description": "Tocar um tom curto quando uma execução de chat termina ou precisa de aprovação de ferramenta.",

@@ -51,7 +51,7 @@ On desktop, files, a git client (stage, commit, branches, worktrees), a full ter
 It installs as a PWA with an iOS-style layout, safe-area aware, with a keyboard-aware composer and smooth scrolling through long transcripts.
 
 ### 🔐 Your rules
-Per-agent permission modes, MCP servers, skills and models, plus web push and desktop notifications when an agent needs you.
+Per-agent permission modes, MCP servers, skills and models, plus web push notifications when an agent needs you.
 
 ### 🔄 Settings that follow you
 **Sync** settings to a git repository you own and pull them on another install. Secrets are never written to the repository.

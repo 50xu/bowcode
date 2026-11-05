@@ -108,7 +108,6 @@ sbx exec -d my-project bowcode start --port 3001
 | `SERVER_PORT` | `3001` | Web UI port |
 | `HOST` | `0.0.0.0` | Bind address (must be `0.0.0.0` for `sbx ports`) |
 | `DATABASE_PATH` | `~/.bowcode/auth.db` | SQLite database location |
-| `BOWCODE_SERVER_PORT` | unset | Desktop local server port override |
 
 ## Advanced usage
 

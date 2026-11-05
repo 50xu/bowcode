@@ -1,6 +1,6 @@
 # The websocket transport
 
-*One websocket server, four paths, and the small protocol that runs over the chat one.
+*One websocket server, three paths, and the small protocol that runs over the chat one.
 Covers routing, auth, the frame vocabulary in both directions, and how a client catches up
 after a drop. What the frames turn into on screen is
 [the realtime stream](./02-realtime-stream.md); which ids they carry is
@@ -27,9 +27,8 @@ work the same way.
 Nine rules. If you can predict what these say about a change, you can predict what the code
 does.
 
-1. **One server, one socket per tab, four paths.** `/ws` (chat), `/shell` (terminals),
-   `/desktop-notifications` (the Electron main process), `/plugin-ws/:name` (a passthrough
-   proxy). Routing is a pathname comparison in one `connection` handler.
+1. **One server, one socket per tab, three paths.** `/ws` (chat), `/shell` (terminals),
+   `/plugin-ws/:name` (a passthrough proxy). Routing is a pathname comparison in one `connection` handler.
 2. **Authentication happens at the upgrade, once, for every path.** If a handler is
    running, the connection is authenticated. No handler re-checks a token, and no frame
    carries credentials.
@@ -74,7 +73,6 @@ every open `/ws` socket in the process. A run's writer holds only the sockets wa
 | `server/modules/taskmaster/taskmaster.routes.ts` | `broadcastTaskMasterUpdate` — the `type`-keyed exception |
 | `server/modules/websocket/services/shell-websocket.service.ts` | The `/shell` protocol, the PTY registry, output buffering and reattachment |
 | `server/modules/websocket/services/plugin-websocket-proxy.service.ts` | `/plugin-ws/:name` passthrough to a plugin's own websocket |
-| `server/modules/notifications/websocket/desktop-notifications-websocket.service.ts` | `/desktop-notifications` registration protocol |
 | `server/shared/types.ts` | `MessageKind`, `GatewayEventKind`, `ServerEventKind`, `NormalizedMessage.seq` |
 | `src/shared/context/WebSocketContext.tsx` | The single browser-side socket: URL building, reconnect, the `subscribe` fan-out |
 | `src/modules/chat/hooks/useChatRealtimeHandlers.ts` | The one `kind` switch on the client, and `lastSeqRef` bookkeeping |
@@ -94,7 +92,6 @@ flowchart TD
   HB --> R{"pathname"}
   R -->|"/ws"| CH["handleChatConnection"]
   R -->|"/shell"| SH["handleShellConnection"]
-  R -->|"/desktop-notifications"| DN["handleDesktopNotificationsConnection"]
   R -->|"/plugin-ws/ prefix"| PP["handlePluginWsProxy"]
   R -->|"anything else"| X2["log the path and close the socket"]
 ```
@@ -102,19 +99,13 @@ flowchart TD
 `createWebSocketServer` (`websocket-server.service.ts:83`) builds the server over the
 existing HTTP server (`:87`) and passes `verifyWebSocketClient` as `verifyClient`
 (`:89-91`). The `connection` handler attaches the heartbeat *first* (`:95`), then routes:
-`/shell` (`:101`), `/ws` (`:106`) and `/desktop-notifications` (`:111`) are exact matches,
-`/plugin-ws/` is the one prefix match (`:116`), and anything else is logged and closed
-(`:121-122`).
+`/shell` (`:101`) and `/ws` (`:106`) are exact matches,
+`/plugin-ws/` is the one prefix match, and anything else is logged and closed.
 
 Two things that are easy to assume and wrong:
 
 - **`/plugin-ws` has no in-repo client.** The route exists for plugin-authored frontend
   code. Nothing under `src/` opens it.
-- **The `/desktop-notifications` client is the Electron *main* process**, not a renderer.
-  It uses the Node `ws` package and authenticates with an `Authorization` header
-  (`electron/desktopNotifications.js:202`, headers built at `:280-290`) — something a
-  browser `WebSocket` cannot do, which is the whole reason the browser paths use a query
-  parameter instead.
 
 ## Authentication at the upgrade
 
@@ -137,7 +128,7 @@ OSS returns `{ userId, username }` with no `id` — which is why the chat handle
 id through `readRequestUserId` (`chat-websocket.service.ts:89-106`) instead of touching
 `user.id` directly.
 
-Only `/ws` and `/desktop-notifications` read `request.user` at all. `/shell` and
+Only `/ws` reads `request.user`. `/shell` and
 `/plugin-ws` just needed the connection to be authenticated.
 
 ## The client's single socket
@@ -307,10 +298,9 @@ chat handler ignores them only because it bails on frames with no `kind`.
 They are broadcast over `connectedClients` rather than the raw `wss.clients` set, and the
 comment above them explains why that distinction is not cosmetic:
 
-> Broadcasting over the raw `wss.clients` set instead delivered them to every `/shell`,
-> `/plugin-ws` and `/desktop-notifications` socket as well, where they were parsed and
-> dropped — and, on `/plugin-ws`, handed to third-party plugin frontends that have no
-> business seeing them.
+> Broadcasting over the raw `wss.clients` set instead delivered them to `/shell` and
+> `/plugin-ws` sockets as well — and, on `/plugin-ws`, handed to third-party plugin
+> frontends that have no business seeing them.
 > — `taskmaster.routes.ts:32-37`
 
 ## The happy path
@@ -406,8 +396,8 @@ sockets, and everything written to it is translated before it goes anywhere.**
   and the fix (`48c8f647`) is covered by *attachConnection adds a socket without cutting off
   the ones already watching*:
 
-  > A session can legitimately be open in more than one place — a second browser tab, a
-  > phone alongside a laptop, the desktop app beside the web app… Holding a single
+  > A session can legitimately be open in more than one place — multiple browser tabs or a
+  > phone alongside a laptop… Holding a single
   > connection here meant the newest subscriber took the stream away from everyone before
   > it, so a second tab silently froze mid-run.
   > — `chat-session-writer.service.ts:55-64`
@@ -588,7 +578,7 @@ The client is `useShellConnection.ts:127` via `getShellWebSocketUrl`
 (`src/modules/shell/utils/socket.ts:39-53`), which builds the URL the same way the chat one
 does — no token in platform mode, `?token=` in OSS.
 
-## The plugin proxy and desktop notifications
+## The plugin proxy
 
 **`/plugin-ws/:pluginName`** (`plugin-websocket-proxy.service.ts`) is pure passthrough. The
 name is validated against `/[^a-zA-Z0-9_-]/` and refused with close code 4400 (`:11-14`); an
@@ -597,13 +587,6 @@ unknown or stopped plugin is 4404 (`:17-20`); otherwise it opens
 ways preserving `isBinary` (`:29-39`). Closes are mirrored in both directions (`:41-51`) and
 an upstream error closes the client with 4502 (`:53-58`). No `kind`, no `seq`, no
 interpretation.
-
-**`/desktop-notifications`** (`desktop-notifications-websocket.service.ts:42`) is how the
-Electron main process registers a device. A connection with no authenticated user is closed
-with 1008 (`:47-50`); the client then sends one `register` frame carrying `deviceId`
-(`:65-99`), gets `registered` back, and `notification_ack` frames are accepted and ignored
-(`:61-63`). The socket-to-device registry itself lives in
-`server/modules/notifications/services/desktop-notification-clients.service.ts`.
 
 ## Gotchas and why the code looks like this
 
@@ -646,14 +629,14 @@ with 1008 (`:47-50`); the client then sends one `register` frame carrying `devic
 | If you touch | Also check |
 | --- | --- |
 | The pathname routing block | Every path still gets the heartbeat first, and the unknown-path branch still closes rather than leaking a live socket |
-| `verifyWebSocketClient` | Both user shapes still work — `readRequestUserId` in the chat handler and `readRequestUserId` in the notifications handler read different fields |
+| `verifyWebSocketClient` | Both user shapes still work — `readRequestUserId` in the chat handler accepts either user id field |
 | `decorateAndRecordEvent` | The exactly-one-`complete` contract, `seq` monotonicity, and the buffer trim — `tests/chat-run-registry.test.ts` covers all three |
 | `ChatSessionWriter.send` or `forward` | That no frame can escape without `sessionId` remapped and a `seq`, and that a closed socket is still dropped rather than throwing |
 | `attachConnection` | It must keep *adding*; the second-tab test is the regression guard |
 | `handleChatSubscribe` | Ack-before-replay ordering, the completed-run rule, and the client's `lastSeqRef` semantics in `useChatRealtimeHandlers.ts:104-109` |
 | The `protocol_error` codes | The client's `protocol_error` branch clears the spinner on the assumption that no `complete` follows — that must stay true of every new code |
 | `filterAttachmentsToUploadStore` | `tests/chat-attachment-filter.test.ts`, and that the re-split into `images` / `files` still happens *after* filtering |
-| Anything broadcasting to clients | Use `connectedClients`, never `wss.clients`, or the frames reach `/shell`, `/plugin-ws` and `/desktop-notifications` too |
+| Anything broadcasting to clients | Use `connectedClients`, never `wss.clients`, or the frames reach `/shell` and `/plugin-ws` too |
 | The reconnect timing or the `ws` memo | Both `chat.subscribe` senders — `useChatSessionState.ts:664` and `ChatInterface.tsx:263` — and whether either now fires with a stale `lastSeq` |
 | `attachWebSocketHeartbeat` | `tests/websocket-heartbeat.service.test.ts`, and that the interval is still shorter than the shortest proxy idle timeout in front of the app |
 

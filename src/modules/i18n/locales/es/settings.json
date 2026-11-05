@@ -148,13 +148,6 @@
       "unsupported": "Las notificaciones push no son compatibles con este navegador.",
       "denied": "Las notificaciones push están bloqueadas. Permítelas en los ajustes de tu navegador."
     },
-    "desktop": {
-      "title": "Notificar en esta app de escritorio",
-      "enable": "Activar notificaciones",
-      "disable": "Desactivar notificaciones",
-      "enabled": "Las notificaciones están activadas en esta app de escritorio",
-      "unsupported": "Las notificaciones de escritorio no son compatibles con este sistema."
-    },
     "sound": {
       "title": "Sonido",
       "description": "Reproduce un tono corto cuando una ejecución del chat termina o necesita aprobación de una herramienta.",

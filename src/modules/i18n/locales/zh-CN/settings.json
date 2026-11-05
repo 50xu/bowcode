@@ -147,13 +147,6 @@
       "unsupported": "此浏览器不支持推送通知。",
       "denied": "推送通知已被阻止，请在浏览器设置中允许。"
     },
-    "desktop": {
-      "title": "通知此桌面应用",
-      "enable": "启用通知",
-      "disable": "关闭通知",
-      "enabled": "此桌面应用已启用通知",
-      "unsupported": "此系统不支持桌面通知。"
-    },
     "sound": {
       "title": "声音",
       "description": "聊天运行完成时播放短提示音。",

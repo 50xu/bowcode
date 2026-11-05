@@ -30,9 +30,8 @@ type TaskmasterRouterDependencies = {
 /**
  * These frames are `type`-keyed and only TaskMasterContext, which lives on the
  * `/ws` chat socket, knows what to do with them. Broadcasting over the raw
- * `wss.clients` set instead delivered them to every `/shell`, `/plugin-ws` and
- * `/desktop-notifications` socket as well, where they were parsed and dropped —
- * and, on `/plugin-ws`, handed to third-party plugin frontends that have no
+ * `wss.clients` set instead delivered them to `/shell` and `/plugin-ws`
+ * sockets as well, and, on `/plugin-ws`, handed to third-party plugin frontends that have no
  * business seeing them. `connectedClients` is the `/ws`-only set every other
  * broadcast in the server already uses.
  */

@@ -1456,12 +1456,11 @@ export type ClaudeSettingsPermissionSource = {
   ask: string[];
 };
 
-/** The user's notification settings, grouped into delivery channels (in-app, web push, desktop, sound) and the events that trigger them; mirrors the payload of the notification preferences API. */
+/** The user's notification settings, grouped into delivery channels (in-app, web push, sound) and the events that trigger them; mirrors the payload of the notification preferences API. */
 export type NotificationPreferencesState = {
   channels: {
     inApp: boolean;
     webPush: boolean;
-    desktop: boolean;
     sound: boolean;
   };
   events: {

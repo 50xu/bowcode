@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,22 +29,9 @@ type SettingsProps = {
   initialTab?: string;
 };
 
-type DesktopNotificationsState = {
-  enabled: boolean;
-  supported: boolean;
-  connectedCount?: number;
-  targetCount?: number;
-  lastError?: string | null;
-};
-
 /** Exported as the settings module's public entry point and rendered by the sidebar module as its settings dialog. */
 function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: SettingsProps) {
   const { t } = useTranslation('settings');
-  const desktopNotificationsBridge = useMemo(() => (
-    typeof window === 'undefined'
-      ? null
-      : ((window as any).bowcodeDesktopNotifications || null)
-  ), []);
   // Phones open on the grouped page list unless a caller asked for a specific page.
   const [showMobileList, setShowMobileList] = useState(() => initialTab === 'agents' || initialTab === 'tools');
   // Settings auto-save once right after they load; the "Saved" badge is only
@@ -57,7 +44,6 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
     }
   }, [isOpen, initialTab]);
 
-  const [desktopNotificationsState, setDesktopNotificationsState] = useState<DesktopNotificationsState | null>(null);
   const {
     activeTab,
     setActiveTab,
@@ -106,45 +92,6 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
     setNotificationPreferences({
       ...notificationPreferences,
       channels: { ...notificationPreferences.channels, webPush: false },
-    });
-  };
-
-  useEffect(() => {
-    if (!desktopNotificationsBridge) return undefined;
-    let mounted = true;
-    desktopNotificationsBridge.getState().then((state: any) => {
-      if (mounted) {
-        setDesktopNotificationsState(state?.desktopNotifications || null);
-      }
-    }).catch(() => {});
-    const unsubscribe = desktopNotificationsBridge.onStateUpdated?.((state: any) => {
-      if (mounted) {
-        setDesktopNotificationsState(state?.desktopNotifications || null);
-      }
-    });
-    return () => {
-      mounted = false;
-      unsubscribe?.();
-    };
-  }, [desktopNotificationsBridge]);
-
-  const handleEnableDesktopNotifications = async () => {
-    if (!desktopNotificationsBridge) return;
-    const state = await desktopNotificationsBridge.update({ enabled: true });
-    setDesktopNotificationsState(state?.desktopNotifications || null);
-    setNotificationPreferences({
-      ...notificationPreferences,
-      channels: { ...notificationPreferences.channels, desktop: true },
-    });
-  };
-
-  const handleDisableDesktopNotifications = async () => {
-    if (!desktopNotificationsBridge) return;
-    const state = await desktopNotificationsBridge.update({ enabled: false });
-    setDesktopNotificationsState(state?.desktopNotifications || null);
-    setNotificationPreferences({
-      ...notificationPreferences,
-      channels: { ...notificationPreferences.channels, desktop: false },
     });
   };
 
@@ -342,10 +289,6 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
                     isPushLoading={isPushLoading}
                     onEnablePush={handleEnablePush}
                     onDisablePush={handleDisablePush}
-                    isDesktop={Boolean(desktopNotificationsBridge)}
-                    desktopNotifications={desktopNotificationsState}
-                    onEnableDesktopNotifications={handleEnableDesktopNotifications}
-                    onDisableDesktopNotifications={handleDisableDesktopNotifications}
                   />
                 )}
 

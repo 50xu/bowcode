@@ -147,13 +147,6 @@
       "unsupported": "Notifikasi push tidak didukung di browser ini.",
       "denied": "Notifikasi push diblokir. Izinkan melalui pengaturan browser."
     },
-    "desktop": {
-      "title": "Notifikasi aplikasi desktop ini",
-      "enable": "Aktifkan notifikasi",
-      "disable": "Nonaktifkan notifikasi",
-      "enabled": "Notifikasi aktif untuk aplikasi desktop ini",
-      "unsupported": "Notifikasi desktop tidak didukung di sistem ini."
-    },
     "sound": {
       "title": "Suara",
       "description": "Putar nada singkat saat proses chat selesai atau memerlukan persetujuan tool.",

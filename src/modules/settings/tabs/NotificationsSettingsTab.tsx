@@ -17,16 +17,6 @@ type NotificationsSettingsTabProps = {
   isPushLoading: boolean;
   onEnablePush: () => void;
   onDisablePush: () => void;
-  isDesktop?: boolean;
-  desktopNotifications?: {
-    enabled: boolean;
-    supported: boolean;
-    connectedCount?: number;
-    targetCount?: number;
-    lastError?: string | null;
-  } | null;
-  onEnableDesktopNotifications?: () => void;
-  onDisableDesktopNotifications?: () => void;
 };
 
 /** Rendered by Settings for the "notifications" tab, covering notification channels and events. */
@@ -38,10 +28,6 @@ export default function NotificationsSettingsTab({
   isPushLoading,
   onEnablePush,
   onDisablePush,
-  isDesktop = false,
-  desktopNotifications = null,
-  onEnableDesktopNotifications,
-  onDisableDesktopNotifications,
 }: NotificationsSettingsTabProps) {
   const { t } = useTranslation('settings');
 
@@ -59,23 +45,7 @@ export default function NotificationsSettingsTab({
       events: { ...notificationPreferences.events, [key]: value },
     });
 
-  const deliveryRow = isDesktop ? (
-    <SettingsRow
-      label={t('notifications.desktop.title', { defaultValue: 'Notify this desktop app' })}
-      description={
-        desktopNotifications?.supported === false
-          ? t('notifications.desktop.unsupported', { defaultValue: 'Desktop notifications are not supported on this system.' })
-          : desktopNotifications?.lastError || undefined
-      }
-    >
-      <SettingsToggle
-        checked={Boolean(desktopNotifications?.enabled)}
-        disabled={desktopNotifications?.supported === false}
-        ariaLabel={t('notifications.desktop.title', { defaultValue: 'Notify this desktop app' })}
-        onChange={(value) => (value ? onEnableDesktopNotifications?.() : onDisableDesktopNotifications?.())}
-      />
-    </SettingsRow>
-  ) : (
+  const deliveryRow = (
     <SettingsRow
       label={t('notifications.webPush.title')}
       description={

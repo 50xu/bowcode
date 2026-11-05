@@ -127,13 +127,6 @@
       "unsupported": "Tento prohlížeč nepodporuje push oznámení.",
       "denied": "Push oznámení jsou zablokovaná. Povolte je prosím v nastavení prohlížeče."
     },
-    "desktop": {
-      "title": "Oznámení v této desktopové aplikaci",
-      "enable": "Zapnout oznámení",
-      "disable": "Vypnout oznámení",
-      "enabled": "Oznámení jsou v této desktopové aplikaci zapnutá",
-      "unsupported": "Tento systém nepodporuje desktopová oznámení."
-    },
     "sound": {
       "title": "Zvuk",
       "description": "Přehrát krátký tón, když běh chatu skončí nebo čeká na schválení nástroje.",

@@ -54,9 +54,9 @@ export class ChatSessionWriter {
   private readonly options: ChatSessionWriterOptions;
   /**
    * Every socket currently watching this run, not just the one that started
-   * it. A session can legitimately be open in more than one place — a second
-   * browser tab, a phone alongside a laptop, the desktop app beside the web
-   * app — and each of those subscribes through `attachConnection`.
+   * it. A session can legitimately be open in more than one place — multiple
+   * browser tabs or a phone alongside a laptop — and each of those subscribes
+   * through `attachConnection`.
    *
    * Holding a single connection here meant the newest subscriber took the
    * stream away from everyone before it, so a second tab silently froze
