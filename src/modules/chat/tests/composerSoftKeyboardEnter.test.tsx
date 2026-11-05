@@ -82,7 +82,7 @@ const enterEvent = (overrides: { shiftKey?: boolean; ctrlKey?: boolean } = {}) =
 };
 
 /** Mounts the composer hook against an open session and a recording sendMessage. */
-const renderComposer = (sendMessage: ReturnType<typeof vi.fn>, sendByCtrlEnter?: boolean) => renderHook(
+const renderComposer = (sendMessage: (message: unknown) => void, sendByCtrlEnter?: boolean) => renderHook(
   () => useChatComposerState({
     selectedProject: PROJECT,
     selectedSession: SESSION,

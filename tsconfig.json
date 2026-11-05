@@ -4,12 +4,11 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "baseUrl": ".",
     "paths": {
       // The frontend keeps "@" mapped to /src.
       // The backend gets its own "@" mapping in server/tsconfig.json so both sides can use
       // the same alias name without sharing one compiler configuration.
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
     "skipLibCheck": true,
     "moduleResolution": "Bundler",
@@ -21,8 +20,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     // "checkJs": true, 
-    "types": ["vite/client"],
-    "ignoreDeprecations": "5.0"
+    "types": ["vite/client"]
   },
   "include": ["src", "shared", "vite.config.js"]
 }

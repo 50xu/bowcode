@@ -78,7 +78,6 @@
       {
         "type": "backend-module",
         "pattern": "server/modules/*",
-        "mode": "folder",
         "capture": ["moduleName"]
       },
       {
@@ -111,7 +110,6 @@
       {
         "type": "frontend-module",
         "pattern": "src/modules/*",
-        "mode": "folder",
         "capture": ["moduleName"]
       }
     ]
@@ -237,20 +235,20 @@
           {
             "default": "allow",
             "checkInternals": false,
-            "rules": [
+            "policies": [
               {
-                "from": { "type": "frontend-module" },
-                "to": { "type": "frontend-shared-type-contract" },
+                "from": { "element": { "type": "frontend-module" } },
+                "to": { "element": { "type": "frontend-shared-type-contract" } },
                 "disallow": { "dependency": { "kind": ["value", "typeof"] } },
                 "message": "Frontend modules may only use `import type` when importing from src/shared/types.ts."
               },
               {
-                "to": { "type": "frontend-module" },
+                "to": { "element": { "type": "frontend-module" } },
                 "disallow": { "to": { "internalPath": "**" } },
                 "message": "Cross-module imports must go through that module's barrel file (src/modules/<module>/index.ts)."
               },
               {
-                "to": { "type": "frontend-module" },
+                "to": { "element": { "type": "frontend-module" } },
                 "allow": { "to": { "internalPath": ["index", "index.{ts,tsx}"] } }
               }
             ]
@@ -295,20 +293,20 @@
           {
             "default": "allow",
             "checkInternals": false,
-            "rules": [
+            "policies": [
               {
-                "from": { "type": "backend-module" },
-                "to": { "type": "backend-shared-type-contract" },
+                "from": { "element": { "type": "backend-module" } },
+                "to": { "element": { "type": "backend-shared-type-contract" } },
                 "disallow": { "dependency": { "kind": ["value", "typeof"] } },
                 "message": "Backend modules may only use `import type` when importing from server/shared/types.ts or server/shared/interfaces.ts."
               },
               {
-                "to": { "type": "backend-module" },
+                "to": { "element": { "type": "backend-module" } },
                 "disallow": { "to": { "internalPath": "**" } },
                 "message": "Cross-module imports must go through that module's barrel file (server/modules/<module>/index.ts or index.js)."
               },
               {
-                "to": { "type": "backend-module" },
+                "to": { "element": { "type": "backend-module" } },
                 "allow": { "to": { "internalPath": ["index", "index.{js,mjs,cjs,ts,tsx}"] } }
               }
             ]
