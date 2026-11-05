@@ -119,7 +119,7 @@ function showStatus(dependencies: CliServiceDependencies): void {
 function showHelp(dependencies: CliServiceDependencies): void {
   dependencies.output.log(`
 ╔═══════════════════════════════════════════════════════════════╗
-║              Bowcode - Command Line Tool               ║
+║                  Bowcode - Command Line Tool                  ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 Usage:

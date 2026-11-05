@@ -189,7 +189,7 @@ function SidebarSessionItem({
           onClick={isSelecting ? (isSelectable ? toggleSelected : undefined) : selectMobileSession}
           onKeyDown={isSelecting ? handleSelectionKeyDown : undefined}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {selectionIcon}
             <div
               className="flex h-4 w-4 flex-shrink-0 items-center justify-center"
