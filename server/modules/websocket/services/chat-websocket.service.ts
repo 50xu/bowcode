@@ -3,7 +3,14 @@ import path from 'node:path';
 import type { WebSocket } from 'ws';
 
 import { sessionsDb } from '@/modules/database/index.js';
-import { findExternalClaudeCliSession, terminateExternalClaudeCliSession, providerModelsService, sessionsService } from '@/modules/providers/index.js';
+import {
+  findExternalClaudeCliSession,
+  findOwnedClaudeCliSessions,
+  providerModelsService,
+  sessionsService,
+  terminateExternalClaudeCliSession,
+  terminateOwnedClaudeCliSession,
+} from '@/modules/providers/index.js';
 import { chatRunRegistry } from '@/modules/websocket/services/chat-run-registry.service.js';
 import { connectedClients, WS_OPEN_STATE } from '@/modules/websocket/services/websocket-state.service.js';
 import {
@@ -88,6 +95,8 @@ type ChatWebSocketDependencies = {
   /** Optional test seams for external CLI detection and takeover. */
   findExternalSession?: typeof findExternalClaudeCliSession;
   terminateExternalSession?: typeof terminateExternalClaudeCliSession;
+  findOwnedSessions?: typeof findOwnedClaudeCliSessions;
+  terminateOwnedSession?: typeof terminateOwnedClaudeCliSession;
 };
 
 /**
@@ -242,6 +251,25 @@ async function dispatchRun(
         if (ws) sendProtocolError(ws, 'TAKEOVER_FAILED', message, sessionId, { pid: holder.pid });
         return { started: false, error: message };
       }
+    }
+  }
+
+  // A process this server spawned for an earlier run that is still holding
+  // the session (an interrupt that never landed, a run whose bookkeeping
+  // ended before its CLI did) would keep working next to the run about to
+  // start: two agents editing one session. Only when no run is in progress —
+  // otherwise startRun refuses below and nothing must be touched.
+  if (
+    provider === 'claude'
+    && session.provider_session_id
+    && chatRunRegistry.getRun(sessionId)?.status !== 'running'
+  ) {
+    const leftovers = await (dependencies.findOwnedSessions ?? findOwnedClaudeCliSessions)(session.provider_session_id)
+      .catch(() => []);
+    for (const leftover of leftovers) {
+      await (dependencies.terminateOwnedSession ?? terminateOwnedClaudeCliSession)(leftover).catch((error: unknown) => {
+        console.error('[Chat] Could not stop leftover Claude process', leftover.pid, error instanceof Error ? error.message : error);
+      });
     }
   }
 

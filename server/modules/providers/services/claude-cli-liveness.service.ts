@@ -130,18 +130,47 @@ export async function findExternalClaudeCliSession(
   return (await listExternalClaudeCliSessions(options)).find((session) => session.providerSessionId === providerSessionId) ?? null;
 }
 
+/**
+ * Server-owned CLI processes (spawned by this server's SDK runs) that still
+ * hold a session. Consulted right before a new run resumes the session: any
+ * process found here belongs to an earlier run that should already be gone,
+ * and leaving it alive means two agents working one session.
+ */
+export async function findOwnedClaudeCliSessions(
+  providerSessionId: string, options: RegistryAccess = {},
+): Promise<ExternalClaudeCliSession[]> {
+  const records = (await readRegistry(options)).filter((record) => record.providerSessionId === providerSessionId);
+  const owned = await Promise.all(records.map(async (record) => (await isExternal(record, options)) ? null : record));
+  return owned.filter((record): record is RegistryRecord => record !== null)
+    .map(({ providerSessionId: id, pid, status, startedAt, cwd }) => ({ providerSessionId: id, pid, status, startedAt, cwd }));
+}
+
 /** Used by websocket takeover; rechecks identity before signalling a process. */
 export async function terminateExternalClaudeCliSession(
   session: ExternalClaudeCliSession, options: RegistryAccess = {},
 ): Promise<void> {
+  return terminateRecordedSession(session, 'external', options);
+}
+
+/** Stops a leftover server-owned CLI process found by findOwnedClaudeCliSessions. */
+export async function terminateOwnedClaudeCliSession(
+  session: ExternalClaudeCliSession, options: RegistryAccess = {},
+): Promise<void> {
+  return terminateRecordedSession(session, 'owned', options);
+}
+
+async function terminateRecordedSession(
+  session: ExternalClaudeCliSession, ownership: 'external' | 'owned', options: RegistryAccess,
+): Promise<void> {
   const record = (await readRegistry(options)).find((candidate) =>
     candidate.pid === session.pid && candidate.providerSessionId === session.providerSessionId);
-  if (!record || !(await isExternal(record, options)) || typeof record.procStart !== 'string' || !record.procStart) {
-    throw new Error('External Claude process identity could not be verified.');
+  const external = record ? await isExternal(record, options) : false;
+  if (!record || external !== (ownership === 'external') || typeof record.procStart !== 'string' || !record.procStart) {
+    throw new Error(`${ownership === 'external' ? 'External' : 'Leftover'} Claude process identity could not be verified.`);
   }
   const alive = () => isRecordedProcessAlive(record.pid, record.procStart, options);
   if (!(await alive())) throw new Error('External Claude process is no longer alive.');
-  console.info('[Chat] Taking over external Claude session', { sessionId: session.providerSessionId, pid: session.pid });
+  console.info(ownership === 'external' ? '[Chat] Taking over external Claude session' : '[Chat] Stopping leftover Claude process before a new run', { sessionId: session.providerSessionId, pid: session.pid });
   access(options).kill(session.pid, 'SIGTERM');
   const deadline = Date.now() + 5_000;
   while (Date.now() < deadline) {

@@ -4,7 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { findExternalClaudeCliSession, listExternalClaudeCliSessions, terminateExternalClaudeCliSession } from '@/modules/providers/services/claude-cli-liveness.service.js';
+import {
+  findExternalClaudeCliSession,
+  findOwnedClaudeCliSessions,
+  listExternalClaudeCliSessions,
+  terminateExternalClaudeCliSession,
+  terminateOwnedClaudeCliSession,
+} from '@/modules/providers/services/claude-cli-liveness.service.js';
 
 const stat = (ppid: number, start = '123') => `42 (claude cli) S ${ppid} ${Array(17).fill('0').join(' ')} ${start} 0`;
 
@@ -54,6 +60,41 @@ test('takeover signals only a still-matching recorded process', async () => {
     await terminateExternalClaudeCliSession(holder, options);
     assert.ok(signals.includes('SIGTERM'));
     assert.equal(signals.includes('SIGKILL'), false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('a leftover server-owned process holding a session is found and stopped; external ones are not touched by it', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'claude-leftover-'));
+  try {
+    await writeFile(path.join(directory, '201.json'), JSON.stringify({
+      pid: 201, sessionId: 'dup', entrypoint: 'claudecodeui', status: 'busy', procStart: '123',
+    }));
+    await writeFile(path.join(directory, '202.json'), JSON.stringify({
+      pid: 202, sessionId: 'dup', entrypoint: 'cli', status: 'idle', procStart: '123',
+    }));
+    const signalled: Array<[number, NodeJS.Signals | 0]> = [];
+    const alive = new Set([201, 202]);
+    const options = {
+      registryDirectory: directory,
+      // 201 is this server's child; 202 belongs to someone else.
+      readProcStat: async (pid: number) => stat(pid === 201 ? process.pid : 1),
+      kill: (pid: number, signal: NodeJS.Signals | 0) => {
+        signalled.push([pid, signal]);
+        if (signal === 'SIGTERM') alive.delete(pid);
+        if (signal === 0 && !alive.has(pid)) throw Object.assign(new Error('gone'), { code: 'ESRCH' });
+      },
+    };
+    const leftovers = await findOwnedClaudeCliSessions('dup', options);
+    assert.deepEqual(leftovers.map((session) => session.pid), [201]);
+    await terminateOwnedClaudeCliSession(leftovers[0], options);
+    assert.ok(signalled.some(([pid, signal]) => pid === 201 && signal === 'SIGTERM'));
+    assert.equal(signalled.some(([pid, signal]) => pid === 202 && signal !== 0), false);
+
+    const external = await findExternalClaudeCliSession('dup', options);
+    assert.ok(external);
+    await assert.rejects(terminateOwnedClaudeCliSession(external, options));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

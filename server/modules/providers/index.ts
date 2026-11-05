@@ -11,7 +11,12 @@ export { providerModelsService } from './services/provider-models.service.js';
 export { sessionsService } from './services/sessions.service.js';
 
 // External CLI holders: websocket admission/takeover and scheduled queue waiting.
-export { findExternalClaudeCliSession, terminateExternalClaudeCliSession } from './services/claude-cli-liveness.service.js';
+export {
+  findExternalClaudeCliSession,
+  findOwnedClaudeCliSessions,
+  terminateExternalClaudeCliSession,
+  terminateOwnedClaudeCliSession,
+} from './services/claude-cli-liveness.service.js';
 export type { ExternalClaudeCliSession } from './services/claude-cli-liveness.service.js';
 
 // reapOrphanedOpenCodeServers: used by the server entrypoint at startup to stop
