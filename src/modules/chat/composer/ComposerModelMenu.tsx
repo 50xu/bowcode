@@ -73,7 +73,9 @@ function ComposerModelMenu({
     return null;
   }
 
-  const triggerLabel = hasModelSection ? modelLabel : effortLabel;
+  // The provider prefix repeats what the whole app is about; the chip shows
+  // the part that differs between models ("opus-5-5", not "claude-opus-5-5").
+  const triggerLabel = hasModelSection ? modelLabel.replace(/^claude-/, '') : effortLabel;
   const ariaLabel = t('composer.modelMenu', {
     defaultValue: 'Select model and reasoning effort',
   });
@@ -87,7 +89,7 @@ function ComposerModelMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className="flex h-9 min-w-0 max-w-24 shrink items-center gap-1 rounded-lg hairline bg-card px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent sm:max-w-56"
+        className="flex h-9 min-w-0 max-w-44 shrink items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95 sm:max-w-56"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
@@ -97,6 +99,7 @@ function ComposerModelMenu({
         {hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE && (
           <span className="hidden shrink-0 capitalize text-muted-foreground sm:inline">· {effortLabel}</span>
         )}
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
       </button>
 
       {isOpen && anchor && createPortal(

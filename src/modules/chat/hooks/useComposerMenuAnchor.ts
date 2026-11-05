@@ -18,6 +18,7 @@ export function useComposerMenuAnchor(
   isOpen: boolean,
   onClose: () => void,
   preferredWidth = 320,
+  align: 'left' | 'right' = 'right',
 ) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -29,6 +30,20 @@ export function useComposerMenuAnchor(
       return;
     }
 
+    if (align === 'left') {
+      // Left-aligned for triggers at the composer's left edge: a right-aligned
+      // menu there would have to grow leftward off the screen.
+      const left = Math.max(VIEWPORT_MARGIN, Math.min(rect.left, window.innerWidth - preferredWidth - VIEWPORT_MARGIN));
+      setAnchor({
+        left,
+        right: 0,
+        bottom: window.innerHeight - rect.top + MENU_GAP,
+        maxHeight: Math.max(160, rect.top - MENU_GAP - VIEWPORT_MARGIN),
+        maxWidth: Math.max(200, Math.min(preferredWidth, window.innerWidth - left - VIEWPORT_MARGIN)),
+      });
+      return;
+    }
+
     const right = Math.max(VIEWPORT_MARGIN, window.innerWidth - rect.right);
     setAnchor({
       right,
@@ -36,7 +51,7 @@ export function useComposerMenuAnchor(
       maxHeight: Math.max(160, rect.top - MENU_GAP - VIEWPORT_MARGIN),
       maxWidth: Math.max(200, Math.min(preferredWidth, window.innerWidth - right - VIEWPORT_MARGIN)),
     });
-  }, [preferredWidth]);
+  }, [align, preferredWidth]);
 
   useEffect(() => {
     if (!isOpen) {

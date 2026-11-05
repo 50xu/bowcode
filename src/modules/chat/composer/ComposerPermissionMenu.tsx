@@ -13,7 +13,6 @@ import {
 
 import type { PermissionMode } from '@/shared/types';
 import { useComposerMenuAnchor } from '@/modules/chat/hooks/useComposerMenuAnchor';
-import { usePermissionNameFit } from '@/modules/chat/hooks/usePermissionNameFit';
 import {
   ComposerMenuHeading,
   ComposerMenuItem,
@@ -36,34 +35,31 @@ const MODE_APPEARANCE: Record<PermissionMode, ModeAppearance> = {
   default: {
     icon: Hand,
     label: 'Default Mode',
-    trigger: 'border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted',
+    trigger: 'text-muted-foreground hover:bg-accent hover:text-foreground',
     item: 'text-foreground',
   },
   auto: {
     icon: Bot,
     label: 'Auto Mode',
-    trigger:
-      'border-blue-300/60 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-600/40 dark:bg-blue-900/15 dark:text-blue-300 dark:hover:bg-blue-900/25',
+    trigger: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 dark:text-blue-400',
     item: 'text-blue-700 dark:text-blue-300',
   },
   acceptEdits: {
     icon: Smile,
     label: 'Accept Edits',
-    trigger:
-      'border-green-300/60 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-600/40 dark:bg-green-900/15 dark:text-green-300 dark:hover:bg-green-900/25',
+    trigger: 'bg-green-500/10 text-green-600 hover:bg-green-500/15 dark:text-green-400',
     item: 'text-green-700 dark:text-green-300',
   },
   bypassPermissions: {
     icon: AlertTriangle,
     label: 'Bypass Permissions',
-    trigger:
-      'border-orange-300/60 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-600/40 dark:bg-orange-900/15 dark:text-orange-300 dark:hover:bg-orange-900/25',
+    trigger: 'bg-orange-500/10 text-orange-600 hover:bg-orange-500/15 dark:text-orange-400',
     item: 'text-orange-600 dark:text-orange-400',
   },
   plan: {
     icon: ClipboardList,
     label: 'Plan Mode',
-    trigger: 'border-primary/20 bg-primary/5 text-primary hover:bg-primary/10',
+    trigger: 'bg-primary/10 text-primary hover:bg-primary/15',
     item: 'text-primary',
   },
 };
@@ -71,7 +67,7 @@ const MODE_APPEARANCE: Record<PermissionMode, ModeAppearance> = {
 const UNKNOWN_MODE: ModeAppearance = {
   icon: ShieldQuestion,
   label: '',
-  trigger: 'border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted',
+  trigger: 'text-muted-foreground hover:bg-accent hover:text-foreground',
   item: 'text-foreground',
 };
 
@@ -103,15 +99,6 @@ function ComposerPermissionMenu({
   const modeLabel = (mode: PermissionMode) =>
     t(`codex.modes.${mode}`, { defaultValue: getAppearance(mode).label || mode });
   const activeModeLabel = modeLabel(permissionMode);
-  // The name is shown only where the composer has room for it, so it never
-  // pushes the model menu and the send button onto a second row. Plan mode,
-  // the one that changes nothing, keeps its name wherever it fits inside the
-  // composer, even when that gives the controls a row of their own.
-  const isNameShown = usePermissionNameFit(
-    triggerRef,
-    permissionModes.length > 0 ? activeModeLabel : null,
-    permissionMode === 'plan',
-  );
 
   if (permissionModes.length === 0) {
     return null;
@@ -133,7 +120,7 @@ function ComposerPermissionMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className={`flex h-9 min-w-9 max-w-40 shrink-0 items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition-colors sm:max-w-48 ${isNameShown ? 'px-2' : 'w-9'} ${activeAppearance.trigger}`}
+        className={`flex h-9 w-9 min-w-9 max-w-40 shrink-0 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors active:scale-95 sm:w-auto sm:max-w-48 sm:px-3 ${activeAppearance.trigger}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         // The mode name leads the accessible name, so what a screen reader
@@ -147,7 +134,8 @@ function ComposerPermissionMenu({
       >
         <ActiveIcon className="h-4 w-4 shrink-0" />
         {/* Named, not just drawn: the mode decides what the next message may change. */}
-        {isNameShown && <span className="truncate">{activeModeLabel}</span>}
+        {/* Icon-only on phones so the model name keeps its room; named where there is space. */}
+        <span className="hidden truncate sm:inline">{activeModeLabel}</span>
       </button>
 
       {isOpen && anchor && createPortal(

@@ -10,7 +10,7 @@ import type {
   RefObject,
   TouchEvent,
 } from 'react';
-import { PaperclipIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
+import { XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
 
 import { useVoiceInput } from '@/modules/chat/hooks/useVoiceInput';
 import { useVoiceAvailable } from '@/modules/chat/hooks/useVoiceAvailable';
@@ -22,7 +22,6 @@ import {
   PromptInputTextarea,
   PromptInputFooter,
   PromptInputTools,
-  PromptInputButton,
   PromptInputSubmit,
 } from '@/modules/chat/composer/PromptInput';
 import CommandMenu from '@/modules/chat/composer/CommandMenu';
@@ -33,7 +32,7 @@ import PermissionRequestsBanner from '@/modules/chat/composer/PermissionRequests
 import TokenUsageSummary from '@/modules/chat/composer/TokenUsageSummary';
 import QueuedMessageCard from '@/modules/chat/composer/QueuedMessageCard';
 import BackgroundSendDialog from '@/modules/chat/composer/BackgroundSendDialog';
-import { ScheduleMessagePopover } from '@/modules/chat/composer/ScheduleMessagePopover';
+import { ComposerActionsMenu } from '@/modules/chat/composer/ComposerActionsMenu';
 import { ScheduledMessageList } from '@/modules/chat/composer/ScheduledMessageList';
 import ComposerModelMenu from '@/modules/chat/composer/ComposerModelMenu';
 import ComposerPermissionMenu from '@/modules/chat/composer/ComposerPermissionMenu';
@@ -196,7 +195,6 @@ export default function ChatComposer({
   onInputFocusChange,
   placeholder,
   isTextareaExpanded,
-  sendByCtrlEnter,
 }: ChatComposerProps) {
   const { t } = useTranslation('chat');
   const fileDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -264,13 +262,6 @@ export default function ChatComposer({
 
   const hasQueuedDraft = Boolean(queuedDraft);
   const canQueueDraft = isLoading && Boolean(input.trim() || attachedFiles.length > 0);
-  const submitHint = canQueueDraft
-    ? hasQueuedDraft
-      ? t('input.hintText.appendQueued', { defaultValue: 'Enter to add to the queued message' })
-      : t('input.hintText.queue', { defaultValue: 'Enter to queue your next message' })
-    : sendByCtrlEnter
-      ? t('input.hintText.ctrlEnter')
-      : t('input.hintText.enter');
   const submitAriaLabel = canQueueDraft
     ? hasQueuedDraft
       ? t('input.queue.append', { defaultValue: 'Add to queued message' })
@@ -470,52 +461,37 @@ export default function ChatComposer({
                 onClick={onClearInput}
                 aria-label={t('input.clearInput', { defaultValue: 'Clear input' })}
                 title={t('input.clearInput', { defaultValue: 'Clear input' })}
-                className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground/40 text-white transition-colors hover:bg-muted-foreground/60 active:scale-90"
+                className="group absolute right-1 top-1 z-10 flex h-9 w-9 items-center justify-center rounded-full active:scale-90"
               >
-                <XIcon className="h-3.5 w-3.5" strokeWidth={3} />
+                {/* A 36px touch target around a small iOS-style glyph. */}
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-muted-foreground/45 text-background transition-colors group-hover:bg-muted-foreground/70">
+                  <XIcon className="h-3 w-3" strokeWidth={3} />
+                </span>
               </button>
             )}
         </PromptInputBody>
 
-        <PromptInputFooter>
-          <PromptInputTools className="min-w-0 flex-wrap">
-            <PromptInputButton
-              tooltip={{ content: t('input.attachFiles') }}
-              onClick={openAttachmentPicker}
-              aria-label={t('input.attachFiles')}
-            >
-              <PaperclipIcon />
-            </PromptInputButton>
+        <PromptInputFooter className="flex-nowrap gap-0.5 border-t-0 px-1.5 pb-1.5 pt-0 sm:px-2">
+          {/* One row on every width: occasional actions behind "+", context on
+              the left; what shapes the next turn (model, permissions) and the
+              send button on the right. */}
+          <PromptInputTools className="min-w-0 shrink-0 gap-0.5">
+            <ComposerActionsMenu
+              onAttachFiles={openAttachmentPicker}
+              onShowCommands={onToggleCommandMenu}
+              commandsCount={slashCommandsCount}
+              canSchedule={Boolean(input.trim())}
+              onSchedule={onScheduleMessage}
+            />
 
             {onVoiceTranscript && voiceAvailable && (
               <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} />
             )}
 
             <TokenUsageSummary usage={tokenBudget} onCompact={onCompact} compactDisabled={isLoading} />
-
-            <PromptInputButton
-              tooltip={{ content: t('input.showAllCommands') }}
-              onClick={onToggleCommandMenu}
-              className="relative"
-            >
-              <MessageSquareIcon />
-              {slashCommandsCount > 0 && (
-                <span
-                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground"
-                >
-                  {slashCommandsCount}
-                </span>
-              )}
-            </PromptInputButton>
-
           </PromptInputTools>
 
-          <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
-            <ScheduleMessagePopover
-              disabled={!input.trim()}
-              onSchedule={onScheduleMessage}
-            />
-
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-0.5">
             <ComposerModelMenu
               effort={effort}
               effortOptions={availableEffortOptions}
@@ -570,13 +546,6 @@ export default function ChatComposer({
             </PromptInputSubmit>
           </div>
 
-          <div
-            className={`order-last hidden basis-full px-2 text-center text-xs leading-4 text-muted-foreground/50 transition-opacity duration-200 lg:block ${
-              input.trim() && !canQueueDraft ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            {submitHint}
-          </div>
         </PromptInputFooter>
       </PromptInput>
       </div>}

@@ -122,12 +122,12 @@ function TokenUsageSummary({ usage, onCompact, compactDisabled = false }: TokenU
         }}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        className="hairline inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-lg bg-card px-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn('inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', isOpen && 'bg-accent text-foreground')}
         title={t('misc.tokensUsed', { count: usedTokens })}
         aria-label={t('misc.showTokenUsage')}
       >
         <UsageRing percent={percent} className={tone} />
-        <span className="font-medium tabular-nums text-foreground">
+        <span className="font-medium tabular-nums">
           {percent !== null ? `${percent}%` : formatTokenCount(usedTokens)}
         </span>
       </button>

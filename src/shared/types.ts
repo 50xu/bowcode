@@ -784,6 +784,8 @@ export type BackgroundSendPrompt = {
 
 /** Viewport-relative placement box (right/bottom offsets plus max height and width) computed for a composer popover so the model and permission menus stay inside the window. */
 export type ComposerMenuAnchor = {
+  /** Set for left-aligned menus; `right` is ignored then. */
+  left?: number;
   right: number;
   bottom: number;
   maxHeight: number;
