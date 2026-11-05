@@ -336,6 +336,9 @@ test('aborting a run whose process ignores the interrupt kills it before reporti
     createQuery,
   };
   const writer = { send: () => {}, userId: null };
+  // The runtime's stop timers are unref'd (they must not hold the server open), and
+  // the fake process holds nothing either; keep the loop alive while the abort runs.
+  const keepAlive = setInterval(() => {}, 1_000);
   try {
     const done = queryClaudeSDK('hello', { sessionId: SESSION_ID, cwd }, writer as never, context);
     await waitFor(() => signal !== undefined);
@@ -346,6 +349,7 @@ test('aborting a run whose process ignores the interrupt kills it before reporti
     assert.equal(stopped, true, 'abort only reports success once the run has drained');
     await done;
   } finally {
+    clearInterval(keepAlive);
     await rm(cwd, { recursive: true, force: true });
   }
 });
