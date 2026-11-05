@@ -97,6 +97,17 @@ export default function SessionRetentionSettingsTab() {
       >
         <SettingsCard divided>
           <SettingsRow
+            label={t('sessionRetention.autoTitleLabel')}
+            description={t('sessionRetention.autoTitleDescription')}
+          >
+            <SettingsToggle
+              checked={settings.autoTitleSessions}
+              onChange={(autoTitleSessions) => void saveSettings({ autoTitleSessions })}
+              ariaLabel={t('sessionRetention.autoTitleLabel')}
+              disabled={isSaving}
+            />
+          </SettingsRow>
+          <SettingsRow
             label={t('sessionRetention.enableLabel')}
             description={t('sessionRetention.enableDescription')}
           >

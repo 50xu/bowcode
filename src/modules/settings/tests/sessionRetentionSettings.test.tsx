@@ -8,7 +8,7 @@ import type { SessionRetentionPreview, SessionRetentionSettings } from '@/shared
 
 const calls: string[] = [];
 const state: { settings: SessionRetentionSettings; preview: SessionRetentionPreview } = {
-  settings: { enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true },
+  settings: { enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true, autoTitleSessions: true },
   preview: { cutoff: '2026-01-01T00:00:00.000Z', total: 0, batchLimit: 100, sessions: [] },
 };
 
@@ -47,7 +47,7 @@ vi.mock('@/shared/api', async (importOriginal) => {
 describe('SessionRetentionSettingsTab', () => {
   beforeEach(() => {
     calls.length = 0;
-    state.settings = { enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true };
+    state.settings = { enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true, autoTitleSessions: true };
     state.preview = {
       cutoff: '2026-01-01T00:00:00.000Z',
       total: 2,

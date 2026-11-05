@@ -66,6 +66,46 @@ test('app sessions without message text receive a stable fallback name', { concu
   });
 });
 
+test('automatic titles apply only while the prompt name is untouched', { concurrency: false }, async () => {
+  await withIsolatedDatabase(async () => {
+    let complete!: (title: string) => void;
+    const pending = new Promise<string>((resolve) => { complete = resolve; });
+    const session = sessionsService.createAppSession('codex', '/tmp/title-project', 'Fix the broken login', {
+      generateTitle: async () => pending,
+    });
+    assert.equal(sessionsDb.getSessionById(session.sessionId)?.name_source, 'auto');
+    await Promise.resolve();
+    complete('Repair login flow');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(sessionsDb.getSessionById(session.sessionId)?.custom_name, 'Repair login flow');
+    assert.equal(sessionsDb.getSessionById(session.sessionId)?.name_source, 'ai');
+
+    let finish!: (title: string) => void;
+    const later = new Promise<string>((resolve) => { finish = resolve; });
+    const renamed = sessionsService.createAppSession('codex', '/tmp/title-project', 'Fix the broken login', {
+      generateTitle: async () => later,
+    });
+    sessionsService.renameSessionById(renamed.sessionId, 'My own title');
+    finish('Wrong title');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(sessionsDb.getSessionById(renamed.sessionId)?.custom_name, 'My own title');
+    assert.equal(sessionsDb.getSessionById(renamed.sessionId)?.name_source, 'user');
+  });
+});
+
+test('automatic titles respect per-call and saved opt-outs', { concurrency: false }, async () => {
+  await withIsolatedDatabase(async () => {
+    let calls = 0;
+    const generateTitle = async () => { calls++; return 'Generated title'; };
+    sessionsService.createAppSession('codex', '/tmp/title-project', 'Fix login', { autoTitle: false, generateTitle });
+    const { appConfigDb } = await import('@/modules/database/index.js');
+    appConfigDb.set('session_retention_settings', JSON.stringify({ autoTitleSessions: false }));
+    sessionsService.createAppSession('codex', '/tmp/title-project', 'Fix login', { generateTitle });
+    await Promise.resolve();
+    assert.equal(calls, 0);
+  });
+});
+
 test('provider session id is unavailable until the provider assigns one', { concurrency: false }, async () => {
   await withIsolatedDatabase(() => {
     sessionsDb.createAppSession('pending-app-session', 'claude', '/tmp/session-id-copy-project');

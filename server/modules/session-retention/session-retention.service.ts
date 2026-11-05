@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS: SessionRetentionSettings = {
   inactiveDays: 30,
   action: 'archive',
   skipStarredProjects: true,
+  autoTitleSessions: true,
 };
 
 /** One session the cleanup selected, as the preview lists it. */
@@ -121,6 +122,7 @@ function normalizeStoredSettings(stored: Record<string, unknown> | null): Sessio
       : DEFAULT_SETTINGS.inactiveDays,
     action: stored.action === 'delete' ? 'delete' : 'archive',
     skipStarredProjects: stored.skipStarredProjects !== false,
+    autoTitleSessions: stored.autoTitleSessions !== false,
   };
 }
 

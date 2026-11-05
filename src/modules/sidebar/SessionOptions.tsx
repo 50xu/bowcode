@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { Check, Edit2, GitBranch, MoreHorizontal, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Edit2, GitBranch, MoreHorizontal, Sparkles, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { ActionMenu } from '@/shared/ui';
+import { api, readApiJson } from '@/shared/api';
 import { cn } from '@/shared/utils';
 import type { LLMProvider } from '@/shared/types';
 import { useSessionForkingProviders } from '@/shared/hooks/useProviderCapabilities';
@@ -63,6 +64,21 @@ export default function SessionOptions({
   t,
 }: SessionOptionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Keeps the menu item busy until the title request settles; prevents duplicate requests.
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  // Shows the request failure beside the action without hiding it when the menu stays open.
+  const [titleError, setTitleError] = useState(false);
+  const generateTitle = async () => {
+    setIsGeneratingTitle(true);
+    setTitleError(false);
+    try {
+      await readApiJson<{ data: { summary: string } }>(await api.generateSessionTitle(sessionId));
+    } catch {
+      setTitleError(true);
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
   const providerLabel = PROVIDER_LABELS[provider];
   const { copyState, copyLabel, setOptionsOpen, handleCopyAction, isCopyPending, CopyStateIcon } =
     useProviderSessionIdCopy(sessionId, providerLabel);
@@ -166,6 +182,15 @@ export default function SessionOptions({
               icon: Edit2,
               onSelect: () => onStartEditingSession(projectId, sessionId, sessionName),
             }] : []),
+            {
+              key: 'generate-title',
+              label: isGeneratingTitle ? t('sessions.generatingTitle') : t('sessions.generateTitle'),
+              description: titleError ? t('sessions.generateTitleFailed') : undefined,
+              icon: Sparkles,
+              loading: isGeneratingTitle,
+              closeOnSelect: false,
+              onSelect: () => void generateTitle(),
+            },
             {
               key: 'copy',
               label: copyLabel,

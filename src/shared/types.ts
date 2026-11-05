@@ -1491,6 +1491,7 @@ export type SessionRetentionSettings = {
   inactiveDays: number;
   action: SessionRetentionAction;
   skipStarredProjects: boolean;
+  autoTitleSessions: boolean;
 };
 
 /** The recorded outcome of one cleanup pass (background or manual), shown as "last run" in the Sessions settings page. */

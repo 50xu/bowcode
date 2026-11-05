@@ -46,7 +46,7 @@ test('PUT /settings passes only the validated fields to the service', async () =
   await withServer({
     updateSettings: (patch) => {
       patches.push(patch);
-      return { settings: { enabled: true, inactiveDays: 90, action: 'delete', skipStarredProjects: false }, lastRun: null };
+      return { settings: { enabled: true, inactiveDays: 90, action: 'delete', skipStarredProjects: false, autoTitleSessions: true }, lastRun: null };
     },
   }, async (baseUrl) => {
     const response = await put(`${baseUrl}/settings`, {

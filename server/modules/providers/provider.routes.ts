@@ -990,6 +990,14 @@ router.put(
   }),
 );
 
+router.post(
+  '/sessions/:sessionId/generate-title',
+  asyncHandler(async (req: Request, res: Response) => {
+    const sessionId = parseSessionId(req.params.sessionId);
+    res.json(createApiSuccessResponse(await sessionsService.generateTitleById(sessionId)));
+  }),
+);
+
 router.get(
   '/sessions/:sessionId/messages',
   asyncHandler(async (req: Request, res: Response) => {

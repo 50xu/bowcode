@@ -47,6 +47,10 @@ function parseSettingsPatch(body: unknown): Partial<SessionRetentionSettings> {
     }
     patch.skipStarredProjects = input.skipStarredProjects;
   }
+  if (input.autoTitleSessions !== undefined) {
+    if (typeof input.autoTitleSessions !== 'boolean') throw invalidSettings('autoTitleSessions must be a boolean.');
+    patch.autoTitleSessions = input.autoTitleSessions;
+  }
   return patch;
 }
 

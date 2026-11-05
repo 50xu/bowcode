@@ -131,7 +131,7 @@ export async function executeScheduleRun(job: ScheduleRunJob, dependencies: Sche
   const provider = schedule.provider as LLMProvider;
   let sessionId: string;
   try {
-    sessionId = sessionsService.createAppSession(provider, schedule.project_path, schedule.prompt).sessionId;
+    sessionId = sessionsService.createAppSession(provider, schedule.project_path, schedule.prompt, { autoTitle: false }).sessionId;
     sessionsDb.updateSessionCustomName(sessionId, buildSessionTitle(schedule, startedAtDate));
     scheduleRunsDb.attachSession(run.id, sessionId);
     // Puts the new session in every open sidebar now, rather than when the

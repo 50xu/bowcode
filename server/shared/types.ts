@@ -1034,6 +1034,7 @@ export type SessionRetentionSettings = {
   inactiveDays: number;
   action: SessionRetentionAction;
   skipStarredProjects: boolean;
+  autoTitleSessions: boolean;
 };
 
 // ---------------------------

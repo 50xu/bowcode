@@ -10,6 +10,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 
 import { closeConnection, initializeDatabase, sessionsDb } from '@/modules/database/index.js';
 import providerRouter from '@/modules/providers/provider.routes.js';
+import { sessionsService } from '@/modules/providers/services/sessions.service.js';
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
 import type { IProvider } from '@/shared/interfaces.js';
 import type { BackgroundTaskSummary, WorkflowAgentActivity } from '@/shared/types.js';
@@ -78,6 +79,40 @@ test('session creation route names a Bowcode session from the initial message', 
       sessionsDb.getSessionById(payload.data.sessionId)?.custom_name,
       'abcd efg hij klm',
     );
+  });
+});
+
+test('generate-title route reports missing sessions and sessions without user history', async () => {
+  await withProviderServer(async (baseUrl, workspacePath) => {
+    const missing = await fetch(`${baseUrl}/api/providers/sessions/missing/generate-title`, { method: 'POST' });
+    assert.equal(missing.status, 404);
+    sessionsDb.createAppSession('empty-session', 'codex', workspacePath);
+    const empty = await fetch(`${baseUrl}/api/providers/sessions/empty-session/generate-title`, { method: 'POST' });
+    assert.equal(empty.status, 422);
+  });
+});
+
+test('generate-title route responds 503 when generation fails and returns the renamed title on success', async () => {
+  await withProviderServer(async (baseUrl, workspacePath) => {
+    sessionsDb.createAppSession('title-session', 'codex', workspacePath);
+    const originalHistory = sessionsService.fetchHistory;
+    const originalGenerate = sessionsService.generateTitleById;
+    sessionsService.fetchHistory = async () => ({
+      messages: [{ id: 'u1', sessionId: 'title-session', timestamp: '', provider: 'codex', kind: 'text', role: 'user', content: 'Fix login' }],
+      total: 1, hasMore: false, offset: 0, limit: null,
+    });
+    try {
+      sessionsService.generateTitleById = (id) => originalGenerate.call(sessionsService, id, async () => null);
+      assert.equal((await fetch(`${baseUrl}/api/providers/sessions/title-session/generate-title`, { method: 'POST' })).status, 503);
+      sessionsService.generateTitleById = (id) => originalGenerate.call(sessionsService, id, async () => 'Repair login flow');
+      const response = await fetch(`${baseUrl}/api/providers/sessions/title-session/generate-title`, { method: 'POST' });
+      assert.equal(response.status, 200);
+      assert.deepEqual(((await response.json()) as { data: unknown }).data, { sessionId: 'title-session', summary: 'Repair login flow' });
+      assert.equal(sessionsDb.getSessionById('title-session')?.name_source, 'user');
+    } finally {
+      sessionsService.fetchHistory = originalHistory;
+      sessionsService.generateTitleById = originalGenerate;
+    }
   });
 });
 

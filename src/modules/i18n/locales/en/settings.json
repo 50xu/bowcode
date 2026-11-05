@@ -856,6 +856,8 @@
     "about": "Version, source code and license."
   },
   "sessionRetention": {
+    "autoTitleLabel": "Auto-generate session titles",
+    "autoTitleDescription": "Uses Claude Haiku from your Claude login; falls back to the first words of the prompt if unavailable.",
     "loading": "Loading…",
     "sectionTitle": "Inactive session cleanup",
     "sectionDescription": "Archive or delete sessions with no activity for longer than a set time. Useful when recurring schedules create a new session on every run.",

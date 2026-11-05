@@ -9,6 +9,7 @@ type SessionRow = {
   project_path: string | null;
   jsonl_path: string | null;
   custom_name: string | null;
+  name_source: 'auto' | 'ai' | 'user' | null;
   /** Model this session runs with; NULL until the app records one for it. */
   model: string | null;
   /** Reasoning effort this session runs with; NULL until the app records one. */
@@ -37,7 +38,7 @@ type InactiveSessionRow = {
 };
 
 const SESSION_ROW_COLUMNS =
-  'session_id, provider, provider_session_id, project_path, jsonl_path, custom_name, model, effort, forked_from_session_id, isArchived, created_at, updated_at';
+  'session_id, provider, provider_session_id, project_path, jsonl_path, custom_name, name_source, model, effort, forked_from_session_id, isArchived, created_at, updated_at';
 
 const SQLITE_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
@@ -198,8 +199,8 @@ export const sessionsDb = {
     projectsDb.createProjectPath(normalizedProjectPath);
 
     db.prepare(
-      `INSERT INTO sessions (session_id, provider, provider_session_id, custom_name, project_path, jsonl_path, isArchived, created_at, updated_at)
-       VALUES (?, ?, NULL, ?, ?, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+      `INSERT INTO sessions (session_id, provider, provider_session_id, custom_name, name_source, project_path, jsonl_path, isArchived, created_at, updated_at)
+       VALUES (?, ?, NULL, ?, 'auto', ?, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
     ).run(sessionId, provider, customName ?? null, normalizedProjectPath);
 
     return sessionId;
@@ -450,13 +451,22 @@ export const sessionsDb = {
     ).run(effort, sessionId);
   },
 
+  /** Used by providers and schedules to record an explicit user-intent title. */
   updateSessionCustomName(sessionId: string, customName: string): void {
     const db = getConnection();
     db.prepare(
       `UPDATE sessions
-       SET custom_name = ?
+       SET custom_name = ?, name_source = 'user'
        WHERE session_id = ?`
     ).run(customName, sessionId);
+  },
+
+  /** Used by providers to apply a generated title only while the original prompt title remains. */
+  setGeneratedName(sessionId: string, name: string): boolean {
+    return getConnection().prepare(
+      `UPDATE sessions SET custom_name = ?, name_source = 'ai'
+       WHERE session_id = ? AND name_source = 'auto'`
+    ).run(name, sessionId).changes > 0;
   },
 
   getSessionById(sessionId: string): SessionRow | null {

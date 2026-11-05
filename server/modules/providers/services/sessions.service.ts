@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import { projectsDb, sessionsDb } from '@/modules/database/index.js';
+import { projectsDb, sessionsDb, appConfigDb } from '@/modules/database/index.js';
+import { generateSessionTitle } from '@/modules/providers/services/session-title.service.js';
 import { broadcastSessionUpserted, chatRunRegistry } from '@/modules/websocket/index.js';
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
 import { listExternalClaudeCliSessions } from '@/modules/providers/services/claude-cli-liveness.service.js';
@@ -294,6 +295,7 @@ export const sessionsService = {
     provider: LLMProvider,
     projectPath: string,
     initialMessage: string,
+    options: { autoTitle?: boolean; generateTitle?: typeof generateSessionTitle } = {},
   ): CreateAppSessionResult {
     const normalizedProjectPath = projectPath.trim();
     if (!normalizedProjectPath) {
@@ -306,6 +308,17 @@ export const sessionsService = {
     const sessionId = randomUUID();
     const sessionName = buildBowcodeSessionName(initialMessage);
     sessionsDb.createAppSession(sessionId, provider, normalizedProjectPath, sessionName);
+    // Read the same persisted setting as the Sessions tab without coupling providers to retention.
+    let autoTitleEnabled = true;
+    try {
+      const raw = appConfigDb.get('session_retention_settings');
+      if (raw) autoTitleEnabled = JSON.parse(raw).autoTitleSessions !== false;
+    } catch { /* Corrupt settings fall back to the default. */ }
+    if (options.autoTitle !== false && autoTitleEnabled && initialMessage.trim()) {
+      void Promise.resolve().then(() => (options.generateTitle ?? generateSessionTitle)({ userMessages: [initialMessage] })).then(async (title) => {
+        if (title && sessionsDb.setGeneratedName(sessionId, title)) await broadcastSessionUpserted(sessionId);
+      }).catch((error: unknown) => console.warn('[SessionTitle] Could not apply title:', error));
+    }
 
     return {
       sessionId,
@@ -749,6 +762,25 @@ export const sessionsService = {
 
     sessionsDb.updateSessionIsArchived(sessionId, false);
     return { sessionId, isArchived: false };
+  },
+
+  /** Used by the providers route to name an existing session from its conversation. */
+  async generateTitleById(sessionId: string, generateTitle = generateSessionTitle): Promise<{ sessionId: string; summary: string }> {
+    if (!sessionsDb.getSessionById(sessionId)) {
+      throw new AppError(`Session "${sessionId}" was not found.`, { code: 'SESSION_NOT_FOUND', statusCode: 404 });
+    }
+    const history = await this.fetchHistory(sessionId);
+    const userMessages = history.messages.filter((message) => message.role === 'user' && message.content?.trim())
+      .slice(0, 3).map((message) => message.content!);
+    if (!userMessages.length) {
+      throw new AppError('No user message available.', { code: 'SESSION_TITLE_NO_MESSAGE', statusCode: 422 });
+    }
+    const assistantReply = history.messages.find((message) => message.role === 'assistant' && message.content?.trim())?.content;
+    const title = await generateTitle({ userMessages, assistantReply });
+    if (!title) throw new AppError('Title generation unavailable.', { code: 'SESSION_TITLE_UNAVAILABLE', statusCode: 503 });
+    const result = this.renameSessionById(sessionId, title);
+    await broadcastSessionUpserted(sessionId);
+    return result;
   },
 
   /**

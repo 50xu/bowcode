@@ -78,7 +78,7 @@ function harness(options: {
 test('defaults are disabled archive after 30 days, protecting starred projects', () => {
   const { service } = harness();
   assert.deepEqual(service.getStatus(), {
-    settings: { enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true },
+    settings: { enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true, autoTitleSessions: true },
     lastRun: null,
   });
 });
@@ -89,14 +89,14 @@ test('a corrupted stored document falls back to the disabled defaults', () => {
   assert.equal(service.getStatus().settings.enabled, false);
   config.set('session_retention_settings', JSON.stringify({ enabled: 'yes', inactiveDays: -4, action: 'nuke' }));
   assert.deepEqual(service.getStatus().settings, {
-    enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true,
+    enabled: false, inactiveDays: 30, action: 'archive', skipStarredProjects: true, autoTitleSessions: true,
   });
 });
 
 test('updateSettings merges a patch over the stored settings and persists it', () => {
   const { service, config } = harness({ settings: { enabled: true, inactiveDays: 90 } });
   const { settings } = service.updateSettings({ action: 'delete' });
-  assert.deepEqual(settings, { enabled: true, inactiveDays: 90, action: 'delete', skipStarredProjects: true });
+  assert.deepEqual(settings, { enabled: true, inactiveDays: 90, action: 'delete', skipStarredProjects: true, autoTitleSessions: true });
   assert.deepEqual(JSON.parse(config.get('session_retention_settings') ?? '{}'), settings);
 });
 
