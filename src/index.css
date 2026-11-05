@@ -283,12 +283,6 @@
     }
   }
 
-  /* PWA mode detected by JavaScript - more reliable */
-  /* The workspace shell sits above the virtual keyboard. */
-  .workspace-shell {
-    bottom: var(--keyboard-height, 0px);
-  }
-
   body.pwa-mode #root {
     padding-left: var(--safe-area-inset-left);
     padding-right: var(--safe-area-inset-right);
@@ -296,27 +290,6 @@
     overflow: hidden;
   }
 
-  /*
-   * Adjust fixed inset positioning in PWA mode.
-   *
-   * Sized from the top rather than pinned with bottom:0: iOS 18 standalone PWAs
-   * (status bar "black-translucent") draw edge to edge but report a layout
-   * viewport shorter by the status bar (innerHeight 797 on an 844pt screen),
-   * so bottom:0 left everything 47pt above the real bottom. 100vh is the full
-   * screen there.
-   */
-  body.pwa-mode .fixed.inset-0 {
-    top: var(--header-total-padding);
-    left: var(--safe-area-inset-left);
-    right: var(--safe-area-inset-right);
-    bottom: auto;
-    height: calc(100vh - var(--header-total-padding));
-  }
-
-  body.pwa-mode .workspace-shell {
-    height: calc(100vh - var(--header-total-padding) - var(--keyboard-height, 0px));
-  }
-  
   /* Global transition defaults */
   button, 
   a, 
@@ -370,6 +343,38 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+/*
+ * Workspace shell positioning. Deliberately unlayered: these override the
+ * `fixed inset-0` utilities on the shell, and in Tailwind 4 any rule inside
+ * @layer base loses to the utilities layer regardless of specificity.
+ */
+
+/* The workspace shell sits above the virtual keyboard. */
+.workspace-shell {
+  bottom: var(--keyboard-height, 0px);
+}
+
+/*
+ * Adjust fixed inset positioning in PWA mode.
+ *
+ * Sized from the top rather than pinned with bottom:0: iOS 18 standalone PWAs
+ * (status bar "black-translucent") draw edge to edge but report a layout
+ * viewport shorter by the status bar (innerHeight 797 on an 844pt screen),
+ * so bottom:0 left everything 47pt above the real bottom. 100vh is the full
+ * screen there.
+ */
+body.pwa-mode .fixed.inset-0 {
+  top: var(--header-total-padding);
+  left: var(--safe-area-inset-left);
+  right: var(--safe-area-inset-right);
+  bottom: auto;
+  height: calc(100vh - var(--header-total-padding));
+}
+
+body.pwa-mode .workspace-shell {
+  height: calc(100vh - var(--header-total-padding) - var(--keyboard-height, 0px));
 }
 
 @layer utilities {
