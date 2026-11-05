@@ -102,6 +102,49 @@ const abortedSessionIds = new Set<string>();
 // entry, the abort flag, and all client-facing events belong to the new run.
 const supersededInstances = new WeakSet<ClaudeQuery>();
 
+/**
+ * Per-query process handles. `interrupt()` only asks the CLI to end its turn —
+ * a request that is lost when stdin closes first or the CLI is mid-tool, and
+ * then the old process keeps working next to the run that replaced it (two
+ * agents editing one session). `finished` settles when the run loop has
+ * drained, i.e. the CLI process is gone; `kill` aborts the SDK's controller,
+ * which terminates the process.
+ */
+const processControls = new WeakMap<ClaudeQuery, { kill: () => void; finished: Promise<void> }>();
+
+const settlesWithin = (promise: Promise<unknown>, ms: number): Promise<boolean> => new Promise((resolve) => {
+  const timer = setTimeout(() => resolve(false), ms);
+  timer.unref?.();
+  promise.then(() => { clearTimeout(timer); resolve(true); }, () => { clearTimeout(timer); resolve(false); });
+});
+
+/**
+ * Stops a run's CLI process for good: interrupt (graceful, keeps the
+ * transcript tidy), release stdin so the process can exit, and wait for the run
+ * loop to drain; if it has not after a grace period, kill the process.
+ * Resolves true once the process is known to be gone.
+ */
+async function stopQueryInstance(
+  instance: ClaudeQuery,
+  releaseInput: (() => void) | null | undefined,
+  label: string,
+): Promise<boolean> {
+  const control = processControls.get(instance);
+  // Interrupt before releasing stdin: the SDK drops control requests written
+  // after stdin has ended.
+  const interrupted = await settlesWithin(Promise.resolve().then(() => instance.interrupt()), 3_000);
+  releaseInput?.();
+  if (!control) {
+    return interrupted;
+  }
+  if (await settlesWithin(control.finished, interrupted ? 5_000 : 1_000)) {
+    return true;
+  }
+  console.warn(`[claude] ${label}: process still running after interrupt; killing it`);
+  control.kill();
+  return settlesWithin(control.finished, 5_000);
+}
+
 const TOOL_APPROVAL_TIMEOUT_MS = parseInt(process.env.CLAUDE_TOOL_APPROVAL_TIMEOUT_MS ?? '', 10) || 55000;
 
 // How long background work is allowed to keep running after a turn ends. This drives
@@ -414,12 +457,10 @@ function addSession(
   );
   if (superseding && existing) {
     supersededInstances.add(existing.instance);
-    Promise.resolve()
-      .then(() => existing.instance.interrupt())
-      .catch((error) => {
-        console.error(`Error interrupting superseded run for session ${sessionId}:`, error?.message || error);
+    void stopQueryInstance(existing.instance, existing.releaseInput, `superseded run for session ${sessionId}`)
+      .then((stopped) => {
+        if (!stopped) console.error(`Superseded run for session ${sessionId} could not be stopped`);
       });
-    existing.releaseInput?.();
     // Whatever the superseded process had outstanding dies with it and will
     // never report, so the new run starts from an empty task set.
     backgroundWork.clear(sessionId);
@@ -1091,6 +1132,10 @@ async function queryClaudeSDK(
   // Hoisted above the try so the catch's cleanup can tell whether this run
   // still owns the activeSessions entry (or was superseded by a newer run).
   let queryInstance: ClaudeQuery | null = null;
+  // Kills this run's CLI process when an interrupt is not enough (see stopQueryInstance).
+  const processAbort = new AbortController();
+  let markRunFinished: () => void = () => {};
+  const runFinished = new Promise<void>((resolve) => { markRunFinished = resolve; });
 
   try {
     const resolvedModel = await context.resolveResumeModel(sessionId, options.model);
@@ -1234,7 +1279,7 @@ async function queryClaudeSDK(
     try {
       queryInstance = createQuery({
         prompt: heldPrompt.stream as AsyncIterable<SDKUserMessage>,
-        options: sdkOptions
+        options: { ...sdkOptions, abortController: processAbort }
       });
     } catch (hookError) {
       // Older/newer SDK versions may not accept hook shapes yet.
@@ -1247,9 +1292,10 @@ async function queryClaudeSDK(
       releasePromptStream = heldPrompt.release;
       queryInstance = createQuery({
         prompt: heldPrompt.stream as AsyncIterable<SDKUserMessage>,
-        options: sdkOptions
+        options: { ...sdkOptions, abortController: processAbort }
       });
     }
+    processControls.set(queryInstance, { kill: () => processAbort.abort(), finished: runFinished });
 
     // Track the query instance for abort capability
     if (sessionKey()) {
@@ -1504,6 +1550,7 @@ async function queryClaudeSDK(
       idleReleaseTimer = null;
     }
     releasePromptStream();
+    markRunFinished();
   }
 }
 
@@ -1527,12 +1574,13 @@ async function abortClaudeSDKSession(sessionId: string) {
     // terminal complete (the abort handler sends the aborted one).
     abortedSessionIds.add(sessionId);
 
-    // Call interrupt() on the query instance
-    await session.instance.interrupt();
-
-    // Release the held stdin stream; without this the CLI stays up for the rest
-    // of the post-turn hold even though the user cancelled.
-    session.releaseInput?.();
+    // Interrupt, release stdin, and make sure the process is actually gone
+    // (killing it if it ignores the interrupt) before anyone starts the next
+    // run on this session.
+    const stopped = await stopQueryInstance(session.instance, session.releaseInput, `abort of session ${sessionId}`);
+    if (!stopped) {
+      throw new Error('The Claude process did not stop');
+    }
 
     // Update session status
     session.status = 'aborted';

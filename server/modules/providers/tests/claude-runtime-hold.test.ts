@@ -7,6 +7,7 @@ import test from 'node:test';
 import { ClaudeSessionsProvider } from '@/modules/providers/list/claude/claude-sessions.provider.js';
 import { CLAUDE_PREDEFINED_MODELS } from '@/modules/providers/list/claude/claude-models.provider.js';
 import {
+  abortClaudeSDKSession,
   listClaudeSDKBackgroundWork,
   queryClaudeSDK,
   stopClaudeSDKTask,
@@ -306,4 +307,45 @@ test('a turn whose tool emits no task events still holds on the static rule', as
 
     assert.equal(script.released(), false, 'Monitor reports no task, so the launch rule decides');
   });
+});
+
+test('aborting a run whose process ignores the interrupt kills it before reporting success', async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'claude-runtime-kill-'));
+  let signal: AbortSignal | undefined;
+  let interrupts = 0;
+  // A CLI stuck mid-tool: answers nothing, keeps its stream open after stdin
+  // closes, and only ends when the SDK's abort controller kills it.
+  const createQuery: NonNullable<ProviderRuntimeContext['createQuery']> = ({ options }) => {
+    signal = (options as { abortController?: AbortController }).abortController?.signal;
+    const iterator = (async function* () {
+      yield { type: 'system', subtype: 'init', session_id: NATIVE_ID };
+      await new Promise<void>((resolve) => signal?.addEventListener('abort', () => resolve(), { once: true }));
+    })();
+    return Object.assign(iterator, {
+      interrupt: () => { interrupts += 1; return new Promise<void>(() => {}); },
+      stopTask: async () => {},
+    });
+  };
+  const sessions = new ClaudeSessionsProvider({ getLiveRunStartTime: () => null });
+  const context: ProviderRuntimeContext = {
+    resolveProviderSessionId: () => null,
+    resolveResumeModel: async () => undefined,
+    getProviderModels: async () => CLAUDE_PREDEFINED_MODELS as never,
+    normalizeMessage: (raw, sessionId) => sessions.normalizeMessage(raw, sessionId),
+    isProviderInstalled: async () => true,
+    createQuery,
+  };
+  const writer = { send: () => {}, userId: null };
+  try {
+    const done = queryClaudeSDK('hello', { sessionId: SESSION_ID, cwd }, writer as never, context);
+    await waitFor(() => signal !== undefined);
+    await settle();
+    const stopped = await abortClaudeSDKSession(SESSION_ID);
+    assert.equal(interrupts, 1, 'the graceful interrupt is tried first');
+    assert.equal(signal?.aborted, true, 'the process is killed when the interrupt does not stop it');
+    assert.equal(stopped, true, 'abort only reports success once the run has drained');
+    await done;
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
 });
