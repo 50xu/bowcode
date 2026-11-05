@@ -32,6 +32,39 @@ type SidebarRecentConversationsProps = {
   t: TFunction;
 };
 
+type RecencyGroupKey = 'today' | 'yesterday' | 'week' | 'older';
+
+const GROUP_FALLBACK_LABELS: Record<RecencyGroupKey, string> = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  week: 'Previous 7 days',
+  older: 'Older',
+};
+
+/**
+ * Buckets the (already newest-first) list by calendar day of last activity,
+ * keeping the server's order inside each bucket and dropping empty buckets.
+ */
+function groupByDay(conversations: RecentConversationListItem[], now: Date) {
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const day = 24 * 60 * 60 * 1000;
+  const keyFor = (lastActivity: string | null | undefined): RecencyGroupKey => {
+    const time = lastActivity ? new Date(lastActivity).getTime() : Number.NaN;
+    if (Number.isNaN(time)) return 'older';
+    if (time >= startOfToday) return 'today';
+    if (time >= startOfToday - day) return 'yesterday';
+    if (time >= startOfToday - 7 * day) return 'week';
+    return 'older';
+  };
+  const order: RecencyGroupKey[] = ['today', 'yesterday', 'week', 'older'];
+  const buckets = new Map<RecencyGroupKey, RecentConversationListItem[]>();
+  for (const conversation of conversations) {
+    const key = keyFor(conversation.lastActivity);
+    buckets.set(key, [...(buckets.get(key) ?? []), conversation]);
+  }
+  return order.filter((key) => buckets.has(key)).map((key) => ({ key, items: buckets.get(key)! }));
+}
+
 function RecentConversationSkeleton() {
   return (
     <div className="space-y-1 px-1" aria-label="Loading recent conversations">
@@ -96,17 +129,24 @@ export default function SidebarRecentConversations({
     );
   }
 
+  const groups = groupByDay(conversations, currentTime);
+
   return (
     <div className="px-1" data-testid="recent-conversations-list">
-      <div className="flex items-center justify-between px-2 pb-1.5 pt-0.5">
-        <span className="text-[11px] font-medium text-muted-foreground">
+      <div className="flex items-center justify-between px-2.5 pb-1 pt-0.5">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
           {t('recent.title', 'Recent conversations')}
         </span>
-        <span className="text-[10px] tabular-nums text-muted-foreground/70">{total}</span>
+        <span className="text-[11px] tabular-nums text-muted-foreground/60">{total}</span>
       </div>
 
-      <div className="hairline overflow-hidden rounded-xl bg-card">
-        {conversations.map((conversation) => {
+      {groups.map((group) => (
+        <section key={group.key} className="pb-1">
+          <h3 className="px-2.5 pb-0.5 pt-2 text-[11px] font-medium text-muted-foreground/70">
+            {t(`recent.groups.${group.key}`, GROUP_FALLBACK_LABELS[group.key])}
+          </h3>
+          <div className="space-y-0.5">
+        {group.items.map((conversation) => {
           const isSelected = String(selectedSession?.id ?? '') === conversation.sessionId;
           const age = formatCompactAge(conversation.lastActivity, currentTime);
           const hasBackgroundWork = sessionActions.backgroundSessionIds.has(conversation.sessionId);
@@ -131,7 +171,7 @@ export default function SidebarRecentConversations({
           };
 
           return (
-            <div key={conversation.sessionId} className="group relative border-b border-border last:border-b-0">
+            <div key={conversation.sessionId} className="group relative">
               {/*
                 * Only the amber "needs attention" dot, and the spinner below. The
                 * Projects row also has a green dot for a session touched recently,
@@ -157,24 +197,22 @@ export default function SidebarRecentConversations({
                 onClick={handleClick}
                 data-testid="recent-conversation-row"
                 className={cn(
-                  'flex min-h-11 min-w-0 items-center gap-2 px-2 py-2 pr-11 text-left transition-colors',
-                  isSelected
-                    ? 'bg-primary/10 text-foreground'
-                    : 'text-foreground hover:bg-accent/60',
+                  'flex h-12 min-w-0 items-center gap-2.5 rounded-lg px-2 pr-10 text-left transition-colors md:h-11',
+                  isSelected ? 'bg-primary/10' : 'hover:bg-accent',
                 )}
               >
-                <span className={cn(
-                  'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md',
-                  isSelected ? 'bg-primary/10' : 'bg-muted/60',
-                )}>
+                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted">
                   <LLMProviderLogo provider={conversation.provider} className="h-3.5 w-3.5" />
                 </span>
 
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[17px] font-normal leading-5">
+                  <span className={cn(
+                    'block truncate text-sm font-medium leading-5 max-md:text-[15px]',
+                    isSelected ? 'text-primary' : 'text-foreground',
+                  )}>
                     {conversation.sessionTitle}
                   </span>
-                  <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[13px] leading-4 text-muted-foreground">
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs leading-4 text-muted-foreground/90">
                     <span className="truncate">{conversation.projectDisplayName}</span>
                     {isProcessing ? (
                       <>
@@ -209,7 +247,7 @@ export default function SidebarRecentConversations({
               </a>
 
               <SessionOptions
-                className="absolute right-2 top-1/2 -translate-y-1/2 transform"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 transform transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
                 sessionId={conversation.sessionId}
                 sessionName={conversation.sessionTitle}
                 provider={conversation.provider}
@@ -237,7 +275,9 @@ export default function SidebarRecentConversations({
             </div>
           );
         })}
-      </div>
+          </div>
+        </section>
+      ))}
 
       {hasMore && (
         <Button

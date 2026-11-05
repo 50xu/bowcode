@@ -147,7 +147,13 @@
     "emptyDescription": "Your most recently updated conversations will appear here.",
     "loadFailed": "Could not load recent conversations",
     "loadMore": "Load older conversations",
-    "loadingMore": "Loading more..."
+    "loadingMore": "Loading more...",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "week": "Previous 7 days",
+      "older": "Older"
+    }
   },
   "deleteConfirmation": {
     "deleteProject": "Remove Project",
