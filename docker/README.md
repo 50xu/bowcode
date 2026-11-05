@@ -3,7 +3,7 @@
 
 # Sandboxed coding agents with a web & mobile IDE (Bowcode)
 
-[Docker Sandbox](https://docs.docker.com/ai/sandboxes/) templates that add [Bowcode](https://github.com/vantran-se/bowcode) on top of Claude Code and Codex. You get a full web and mobile IDE accessible from any browser on any device.
+[Docker Sandbox](https://docs.docker.com/ai/sandboxes/) templates that add [Bowcode](https://github.com/50xu/bowcode) on top of Claude Code and Codex. You get a full web and mobile IDE accessible from any browser on any device.
 
 ## Get started
 
@@ -146,7 +146,7 @@ The web UI itself doesn't need a policy — access it via `sbx ports`.
 
 ## Links
 
-- [Bowcode source and issues](https://github.com/vantran-se/bowcode)
+- [Bowcode source and issues](https://github.com/50xu/bowcode)
 - [Documentation](../README.md)
 
 ## License

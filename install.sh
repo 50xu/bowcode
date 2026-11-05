@@ -49,7 +49,7 @@ if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1 ||
   exit 1
 fi
 
-BASE='https://github.com/vantran-se/bowcode/releases'
+BASE='https://github.com/50xu/bowcode/releases'
 if [[ -n "$VERSION" ]]; then
   URL="$BASE/download/$VERSION/bowcode-${VERSION#v}.tgz"
 else

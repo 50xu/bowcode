@@ -155,10 +155,10 @@ Environment Variables:
   CONTEXT_WINDOW      Fallback context window size (default: 160000)
 
 Documentation:
-  ${dependencies.packageMetadata.homepage || 'https://github.com/vantran-se/bowcode'}
+  ${dependencies.packageMetadata.homepage || 'https://github.com/50xu/bowcode'}
 
 Report Issues:
-  ${dependencies.packageMetadata.bugsUrl || 'https://github.com/vantran-se/bowcode/issues'}
+  ${dependencies.packageMetadata.bugsUrl || 'https://github.com/50xu/bowcode/issues'}
 `);
 }
 

@@ -8,8 +8,8 @@
 
 A self-hosted web app for driving **Claude Code**, **Codex** and **OpenCode** on your own machine from any browser, including your phone.
 
-[![Release](https://img.shields.io/github/v/release/vantran-se/bowcode?color=2563eb&label=release)](https://github.com/vantran-se/bowcode/releases/latest)
-[![Release workflow](https://img.shields.io/github/actions/workflow/status/vantran-se/bowcode/release.yml?label=build)](https://github.com/vantran-se/bowcode/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/50xu/bowcode?color=2563eb&label=release)](https://github.com/50xu/bowcode/releases/latest)
+[![Release workflow](https://img.shields.io/github/actions/workflow/status/50xu/bowcode/release.yml?label=build)](https://github.com/50xu/bowcode/actions/workflows/release.yml)
 ![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-555)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](LICENSE)
 
@@ -77,7 +77,7 @@ Per-agent permission modes, MCP servers, skills and models, plus web push and de
 You need **Linux or macOS**, **Node.js 22+**, and at least one agent CLI installed and signed in ([Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex) or [OpenCode](https://opencode.ai)).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vantran-se/bowcode/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/50xu/bowcode/main/install.sh | bash
 ```
 
 The installer:
@@ -93,13 +93,13 @@ Open it, create your account, and you're in.
 
 ```bash
 # pin a version, change the port, or skip the background service
-curl -fsSL https://raw.githubusercontent.com/vantran-se/bowcode/main/install.sh | bash -s -- --version v1.38.0 --port 8080 --no-service
+curl -fsSL https://raw.githubusercontent.com/50xu/bowcode/main/install.sh | bash -s -- --version v1.38.0 --port 8080 --no-service
 ```
 
 Without the script:
 
 ```bash
-npm install -g https://github.com/vantran-se/bowcode/releases/latest/download/bowcode.tgz \
+npm install -g https://github.com/50xu/bowcode/releases/latest/download/bowcode.tgz \
   --allow-scripts=bowcode,bcrypt,better-sqlite3,node-pty
 bowcode service install --port 3001     # or run in the foreground: bowcode start
 ```
@@ -132,7 +132,7 @@ bowcode status                     show configuration and paths
 ## Run from source
 
 ```bash
-git clone https://github.com/vantran-se/bowcode.git && cd bowcode
+git clone https://github.com/50xu/bowcode.git && cd bowcode
 npm ci && npm run build
 npm run server          # production build on :3001
 npm run dev             # or hot-reload development

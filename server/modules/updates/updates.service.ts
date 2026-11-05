@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { isNewerVersion } from '@/shared/utils.js';
 
-const RELEASES_URL = 'https://api.github.com/repos/vantran-se/bowcode/releases/latest';
+const RELEASES_URL = 'https://api.github.com/repos/50xu/bowcode/releases/latest';
 
 type Release = { tag_name?: string; html_url?: string };
 type UpdatesDependencies = {

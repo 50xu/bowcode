@@ -21,13 +21,13 @@
   "engines": {
     "node": ">=22"
   },
-  "homepage": "https://github.com/vantran-se/bowcode",
+  "homepage": "https://github.com/50xu/bowcode",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vantran-se/bowcode.git"
+    "url": "git+https://github.com/50xu/bowcode.git"
   },
   "bugs": {
-    "url": "https://github.com/vantran-se/bowcode/issues"
+    "url": "https://github.com/50xu/bowcode/issues"
   },
   "scripts": {
     "dev": "concurrently --kill-others \"npm run server:dev\" \"npm run client\"",

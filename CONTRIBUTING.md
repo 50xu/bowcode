@@ -4,8 +4,8 @@ Thanks for your interest in contributing to Bowcode! Before you start, please ta
 
 ## Before You Start
 
-- **Search first.** Check [existing issues](https://github.com/vantran-se/bowcode/issues) and [pull requests](https://github.com/vantran-se/bowcode/pulls) to avoid duplicating work.
-- **Discuss first** for new features. Open an [issue](https://github.com/vantran-se/bowcode/issues/new) to discuss your idea before investing time in implementation. We may already have plans or opinions on how it should work.
+- **Search first.** Check [existing issues](https://github.com/50xu/bowcode/issues) and [pull requests](https://github.com/50xu/bowcode/pulls) to avoid duplicating work.
+- **Discuss first** for new features. Open an [issue](https://github.com/50xu/bowcode/issues/new) to discuss your idea before investing time in implementation. We may already have plans or opinions on how it should work.
 - **Bug fixes are always welcome.** If you spot a bug, feel free to open a PR directly.
 
 ## Prerequisites

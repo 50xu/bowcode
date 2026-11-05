@@ -30,7 +30,7 @@ try {
   run('git', ['tag', '-a', tag, '-m', `Bowcode ${tag}`]);
   run('git', ['push', 'origin', 'main']);
   run('git', ['push', 'origin', tag]);
-  console.log(`Release workflow: https://github.com/vantran-se/bowcode/actions/workflows/release.yml`);
+  console.log(`Release workflow: https://github.com/50xu/bowcode/actions/workflows/release.yml`);
   console.log(`Tag: ${tag}`);
 } catch (error) {
   console.error(error.message);

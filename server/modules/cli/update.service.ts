@@ -32,7 +32,7 @@ export function createUpdateCommand(deps: UpdateDependencies) {
     let latest: string | null = null;
     if (!requested || checkOnly) {
       try {
-        const result = await deps.fetchRelease('https://api.github.com/repos/vantran-se/bowcode/releases/latest');
+        const result = await deps.fetchRelease('https://api.github.com/repos/50xu/bowcode/releases/latest');
         if (result.ok) latest = (await result.json()).tag_name?.replace(/^v/, '') ?? null;
         else if (result.status !== 404) throw new Error(`GitHub returned ${result.status}`);
       } catch (error) {
@@ -65,7 +65,7 @@ export function createUpdateCommand(deps: UpdateDependencies) {
       return 1;
     }
     const prefix = deps.root.slice(0, -suffix.length).replace(/\/$/, '');
-    const url = `https://github.com/vantran-se/bowcode/releases/download/v${target}/bowcode-${target}.tgz`;
+    const url = `https://github.com/50xu/bowcode/releases/download/v${target}/bowcode-${target}.tgz`;
     try {
       const result = await deps.spawn('npm', ['install', '-g', '--prefix', prefix, url, '--allow-scripts=bowcode,bcrypt,better-sqlite3,node-pty', '--no-fund', '--no-audit']);
       if (result !== 0) return result;
