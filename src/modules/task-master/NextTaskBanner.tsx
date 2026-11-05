@@ -142,7 +142,7 @@ export default function NextTaskBanner({ onShowAllTasks = null, onStartTask = nu
               <p className="line-clamp-1 text-sm font-medium text-slate-900 dark:text-slate-100">{nextTask.title}</p>
             </div>
 
-            <div className="flex flex-shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               <button
                 onClick={() => onStartTask?.()}
                 className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"

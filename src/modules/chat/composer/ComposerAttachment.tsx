@@ -41,14 +41,14 @@ const ComposerAttachment = ({ file, onRemove, error }: ComposerAttachmentProps) 
           type="button"
           onClick={() => preview && setExpanded(true)}
           aria-label={`Expand ${file.name}`}
-          className="block overflow-hidden rounded-xl border border-border/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+          className="block overflow-hidden rounded-xl border border-border/50 shadow-xs focus:outline-hidden focus:ring-2 focus:ring-primary/60"
         >
           {preview
             ? <img src={preview} alt={file.name} className="h-20 w-20 cursor-zoom-in object-cover" />
             : <div className="h-20 w-20 animate-pulse bg-muted" />}
         </button>
       ) : (
-        <div className="flex h-20 w-56 max-w-full items-center gap-3 rounded-xl border border-border/50 bg-background/80 px-3 shadow-sm">
+        <div className="flex h-20 w-56 max-w-full items-center gap-3 rounded-xl border border-border/50 bg-background/80 px-3 shadow-xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <FileIcon className="h-5 w-5" aria-hidden />
           </div>
@@ -68,7 +68,7 @@ const ComposerAttachment = ({ file, onRemove, error }: ComposerAttachmentProps) 
       <button
         type="button"
         onClick={onRemove}
-        className="absolute -right-1.5 -top-1.5 rounded-full border border-border/40 bg-background/90 p-1 text-foreground shadow-sm backdrop-blur transition-opacity hover:bg-background focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        className="absolute -right-1.5 -top-1.5 rounded-full border border-border/40 bg-background/90 p-1 text-foreground shadow-xs backdrop-blur-xs transition-opacity hover:bg-background focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         aria-label={`Remove ${file.name}`}
       >
         <XIcon className="h-3 w-3" aria-hidden />

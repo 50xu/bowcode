@@ -42,7 +42,7 @@ export default function GithubAuthenticationCard({
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
       <div className="mb-4 flex items-start gap-3">
-        <Key className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+        <Key className="mt-0.5 h-5 w-5 shrink-0 text-gray-600 dark:text-gray-400" />
         <div className="flex-1">
           <h5 className="mb-1 font-medium text-gray-900 dark:text-white">
             {t('projectWizard.step2.githubAuth')}

@@ -108,14 +108,14 @@ export const TaskListContent: React.FC<TaskListContentProps> = ({ content }) => 
               key={task.id}
               className="group flex items-center gap-1.5 py-0.5"
             >
-              <span className="flex-shrink-0">{config.icon}</span>
-              <span className="flex-shrink-0 font-mono text-[11px] text-gray-400 dark:text-gray-500">
+              <span className="shrink-0">{config.icon}</span>
+              <span className="shrink-0 font-mono text-[11px] text-gray-400 dark:text-gray-500">
                 #{task.id}
               </span>
               <span className={`flex-1 truncate text-xs ${config.textClass}`}>
                 {task.subject}
               </span>
-              <span className={`flex-shrink-0 rounded border px-1 py-px text-[10px] ${config.badgeClass}`}>
+              <span className={`shrink-0 rounded border px-1 py-px text-[10px] ${config.badgeClass}`}>
                 {task.status.replace('_', ' ')}
               </span>
             </div>

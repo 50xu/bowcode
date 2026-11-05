@@ -15,7 +15,7 @@ type BrandMarkProps = {
 export function BrandMark({ size = 28, className }: BrandMarkProps) {
   return (
     <span
-      className={cn('inline-flex flex-shrink-0 items-center justify-center bg-[#2563eb] text-white shadow-sm', className)}
+      className={cn('inline-flex shrink-0 items-center justify-center bg-[#2563eb] text-white shadow-xs', className)}
       style={{ width: size, height: size, borderRadius: size * 0.25 }}
       aria-hidden
     >

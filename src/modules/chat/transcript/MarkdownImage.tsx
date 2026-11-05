@@ -137,7 +137,7 @@ export function MarkdownImage({ node: _node, src, alt, title }: MarkdownImagePro
         type="button"
         onClick={() => setExpanded(true)}
         aria-label={t('chat:misc.expandImage', { name: label })}
-        className="my-2 block max-w-full overflow-hidden rounded-xl border border-border/50 bg-muted/30 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+        className="my-2 block max-w-full overflow-hidden rounded-xl border border-border/50 bg-muted/30 shadow-xs focus:outline-hidden focus:ring-2 focus:ring-primary/60"
       >
         <img
           src={resolved}

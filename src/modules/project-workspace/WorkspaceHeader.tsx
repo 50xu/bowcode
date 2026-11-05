@@ -35,7 +35,7 @@ export default function WorkspaceHeader({
   const { t } = useTranslation();
 
   return (
-    <header className="hairline-bottom sticky top-0 z-30 flex flex-shrink-0 items-end bg-background/80 px-1 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 sm:px-3">
+    <header className="hairline-bottom sticky top-0 z-30 flex shrink-0 items-end bg-background/80 px-1 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 sm:px-3">
       <div className="flex h-11 w-full min-w-0 items-center gap-1">
         {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
         <div className="flex min-w-0 flex-1 items-center gap-1 sm:max-w-[min(38%,24rem)]">
@@ -50,7 +50,7 @@ export default function WorkspaceHeader({
           />
           <WorkspaceConnectionStatus />
         </div>
-        <div className="flex min-w-0 flex-shrink-0 items-center justify-end sm:ml-auto">
+        <div className="flex min-w-0 shrink-0 items-center justify-end sm:ml-auto">
           <WorkspaceTabs
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -63,7 +63,7 @@ export default function WorkspaceHeader({
             onClick={() => window.dispatchEvent(new Event('workspace:toggle-quick-settings'))}
             aria-label={t('quickSettings.title', { defaultValue: 'Quick settings' })}
             title={t('quickSettings.title', { defaultValue: 'Quick settings' })}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             <SlidersHorizontal className="h-[18px] w-[18px]" />
           </button>

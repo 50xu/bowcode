@@ -73,7 +73,7 @@ export default function SidebarHeader({
         : t('projects.searchPlaceholder');
 
   return (
-    <div className="flex-shrink-0">
+    <div className="shrink-0">
       {/* Desktop header */}
       <div
         className="hidden px-3 pb-3 pt-3 md:block"
@@ -82,7 +82,7 @@ export default function SidebarHeader({
         <div className="flex items-center justify-between gap-2">
           <LogoBlock t={t} />
 
-          <div className="flex flex-shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-0.5">
             <Button
               variant="ghost"
               size="sm"
@@ -181,7 +181,7 @@ export default function SidebarHeader({
         <div className="flex items-center justify-between">
           <LogoBlock t={t} />
 
-          <div className="flex flex-shrink-0 gap-1.5">
+          <div className="flex shrink-0 gap-1.5">
             <button
               className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-card text-muted-foreground transition-all active:scale-95"
               onClick={onRefresh}

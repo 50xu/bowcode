@@ -104,7 +104,7 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xs"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -153,7 +153,7 @@ function ChatMessageImage({ image, projectId }: { image: ChatImage; projectId?: 
         type="button"
         onClick={() => setExpanded(true)}
         aria-label={t('chat:misc.expandImage', { name: alt })}
-        className="block overflow-hidden rounded-xl border border-border/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+        className="block overflow-hidden rounded-xl border border-border/50 shadow-xs focus:outline-hidden focus:ring-2 focus:ring-primary/60"
       >
         <img
           src={src}

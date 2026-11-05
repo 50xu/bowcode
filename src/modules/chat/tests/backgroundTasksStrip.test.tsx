@@ -179,7 +179,7 @@ describe('the background tasks strip', () => {
     expect(progress.textContent).toBe(`· ${summary}`);
     expect(progress.className).toContain('truncate');
     expect(progress.className).toContain('min-w-0');
-    expect(progress.className).not.toContain('flex-shrink-0');
+    expect(progress.className).not.toContain('shrink-0');
     expect(chip.title).toBe(`Workflow · frontend-architecture-audit · ${summary}`);
     expect(chip.parentElement?.className).toContain('max-w-full');
   });

@@ -538,14 +538,14 @@ function ChatInterface({
           </TranscriptSessionContext.Provider>
         </MarkdownWorkspaceContext.Provider>
 
-        <div className="relative flex-shrink-0">
+        <div className="relative shrink-0">
           {isUserScrolledUp && chatMessages.length > 0 && (
             <div className="pointer-events-none absolute -top-11 left-0 right-0 z-20 flex justify-center">
               <button
                 type="button"
                 onClick={scrollToBottomAndReset}
                 aria-label={t('input.scrollToBottom', { defaultValue: 'Scroll to bottom' })}
-                className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-border/50 bg-card text-muted-foreground shadow-sm transition-all duration-200 hover:bg-accent hover:text-foreground"
+                className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-border/50 bg-card text-muted-foreground shadow-xs transition-all duration-200 hover:bg-accent hover:text-foreground"
                 title={t('input.scrollToBottom', { defaultValue: 'Scroll to bottom' })}
               >
                 <ArrowDownIcon className="h-4 w-4" aria-hidden />

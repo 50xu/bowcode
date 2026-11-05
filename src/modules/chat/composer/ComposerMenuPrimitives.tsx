@@ -79,7 +79,7 @@ export function ComposerMenuItem({
       onClick={onSelect}
       className={cn(
         'flex w-full items-start gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors',
-        'hover:bg-accent focus-visible:bg-accent focus-visible:outline-none',
+        'hover:bg-accent focus-visible:bg-accent focus-visible:outline-hidden',
         isSelected ? 'text-foreground' : 'text-foreground/90',
         className,
       )}

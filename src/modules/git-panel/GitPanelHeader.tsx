@@ -180,7 +180,7 @@ export default function GitPanelHeader({
                   value={branchSearchQuery}
                   onChange={(event) => setBranchSearchQuery(event.target.value)}
                   placeholder={t('git:header.searchBranches')}
-                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden"
                 />
                 {branchSearchQuery && (
                   <button

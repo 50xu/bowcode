@@ -116,7 +116,7 @@ export function TerminalSession({ projectPath, terminalId, active, searchOpen, f
           <input ref={searchInputRef} aria-label="Search terminal text" placeholder="Find in terminal" value={query}
             onChange={(event) => { setQuery(event.target.value); find(false, event.target.value); }}
             onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); onCloseSearch(); } else if (event.key === 'Enter') { event.preventDefault(); find(event.shiftKey); } }}
-            className="min-w-0 w-40 bg-transparent px-2 text-sm text-[#E6E9F0] outline-none placeholder:text-[#8A93A8]" />
+            className="min-w-0 w-40 bg-transparent px-2 text-sm text-[#E6E9F0] outline-hidden placeholder:text-[#8A93A8]" />
           <button type="button" aria-label="Previous match" className="p-1 text-[#8A93A8]" onClick={() => find(true)}><ChevronUp size={16} /></button>
           <button type="button" aria-label="Next match" className="p-1 text-[#8A93A8]" onClick={() => find(false)}><ChevronDown size={16} /></button>
           <button type="button" aria-label="Close search" className="p-1 text-[#8A93A8]" onClick={onCloseSearch}><X size={16} /></button>

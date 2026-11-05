@@ -80,7 +80,7 @@ export default function WorkspaceTitle({
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
       {showSessionIcon && (
-        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center">
           <LLMProviderLogo provider={selectedSession?.__provider} className="h-4 w-4" />
         </div>
       )}
@@ -102,7 +102,7 @@ export default function WorkspaceTitle({
                 aria-label={t('mainContent.renameSessionLabel')}
                 // Blur cancels, so a touch keyboard needs a key that commits.
                 enterKeyHint="done"
-                className="w-full max-w-md rounded border border-border bg-background px-1.5 py-0.5 text-sm font-semibold leading-tight text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full max-w-md rounded border border-border bg-background px-1.5 py-0.5 text-sm font-semibold leading-tight text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
               />
             ) : (
               <h2

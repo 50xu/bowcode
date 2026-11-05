@@ -115,7 +115,7 @@ export default function SessionOptions({
               }
             }}
             onClick={(event) => event.stopPropagation()}
-            className="w-32 rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-32 rounded border border-border bg-background px-2 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
             autoFocus
           />
           <button

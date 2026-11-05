@@ -23,7 +23,7 @@ export default function PrdEditorFooter({ content }: PrdEditorFooterProps) {
   const stats = useMemo(() => getContentStats(content), [content]);
 
   return (
-    <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
+    <div className="flex shrink-0 items-center justify-between border-t border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
         <span>Lines: {stats.lines}</span>
         <span>Characters: {stats.characters}</span>

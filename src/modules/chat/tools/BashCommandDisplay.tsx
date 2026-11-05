@@ -76,10 +76,10 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
   return (
     <div
       className={cn(
-        'group/cmd overflow-hidden rounded-lg border bg-muted/40 backdrop-blur-sm transition-all duration-200',
+        'group/cmd overflow-hidden rounded-lg border bg-muted/40 backdrop-blur-xs transition-all duration-200',
         isError ? 'border-red-500/30' : 'border-border/60',
         hasOutput && !open && 'hover:border-border hover:bg-muted/60',
-        open && 'bg-muted/50 shadow-sm',
+        open && 'bg-muted/50 shadow-xs',
       )}
     >
       {/* Command header — clickable when there is output to expand */}
@@ -95,18 +95,18 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
           }
         }}
         className={cn(
-          'flex items-center gap-2 px-2.5 py-1.5 outline-none',
+          'flex items-center gap-2 px-2.5 py-1.5 outline-hidden',
           hasOutput && 'cursor-pointer focus-visible:ring-1 focus-visible:ring-ring',
         )}
       >
         <ChevronRight
           className={cn(
-            'h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70 transition-transform duration-200',
+            'h-3.5 w-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-200',
             open && 'rotate-90',
             !hasOutput && 'opacity-0',
           )}
         />
-        <span className="flex-shrink-0 select-none font-mono text-xs font-semibold text-emerald-500 dark:text-emerald-400">
+        <span className="shrink-0 select-none font-mono text-xs font-semibold text-emerald-500 dark:text-emerald-400">
           $
         </span>
         {/* Not a <code> tag: the global `.chat-message code` rule forces
@@ -122,11 +122,11 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
         </span>
 
         {isRunning && (
-          <span className="h-2.5 w-2.5 flex-shrink-0 animate-spin rounded-full border-[1.5px] border-muted-foreground/30 border-t-emerald-400" />
+          <span className="h-2.5 w-2.5 shrink-0 animate-spin rounded-full border-[1.5px] border-muted-foreground/30 border-t-emerald-400" />
         )}
-        {status && status !== 'running' && <ToolStatusBadge status={status} className="flex-shrink-0" />}
+        {status && status !== 'running' && <ToolStatusBadge status={status} className="shrink-0" />}
         {!open && hasOutput && !isRunning && (
-          <span className="flex-shrink-0 text-[10px] tabular-nums text-muted-foreground/70 transition-opacity group-hover/cmd:opacity-0">
+          <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/70 transition-opacity group-hover/cmd:opacity-0">
             {outputLineCount} {outputLineCount === 1 ? 'line' : 'lines'}
           </span>
         )}
@@ -134,7 +134,7 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
         <button
           onClick={handleCopy}
           onKeyDown={(event) => event.stopPropagation()}
-          className="flex-shrink-0 rounded p-0.5 text-muted-foreground/60 opacity-0 transition-all hover:bg-foreground/10 hover:text-foreground focus:opacity-100 group-hover/cmd:opacity-100"
+          className="shrink-0 rounded p-0.5 text-muted-foreground/60 opacity-0 transition-all hover:bg-foreground/10 hover:text-foreground focus:opacity-100 group-hover/cmd:opacity-100"
           title={t('chat:misc.copyCommand')}
           aria-label={t('chat:misc.copyCommand')}
         >

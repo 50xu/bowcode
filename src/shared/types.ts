@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { CSSProperties } from 'react';
-import type { NavigateFunction } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 
 //----------------- LLM PROVIDER MODEL CATALOG ------------
 

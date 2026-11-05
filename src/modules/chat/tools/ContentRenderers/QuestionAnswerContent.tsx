@@ -66,7 +66,7 @@ export const QuestionAnswerContent: React.FC<QuestionAnswerContentProps> = ({
               onClick={() => setExpandedIdx(isExpanded ? null : idx)}
               className="flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
             >
-              <div className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full ${
+              <div className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
                 answerLabels.length > 0
                   ? 'bg-blue-100 dark:bg-blue-900/40'
                   : 'bg-gray-100 dark:bg-gray-800'
@@ -124,7 +124,7 @@ export const QuestionAnswerContent: React.FC<QuestionAnswerContentProps> = ({
               </div>
 
               <svg
-                className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform duration-200 dark:text-gray-500 ${
+                className={`mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 dark:text-gray-500 ${
                   isExpanded ? 'rotate-180' : ''
                 }`}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
@@ -147,7 +147,7 @@ export const QuestionAnswerContent: React.FC<QuestionAnswerContentProps> = ({
                             : 'text-gray-400 dark:text-gray-500'
                         }`}
                       >
-                        <div className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${q.multiSelect ? 'rounded-[3px]' : 'rounded-full'} flex items-center justify-center border-[1.5px] ${
+                        <div className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${q.multiSelect ? 'rounded-[3px]' : 'rounded-full'} flex items-center justify-center border-[1.5px] ${
                           wasSelected
                             ? 'border-blue-500 bg-blue-500 dark:border-blue-400 dark:bg-blue-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -179,7 +179,7 @@ export const QuestionAnswerContent: React.FC<QuestionAnswerContentProps> = ({
                       key={lbl}
                       className="flex items-start gap-2 rounded-lg border border-blue-200/60 bg-blue-50/80 px-2.5 py-1.5 text-[12px] dark:border-blue-800/40 dark:bg-blue-900/20"
                     >
-                      <div className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${q.multiSelect ? 'rounded-[3px]' : 'rounded-full'} flex items-center justify-center border-[1.5px] border-blue-500 bg-blue-500 dark:border-blue-400 dark:bg-blue-500`}>
+                      <div className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${q.multiSelect ? 'rounded-[3px]' : 'rounded-full'} flex items-center justify-center border-[1.5px] border-blue-500 bg-blue-500 dark:border-blue-400 dark:bg-blue-500`}>
                         <svg className="h-2 w-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>

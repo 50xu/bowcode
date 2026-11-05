@@ -190,7 +190,7 @@ function SidebarProjectItem({
                     onCancelEditingProject();
                   }
                 }}
-                className="w-full rounded border border-primary bg-background px-1 text-sm text-foreground focus:outline-none max-md:text-base"
+                className="w-full rounded border border-primary bg-background px-1 text-sm text-foreground focus:outline-hidden max-md:text-base"
                 placeholder={t('projects.projectNamePlaceholder')} autoFocus autoComplete="off"
               />
             ) : (

@@ -31,9 +31,9 @@ export default function WorkspaceConnectionStatus() {
         <span
           aria-hidden="true"
           title={description}
-          className="inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300"
+          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300"
         >
-          <WifiOff className="h-3.5 w-3.5 flex-shrink-0" />
+          <WifiOff className="h-3.5 w-3.5 shrink-0" />
           <span className="sm:hidden xl:inline">{t('status.reconnecting')}</span>
         </span>
       )}

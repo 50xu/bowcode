@@ -107,7 +107,7 @@ function SchedulesDialogBody({ projects, onOpenSession, onClose }: {
     <>
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
         <div className="flex min-w-0 items-center gap-2">
-          <CalendarClock className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
           <DialogTitle className="not-sr-only text-base font-semibold">{t('title')}</DialogTitle>
         </div>
         <Button size="sm" onClick={() => setView({ kind: 'editor', schedule: null })}>

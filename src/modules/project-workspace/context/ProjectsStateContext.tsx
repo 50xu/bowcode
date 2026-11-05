@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { NavigateFunction } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 
 import { useProjectsState } from '@/modules/project-workspace/hooks/useProjectsState';
 import type { IsSessionProcessing,ServerEvent } from '@/shared/types';

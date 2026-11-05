@@ -305,12 +305,12 @@ const WorkflowAgentRowView = memo(({ agent, timelineAddress, onFileOpen, createD
 
   const summary = (
     <>
-      <span className={cn('h-1.5 w-1.5 flex-shrink-0 rounded-full', AGENT_STATUS_STYLES[agent.status])} />
+      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', AGENT_STATUS_STYLES[agent.status])} />
       <span className={cn('min-w-0 truncate', agent.status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
         {describeWorkflowAgent(agent)}
       </span>
-      {agent.phase && <span className="flex-shrink-0 text-muted-foreground/70">· {agent.phase}</span>}
-      <span className="ml-auto flex-shrink-0 text-[11px] text-muted-foreground/70">
+      {agent.phase && <span className="shrink-0 text-muted-foreground/70">· {agent.phase}</span>}
+      <span className="ml-auto shrink-0 text-[11px] text-muted-foreground/70">
         {t(`workflow.agentStatus.${agent.status}`, agent.status)}
       </span>
     </>
@@ -325,7 +325,7 @@ const WorkflowAgentRowView = memo(({ agent, timelineAddress, onFileOpen, createD
           onClick={() => setIsOpen((previous) => !previous)}
           className="flex w-full items-center gap-1.5 text-left hover:text-foreground"
         >
-          <ChevronRight className={cn('h-3 w-3 flex-shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
+          <ChevronRight className={cn('h-3 w-3 shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
           {summary}
         </button>
       ) : (
@@ -340,8 +340,8 @@ const WorkflowAgentRowView = memo(({ agent, timelineAddress, onFileOpen, createD
               {agent.lastToolSummary && `: ${agent.lastToolSummary}`}
             </span>
           )}
-          {agent.tokens !== undefined && <span className="flex-shrink-0">{t('workflow.agentTokens', '{{tokens}} tokens', { tokens: formatTokenCount(agent.tokens) })}</span>}
-          {agent.toolCalls !== undefined && <span className="flex-shrink-0">{t('workflow.agentToolCalls', { count: agent.toolCalls, defaultValue_one: '{{count}} tool call', defaultValue_other: '{{count}} tool calls' })}</span>}
+          {agent.tokens !== undefined && <span className="shrink-0">{t('workflow.agentTokens', '{{tokens}} tokens', { tokens: formatTokenCount(agent.tokens) })}</span>}
+          {agent.toolCalls !== undefined && <span className="shrink-0">{t('workflow.agentToolCalls', { count: agent.toolCalls, defaultValue_one: '{{count}} tool call', defaultValue_other: '{{count}} tool calls' })}</span>}
         </div>
       )}
 
@@ -444,17 +444,17 @@ export const WorkflowPanel = memo(({ toolInput, toolResult, workflow, taskStatus
         onClick={() => setIsOpen((previous) => !previous)}
         className="flex w-full select-none items-center gap-1.5 py-0.5 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ChevronRight className={cn('h-3 w-3 flex-shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
-        <Workflow className="h-3.5 w-3.5 flex-shrink-0 text-purple-500 dark:text-purple-400" />
-        <span className="flex-shrink-0 font-medium text-foreground">{t('workflow.title', 'Workflow')}</span>
+        <ChevronRight className={cn('h-3 w-3 shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
+        <Workflow className="h-3.5 w-3.5 shrink-0 text-purple-500 dark:text-purple-400" />
+        <span className="shrink-0 font-medium text-foreground">{t('workflow.title', 'Workflow')}</span>
         {name && (
           <>
-            <span className="flex-shrink-0 text-[10px] text-muted-foreground/40">/</span>
-            <span className="flex-shrink-0 font-medium">{name}</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground/40">/</span>
+            <span className="shrink-0 font-medium">{name}</span>
           </>
         )}
         {description && <span className="min-w-0 flex-1 truncate">{description}</span>}
-        <span className={cn('ml-auto flex flex-shrink-0 items-center gap-1 text-[11px]', STATUS_STYLES[status])}>
+        <span className={cn('ml-auto flex shrink-0 items-center gap-1 text-[11px]', STATUS_STYLES[status])}>
           {status === 'running' ? (
             <>
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-500 dark:bg-purple-400" />

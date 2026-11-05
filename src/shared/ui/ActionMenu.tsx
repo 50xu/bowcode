@@ -207,7 +207,7 @@ export function ActionMenu({
               onClick={() => runItem(item)}
               className={cn(
                 'flex w-full items-start gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors',
-                'focus:outline-none focus-visible:bg-accent',
+                'focus:outline-hidden focus-visible:bg-accent',
                 item.disabled || item.loading
                   ? 'cursor-not-allowed opacity-50'
                   : item.isDanger
@@ -216,9 +216,9 @@ export function ActionMenu({
               )}
             >
               {item.loading ? (
-                <Loader2 className="mt-0.5 h-4 w-4 flex-shrink-0 animate-spin" />
+                <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
               ) : (
-                Icon && <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                Icon && <Icon className="mt-0.5 h-4 w-4 shrink-0" />
               )}
               <span className="min-w-0 flex-1">
                 <span className="block font-medium leading-5">{item.label}</span>

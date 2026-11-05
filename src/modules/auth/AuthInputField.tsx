@@ -57,7 +57,7 @@ export default function AuthInputField({
           autoComplete={autoComplete}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className={`w-full rounded-xl border border-border bg-background/60 py-2.5 text-foreground shadow-sm transition-colors placeholder:text-muted-foreground/60 hover:border-foreground/20 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`w-full rounded-xl border border-border bg-background/60 py-2.5 text-foreground shadow-xs transition-colors placeholder:text-muted-foreground/60 hover:border-foreground/20 focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60 ${
             Icon ? 'pl-10' : 'pl-3.5'
           } ${isPasswordField ? 'pr-11' : 'pr-3.5'}`}
           placeholder={placeholder}
@@ -70,7 +70,7 @@ export default function AuthInputField({
             onClick={() => setIsPasswordVisible((previous) => !previous)}
             disabled={isDisabled}
             aria-label={isPasswordVisible ? t('misc.hide') : t('misc.show')}
-            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
           >
             {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>

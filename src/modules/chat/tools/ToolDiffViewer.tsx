@@ -57,7 +57,7 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
             {filePath}
           </span>
         )}
-        <span className={`rounded px-1.5 py-px text-[10px] font-medium ${badgeClasses} ml-2 flex-shrink-0`}>
+        <span className={`rounded px-1.5 py-px text-[10px] font-medium ${badgeClasses} ml-2 shrink-0`}>
           {badge}
         </span>
       </div>
@@ -67,7 +67,7 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
         {diffLines.map((diffLine, i) => (
           <div key={i} className="flex">
             <span
-              className={`w-6 flex-shrink-0 select-none text-center ${
+              className={`w-6 shrink-0 select-none text-center ${
                 diffLine.type === 'removed'
                   ? 'bg-red-50 text-red-400 dark:bg-red-950/30 dark:text-red-500'
                   : 'bg-green-50 text-green-400 dark:bg-green-950/30 dark:text-green-500'

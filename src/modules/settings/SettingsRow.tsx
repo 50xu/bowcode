@@ -27,7 +27,7 @@ export default function SettingsRow({ label, description, children, className, s
           <div className="mt-0.5 text-sm text-muted-foreground">{description}</div>
         )}
       </div>
-      <div className={cn('flex-shrink-0', stacked && 'w-full sm:w-72')}>{children}</div>
+      <div className={cn('shrink-0', stacked && 'w-full sm:w-72')}>{children}</div>
     </div>
   );
 }

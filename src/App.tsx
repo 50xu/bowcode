@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router';
 import { I18nextProvider } from 'react-i18next';
 
 import { ThemeProvider } from '@/shared/context/ThemeContext';

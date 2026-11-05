@@ -22,7 +22,7 @@ function ToggleSwitch({ checked, onChange, ariaLabel }: { checked: boolean; onCh
           relative h-5 w-9 rounded-full bg-muted transition-colors
           duration-200 after:absolute
           after:left-[2px] after:top-[2px] after:h-4 after:w-4
-          after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-200
+          after:rounded-full after:bg-white after:shadow-xs after:transition-transform after:duration-200
           after:content-[''] peer-checked:bg-emerald-500
           peer-checked:after:translate-x-4
         `}
@@ -85,13 +85,13 @@ function PluginCard({
       }}
     >
       {/* Left accent bar */}
-      <div className={`w-[3px] flex-shrink-0 ${accentColor} transition-colors duration-300`} />
+      <div className={`w-[3px] shrink-0 ${accentColor} transition-colors duration-300`} />
 
       <div className="min-w-0 flex-1 p-4">
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="h-5 w-5 flex-shrink-0 text-foreground/80">
+            <div className="h-5 w-5 shrink-0 text-foreground/80">
               <PluginIcon
                 pluginName={plugin.name}
                 iconFile={plugin.icon}
@@ -140,7 +140,7 @@ function PluginCard({
           </div>
 
           {/* Controls */}
-          <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={onUpdate}
               disabled={updating || !plugin.repoUrl}
@@ -197,7 +197,7 @@ function PluginCard({
         {/* Update error */}
         {updateError && (
           <div className="mt-2 flex items-center gap-1.5 text-sm text-red-500">
-            <ServerCrash className="h-3.5 w-3.5 flex-shrink-0" />
+            <ServerCrash className="h-3.5 w-3.5 shrink-0" />
             <span>{updateError}</span>
           </div>
         )}
@@ -295,7 +295,7 @@ export default function PluginSettingsTab() {
 
       {/* Install from Git — compact */}
       <div className="flex items-center gap-0 overflow-hidden rounded-lg border border-border bg-card">
-        <span className="flex-shrink-0 pl-3 pr-1 text-muted-foreground/40">
+        <span className="shrink-0 pl-3 pr-1 text-muted-foreground/40">
           <GitBranch className="h-3.5 w-3.5" />
         </span>
         <input
@@ -307,7 +307,7 @@ export default function PluginSettingsTab() {
           }}
           placeholder={t('pluginSettings.installPlaceholder')}
           aria-label={t('pluginSettings.installAriaLabel')}
-          className="flex-1 bg-transparent px-2 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+          className="flex-1 bg-transparent px-2 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden"
           onKeyDown={(e) => {
             if (e.key === 'Enter') void handleInstall();
           }}
@@ -315,7 +315,7 @@ export default function PluginSettingsTab() {
         <button
           onClick={handleInstall}
           disabled={installing || !gitUrl.trim()}
-          className="flex-shrink-0 border-l border-border bg-foreground px-4 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-30"
+          className="shrink-0 border-l border-border bg-foreground px-4 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-30"
         >
           {installing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -330,7 +330,7 @@ export default function PluginSettingsTab() {
       )}
 
       <p className="-mt-4 flex items-start gap-1.5 text-xs leading-snug text-muted-foreground/50">
-        <ShieldAlert className="mt-px h-3 w-3 flex-shrink-0" />
+        <ShieldAlert className="mt-px h-3 w-3 shrink-0" />
         <span>
           {t('pluginSettings.securityWarning')}
         </span>

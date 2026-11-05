@@ -14,7 +14,7 @@ export default function MobileMenuButton({ onMenuClick, compact = false }: Mobil
 
   const buttonClasses = compact
     ? 'flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground rounded-[10px] hover:bg-accent pwa-menu-button'
-    : 'flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground rounded-[10px] hover:bg-accent touch-manipulation active:scale-95 pwa-menu-button flex-shrink-0';
+    : 'flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground rounded-[10px] hover:bg-accent touch-manipulation active:scale-95 pwa-menu-button shrink-0';
 
   return (
     <button

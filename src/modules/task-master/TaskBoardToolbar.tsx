@@ -111,7 +111,7 @@ export default function TaskBoardToolbar({
               className={cn(
                 'p-2 rounded-md',
                 viewMode === 'kanban'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
               )}
               title={t('views.kanban')}
@@ -124,7 +124,7 @@ export default function TaskBoardToolbar({
               className={cn(
                 'p-2 rounded-md',
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
               )}
               title={t('views.list')}
@@ -137,7 +137,7 @@ export default function TaskBoardToolbar({
               className={cn(
                 'p-2 rounded-md',
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
               )}
               title={t('views.grid')}

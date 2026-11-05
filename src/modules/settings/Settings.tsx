@@ -151,7 +151,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
 
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm md:p-6"
+      className="modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-xs md:p-6"
       onMouseDown={handleBackdropMouseDown}
       onClick={handleBackdropClick}
     >
@@ -168,7 +168,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
           {/* Phone, first screen: the grouped list of pages. */}
           {showMobileList && (
             <div className="flex min-h-0 flex-1 flex-col md:hidden">
-              <div className="flex h-12 flex-shrink-0 items-center justify-end px-2">
+              <div className="flex h-12 shrink-0 items-center justify-end px-2">
                 <button
                   type="button"
                   onClick={onClose}
@@ -186,7 +186,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
 
           <div className={cn('flex min-h-0 flex-1 flex-col', showMobileList && 'max-md:hidden')}>
             {/* Phone page bar: back to the list, page title, done. */}
-            <div className="grid h-12 flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background px-1 md:hidden">
+            <div className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background px-1 md:hidden">
               <button
                 type="button"
                 onClick={() => setShowMobileList(true)}
@@ -206,8 +206,8 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
             </div>
 
             {/* Desktop page header */}
-            <div className="hidden flex-shrink-0 items-start gap-3 border-b border-border px-6 py-4 md:flex">
-              <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="hidden shrink-0 items-start gap-3 border-b border-border px-6 py-4 md:flex">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <PageIcon className="h-[18px] w-[18px]" />
               </span>
               <div className="min-w-0 flex-1">

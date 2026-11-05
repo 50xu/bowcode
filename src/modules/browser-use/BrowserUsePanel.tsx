@@ -363,7 +363,7 @@ export default function BrowserUsePanel({ isVisible, onShowSettings }: BrowserUs
 
   const renderEmptyState = () => (
     <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-2xl rounded-md border border-border bg-card/40 p-5 shadow-sm">
+      <div className="w-full max-w-2xl rounded-md border border-border bg-card/40 p-5 shadow-xs">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background">
             <MonitorPlay className="h-5 w-5 text-primary" />
@@ -422,7 +422,7 @@ export default function BrowserUsePanel({ isVisible, onShowSettings }: BrowserUs
         <div
           className={cn(
             'relative inline-block max-h-full',
-            selectedSession.status === 'ready' && 'rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            selectedSession.status === 'ready' && 'rounded-sm outline-hidden focus-visible:ring-2 focus-visible:ring-primary',
           )}
           {...(selectedSession.status === 'ready' && {
             tabIndex: 0,
@@ -583,7 +583,7 @@ export default function BrowserUsePanel({ isVisible, onShowSettings }: BrowserUs
             renderEmptyState()
           ) : (
             <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4">
-              <div className="mx-auto flex min-h-[500px] max-w-7xl flex-col overflow-hidden rounded-md border border-border bg-background shadow-sm">
+              <div className="mx-auto flex min-h-[500px] max-w-7xl flex-col overflow-hidden rounded-md border border-border bg-background shadow-xs">
                 <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-3 py-2">
                   <Badge variant="outline" className={selectedSession ? cn('text-[10px]', getStatusTone(selectedSession.status)) : 'text-[10px]'}>
                     {getStatusLabel(selectedSession?.status, t)}

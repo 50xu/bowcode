@@ -34,7 +34,7 @@ export const ToolErrorDisplay: React.FC<ToolErrorDisplayProps> = ({ content, lab
     <div
       className={cn(
         'mt-2 overflow-hidden rounded-lg border border-red-500/30 bg-red-50/50 transition-all duration-200 dark:bg-red-950/10',
-        open && 'shadow-sm',
+        open && 'shadow-xs',
       )}
     >
       <div
@@ -49,26 +49,26 @@ export const ToolErrorDisplay: React.FC<ToolErrorDisplayProps> = ({ content, lab
           }
         }}
         className={cn(
-          'flex items-center gap-2 px-2.5 py-1.5 outline-none',
+          'flex items-center gap-2 px-2.5 py-1.5 outline-hidden',
           hasContent && 'cursor-pointer focus-visible:ring-1 focus-visible:ring-ring',
         )}
       >
         <ChevronRight
           className={cn(
-            'h-3.5 w-3.5 flex-shrink-0 text-red-500/70 transition-transform duration-200 dark:text-red-400/70',
+            'h-3.5 w-3.5 shrink-0 text-red-500/70 transition-transform duration-200 dark:text-red-400/70',
             open && 'rotate-90',
             !hasContent && 'opacity-0',
           )}
         />
         <svg
-          className="h-3.5 w-3.5 flex-shrink-0 text-red-500 dark:text-red-400"
+          className="h-3.5 w-3.5 shrink-0 text-red-500 dark:text-red-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
-        <span className="flex-shrink-0 text-xs font-medium text-red-700 dark:text-red-300">{label}</span>
+        <span className="shrink-0 text-xs font-medium text-red-700 dark:text-red-300">{label}</span>
         {!open && hasContent && (
           /* Not a <code>/<pre> tag: the global `.chat-message code` rule forces
              `white-space: pre-wrap !important`, which would defeat `truncate`. */

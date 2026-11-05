@@ -76,7 +76,7 @@ function SubscriptionOverrideNotice({ override }: SubscriptionOverrideNoticeProp
       className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/30"
     >
       <div className="flex items-start gap-2">
-        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <div className="space-y-1 text-sm text-amber-900 dark:text-amber-100">
           <div className="font-medium">{t('agents.subscriptionOverride.title')}</div>
           <p>{description}</p>

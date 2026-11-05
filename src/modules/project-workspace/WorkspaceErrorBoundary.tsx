@@ -36,7 +36,7 @@ function ErrorFallback({
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-6">
         <div className="mb-4 flex items-center">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
@@ -62,7 +62,7 @@ function ErrorFallback({
         <div className="mt-4">
           <button
             onClick={resetErrorBoundary}
-            className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 focus:outline-hidden focus:ring-2 focus:ring-red-500"
           >
             Try Again
           </button>

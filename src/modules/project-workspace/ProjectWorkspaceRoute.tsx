@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import { PaletteOpsProvider } from '@/modules/command-palette';
 import { ProjectsStateProvider } from '@/modules/project-workspace/context/ProjectsStateContext';

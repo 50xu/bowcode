@@ -159,7 +159,7 @@ export default function SessionRetentionSettingsTab() {
             role="alert"
             className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-100"
           >
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{t('sessionRetention.deleteWarning')}</p>
           </div>
         )}
@@ -200,7 +200,7 @@ export default function SessionRetentionSettingsTab() {
                           {session.isArchived ? ` · ${t('sessionRetention.archivedBadge')}` : ''}
                         </div>
                       </div>
-                      <div className="flex-shrink-0 text-xs text-muted-foreground">
+                      <div className="shrink-0 text-xs text-muted-foreground">
                         {formatDateTime(session.lastActivity)}
                       </div>
                     </li>

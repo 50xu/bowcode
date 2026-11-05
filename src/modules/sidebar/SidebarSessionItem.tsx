@@ -128,7 +128,7 @@ function SidebarSessionItem({
   const selectionIcon = isSelecting ? (
     <SelectionIcon
       className={cn(
-        'h-4 w-4 flex-shrink-0',
+        'h-4 w-4 shrink-0',
         isChecked ? 'text-primary' : 'text-muted-foreground',
         !isSelectable && 'opacity-40',
       )}
@@ -192,7 +192,7 @@ function SidebarSessionItem({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {selectionIcon}
             <div
-              className="flex h-4 w-4 flex-shrink-0 items-center justify-center"
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
             >
               {session.__provider ? <LLMProviderLogo provider={session.__provider} className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
             </div>
@@ -206,7 +206,7 @@ function SidebarSessionItem({
                   {sessionView.sessionName}
                 </div>
                 {isProcessing ? (
-                  <span className="ml-auto flex-shrink-0">
+                  <span className="ml-auto shrink-0">
                     <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
                       <span className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -214,7 +214,7 @@ function SidebarSessionItem({
                     </Tooltip>
                   </span>
                 ) : compactSessionAge && (
-                  <span className="ml-auto flex-shrink-0 text-[11px] text-muted-foreground">{compactSessionAge}</span>
+                  <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{compactSessionAge}</span>
                 )}
               </div>
             </div>
@@ -225,7 +225,7 @@ function SidebarSessionItem({
                 aria-label={`Session options for ${sessionView.sessionName}`}
                 aria-haspopup="dialog"
                 aria-expanded={isMobileOptionsOpen}
-                className="ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent"
+                className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent"
                 onClick={(event) => {
                   event.stopPropagation();
                   setMobileOptionsOpen(true);
@@ -247,7 +247,7 @@ function SidebarSessionItem({
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />
 
             <div className="mb-4 flex items-center gap-3 px-1">
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-muted">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted">
                 <LLMProviderLogo provider={session.__provider} className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -276,7 +276,7 @@ function SidebarSessionItem({
                       saveMobileRename();
                     }
                   }}
-                  className="w-full rounded-xl border-2 border-primary/40 bg-background px-3 py-3 text-foreground shadow-sm focus:border-primary focus:outline-none"
+                  className="w-full rounded-xl border-2 border-primary/40 bg-background px-3 py-3 text-foreground shadow-xs focus:border-primary focus:outline-hidden"
                   autoFocus
                   autoComplete="off"
                   // 16px keeps iOS Safari from zooming the viewport on focus.
@@ -288,7 +288,7 @@ function SidebarSessionItem({
                     onClick={saveMobileRename}
                     className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-transform active:scale-95"
                   >
-                    <Check className="h-5 w-5 flex-shrink-0" />
+                    <Check className="h-5 w-5 shrink-0" />
                     Save
                   </button>
                   <button
@@ -296,7 +296,7 @@ function SidebarSessionItem({
                     onClick={onCancelEditingSession}
                     className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted/35 px-4 py-3 text-sm font-medium text-foreground transition-colors active:bg-muted"
                   >
-                    <X className="h-5 w-5 flex-shrink-0" />
+                    <X className="h-5 w-5 shrink-0" />
                     Cancel
                   </button>
                 </div>
@@ -308,7 +308,7 @@ function SidebarSessionItem({
                   onClick={startMobileRename}
                   className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-border bg-muted/35 px-4 py-3 text-left text-foreground transition-colors active:bg-muted"
                 >
-                  <Edit2 className="h-5 w-5 flex-shrink-0" />
+                  <Edit2 className="h-5 w-5 shrink-0" />
                   <span className="text-sm font-medium">Rename session</span>
                 </button>
 
@@ -326,9 +326,9 @@ function SidebarSessionItem({
                   )}
                 >
                   {isCopyPending ? (
-                    <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin" />
+                    <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
                   ) : (
-                    <CopyStateIcon className="h-5 w-5 flex-shrink-0" />
+                    <CopyStateIcon className="h-5 w-5 shrink-0" />
                   )}
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium">{copyLabel}</span>
@@ -347,7 +347,7 @@ function SidebarSessionItem({
                     }}
                     className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-border bg-muted/35 px-4 py-3 text-left text-foreground transition-colors active:bg-muted"
                   >
-                    <GitBranch className="h-5 w-5 flex-shrink-0" />
+                    <GitBranch className="h-5 w-5 shrink-0" />
                     <span>
                       <span className="block text-sm font-medium">Fork session</span>
                       <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -366,7 +366,7 @@ function SidebarSessionItem({
                     }}
                     className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-600 transition-colors active:bg-red-500/10 dark:text-red-400"
                   >
-                    <Trash2 className="h-5 w-5 flex-shrink-0" />
+                    <Trash2 className="h-5 w-5 shrink-0" />
                     <span className="text-sm font-medium">Archive or delete session</span>
                   </button>
                 )}
@@ -422,7 +422,7 @@ function SidebarSessionItem({
           <div className="flex w-full min-w-0 items-center gap-2">
             {selectionIcon}
             <div
-              className="flex h-4 w-4 flex-shrink-0 items-center justify-center"
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
             >
               {session.__provider ? <LLMProviderLogo provider={session.__provider} className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
             </div>
@@ -443,7 +443,7 @@ function SidebarSessionItem({
                 {isProcessing ? (
                   <span
                     className={cn(
-                      'ml-auto flex-shrink-0 transition-opacity duration-200',
+                      'ml-auto shrink-0 transition-opacity duration-200',
                       isEditing ? 'opacity-0' : !isSelecting && 'group-hover:opacity-0',
                     )}
                   >
@@ -456,7 +456,7 @@ function SidebarSessionItem({
                 ) : compactSessionAge && (
                   <span
                     className={cn(
-                      'ml-auto flex-shrink-0 text-[11px] text-muted-foreground transition-opacity duration-200',
+                      'ml-auto shrink-0 text-[11px] text-muted-foreground transition-opacity duration-200',
                       isEditing ? 'opacity-0' : !isSelecting && 'group-hover:opacity-0',
                     )}
                   >

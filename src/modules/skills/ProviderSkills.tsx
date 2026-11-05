@@ -445,7 +445,7 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
                 key={queuedFile.id}
                 className="flex items-center gap-3 rounded-lg border border-border/70 bg-background/70 px-3 py-2"
               >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
                   {queuedFile.kind === 'folder' ? <FolderUp className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -462,7 +462,7 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 flex-shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:text-foreground"
                   aria-label={t('skillsPage.upload.removeFile', { name: queuedFile.name })}
                   onClick={() => {
                     setQueuedFiles((previous) => previous.filter((file) => file.id !== queuedFile.id));
@@ -567,7 +567,7 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
           className="flex h-[calc(100vh-2rem)] max-h-[760px] w-[calc(100vw-2rem)] max-w-4xl flex-col overflow-hidden p-0 sm:h-[720px]"
         >
           <DialogTitle>{t('skillsPage.addDialogTitle', { provider: providerName })}</DialogTitle>
-          <div className="flex-shrink-0 border-b border-border/60 px-4 py-4">
+          <div className="shrink-0 border-b border-border/60 px-4 py-4">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/20 text-muted-foreground">
                 <FileUp className="h-4 w-4" />
@@ -596,7 +596,7 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
             {uploadPanel}
           </div>
 
-          <div className="flex flex-shrink-0 flex-col gap-3 border-t border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex shrink-0 flex-col gap-3 border-t border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1">
               {(submitError || loadError || (justInstalled && saveStatus === 'success')) ? (
                 <div className={cn(

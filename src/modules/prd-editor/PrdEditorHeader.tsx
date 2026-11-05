@@ -84,9 +84,9 @@ export default function PrdEditorHeader({
   const fileNameInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <div className="flex min-w-0 flex-shrink-0 items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+    <div className="flex min-w-0 shrink-0 items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-purple-600">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-purple-600">
           <FileText className="h-4 w-4 text-white" />
         </div>
 
@@ -99,7 +99,7 @@ export default function PrdEditorHeader({
                   type="text"
                   value={fileName}
                   onChange={(event) => onFileNameChange(event.target.value)}
-                  className="min-w-0 flex-1 border-none bg-transparent text-base font-medium text-gray-900 placeholder-gray-400 outline-none dark:text-white dark:placeholder-gray-500 sm:text-sm"
+                  className="min-w-0 flex-1 border-none bg-transparent text-base font-medium text-gray-900 placeholder-gray-400 outline-hidden dark:text-white dark:placeholder-gray-500 sm:text-sm"
                   placeholder="Enter PRD filename"
                   maxLength={100}
                 />
@@ -124,7 +124,7 @@ export default function PrdEditorHeader({
               </button>
             </div>
 
-            <div className="flex flex-shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <span className="whitespace-nowrap rounded bg-purple-100 px-2 py-1 text-xs text-purple-600 dark:bg-purple-900 dark:text-purple-300">
                 PRD
               </span>
@@ -142,7 +142,7 @@ export default function PrdEditorHeader({
         </div>
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-1 md:gap-2">
+      <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <HeaderIconButton
           title={previewMode ? 'Switch to edit mode' : 'Preview markdown'}
           onClick={onTogglePreview}

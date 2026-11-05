@@ -268,7 +268,7 @@ export default function ModelLibraryPanel({
               aria-pressed={selected}
               className={`flex min-w-fit flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                 selected
-                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border/70'
+                  ? 'bg-background text-foreground shadow-xs ring-1 ring-border/70'
                   : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
             >
@@ -282,7 +282,7 @@ export default function ModelLibraryPanel({
       <div className="scrollbar-thin grid min-h-0 flex-1 items-start gap-4 overflow-y-auto pr-1 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(20rem,1.2fr)]">
         <form
           onSubmit={handleSubmit}
-          className="h-fit rounded-2xl border border-border/70 bg-muted/20 p-4 shadow-sm"
+          className="h-fit rounded-2xl border border-border/70 bg-muted/20 p-4 shadow-xs"
         >
           <div className="flex items-start justify-between gap-3">
             <div>

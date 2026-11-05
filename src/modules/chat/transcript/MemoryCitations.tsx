@@ -30,11 +30,11 @@ export const MemoryCitations = memo(({ citations }: { citations: MemoryCitation[
         onClick={() => setIsOpen((previous) => !previous)}
         className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
       >
-        <BookMarked className="h-3 w-3 flex-shrink-0" />
+        <BookMarked className="h-3 w-3 shrink-0" />
         <span>
           Used {citations.length} {citations.length === 1 ? 'memory' : 'memories'}
         </span>
-        <ChevronRight className={cn('h-3 w-3 flex-shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
+        <ChevronRight className={cn('h-3 w-3 shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
       </button>
 
       {isOpen && (

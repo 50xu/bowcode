@@ -271,7 +271,7 @@ export default function ChatComposer({
       : t('input.send');
 
   return (
-    <div className="chat-composer-shell relative min-w-0 flex-shrink-0 px-2 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-0 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+    <div className="chat-composer-shell relative min-w-0 shrink-0 px-2 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-0 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
       {!hasPendingPermissions && (
         <div className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[calc(100%-1rem)] max-w-[54.25rem] -translate-x-1/2 translate-y-px bg-transparent sm:w-[calc(100%-2rem)]">
           <ActivityIndicator activity={activity} onAbort={onAbortSession} isInputFocused={isInputFocused} />

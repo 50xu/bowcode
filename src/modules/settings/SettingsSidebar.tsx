@@ -76,7 +76,7 @@ export default function SettingsSidebar({ activeTab, onChange }: SettingsSidebar
   const { t } = useTranslation('settings');
 
   return (
-    <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-border bg-muted/30 md:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-muted/30 md:flex">
       <div className="px-5 pb-2 pt-5">
         <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('title')}</h2>
       </div>
@@ -103,7 +103,7 @@ export default function SettingsSidebar({ activeTab, onChange }: SettingsSidebar
                       : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
                   )}
                 >
-                  <Icon className={cn('h-4 w-4 flex-shrink-0', isActive && 'text-primary')} />
+                  <Icon className={cn('h-4 w-4 shrink-0', isActive && 'text-primary')} />
                   {t(item.labelKey)}
                 </button>
               );
@@ -158,7 +158,7 @@ export function SettingsMobileList({ onSelect }: SettingsMobileListProps) {
                   onClick={() => onSelect(item.id)}
                   className="flex min-h-[46px] w-full items-center gap-3 pl-4 text-left transition-colors active:bg-accent"
                 >
-                  <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[7px] text-white', item.tint)}>
+                  <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] text-white', item.tint)}>
                     <Icon className="h-4 w-4" />
                   </span>
                   <span

@@ -71,7 +71,7 @@ export default function WorkspaceTabs({ activeTab, setActiveTab, shouldShowTasks
           <Tooltip key={tab.id} content={label(tab)} position="bottom">
             <button type="button" role="tab" aria-label={label(tab)} aria-selected={tab.id === activeTab}
               tabIndex={tab.id === activeTab ? 0 : -1} onClick={() => selectTab(tab.id)} onKeyDown={handleTabKeyDown}
-              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab.id === activeTab ? 'text-primary' : 'text-muted-foreground'}`}>
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] hover:bg-accent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${tab.id === activeTab ? 'text-primary' : 'text-muted-foreground'}`}>
               {icon(tab)}
             </button>
           </Tooltip>

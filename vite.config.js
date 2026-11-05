@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { getConnectableHost, normalizeLoopbackHost } from './shared/networkHosts.js'
 
 // The client shows the installed package version so it can be compared against the
@@ -25,7 +26,7 @@ export default defineConfig(({ mode }) => {
   const serverPort = env.SERVER_PORT || env.PORT || 3001
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version)
     },
@@ -55,12 +56,11 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      cssMinify: 'esbuild', // Lightning CSS rejects Tailwind's generated empty selector.
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (['react', 'react-dom', 'react-router-dom'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-react'
+            if (['react', 'react-dom', 'react-router'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-react'
             if (['@uiw/react-codemirror', '@codemirror/lang-css', '@codemirror/lang-html', '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-markdown', '@codemirror/lang-python', '@codemirror/theme-one-dark'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-codemirror'
             if (['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-clipboard', '@xterm/addon-webgl'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-xterm'
           }

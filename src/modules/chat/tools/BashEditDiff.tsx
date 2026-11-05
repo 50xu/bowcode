@@ -244,7 +244,7 @@ function BashEditDiffLine({ line }: { line: string }) {
   return (
     // min-h keeps an empty line one row tall instead of collapsing to nothing.
     <div className="flex min-h-[18px]">
-      <span className={cn('w-6 flex-shrink-0 select-none text-center', LINE_CLASSES[kind].gutter)}>
+      <span className={cn('w-6 shrink-0 select-none text-center', LINE_CLASSES[kind].gutter)}>
         {kind === 'added' ? '+' : kind === 'removed' ? '-' : ''}
       </span>
       <span className={cn('flex-1 whitespace-pre-wrap break-all px-2', LINE_CLASSES[kind].text)}>

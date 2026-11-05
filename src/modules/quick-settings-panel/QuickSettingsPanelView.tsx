@@ -152,7 +152,7 @@ function QuickSettingsPanelView({ selectedProject, onInsertCommand }: QuickSetti
       {/* Docked: a layout column while open; the header button collapses it without clearing the pin. */}
       {isPinned ? (
         isOpen && (
-          <div className="relative h-full w-64 flex-shrink-0 border-l border-border bg-card">
+          <div className="relative h-full w-64 shrink-0 border-l border-border bg-card">
             {panelBody}
           </div>
         )
@@ -168,7 +168,7 @@ function QuickSettingsPanelView({ selectedProject, onInsertCommand }: QuickSetti
 
       {isOpen && !isPinned && (
         <div
-          className="fixed inset-0 z-[9998] bg-background/80 backdrop-blur-sm transition-opacity duration-150 ease-out"
+          className="fixed inset-0 z-[9998] bg-background/80 backdrop-blur-xs transition-opacity duration-150 ease-out"
           onClick={close}
         />
       )}

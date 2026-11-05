@@ -99,7 +99,7 @@ export default function CommitHistoryItem({
                 {formatDate(commit.date, i18n.language)}
               </p>
             </div>
-            <span className="flex-shrink-0 font-mono text-sm text-muted-foreground/60">
+            <span className="shrink-0 font-mono text-sm text-muted-foreground/60">
               {commit.hash.substring(0, 7)}
             </span>
           </div>
@@ -161,7 +161,7 @@ export default function CommitHistoryItem({
                       }`}
                     >
                       <span
-                        className={`inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border text-[9px] font-bold ${getStatusBadgeClass(file.status)}`}
+                        className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[9px] font-bold ${getStatusBadgeClass(file.status)}`}
                       >
                         {file.status}
                       </span>
@@ -171,7 +171,7 @@ export default function CommitHistoryItem({
                         )}
                         <span className="font-medium text-foreground">{file.filename}</span>
                       </span>
-                      <span className="flex-shrink-0 font-mono text-muted-foreground/60">
+                      <span className="shrink-0 font-mono text-muted-foreground/60">
                         {file.insertions > 0 && (
                           <span className="text-green-600 dark:text-green-400">+{file.insertions}</span>
                         )}

@@ -104,7 +104,7 @@ function MetricCard({
 
   return (
     <div
-      className={`group rounded-2xl border border-border/70 bg-background/75 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md ${
+      className={`group rounded-2xl border border-border/70 bg-background/75 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md ${
         compact ? 'p-3' : 'p-4'
       }`}
     >
@@ -170,7 +170,7 @@ function HelpContent({ data }: { data: HelpCommandData }) {
             {filteredCommands.map((command, index) => (
               <div
                 key={`${command.namespace || 'builtin'}-${command.name}`}
-                className="settings-content-enter rounded-2xl border border-border/70 bg-background/75 p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/25"
+                className="settings-content-enter rounded-2xl border border-border/70 bg-background/75 p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/25"
                 style={{ animationDelay: `${Math.min(index * 18, 160)}ms` }}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -358,7 +358,7 @@ function ModelsContent({
                   onClick={() => handleSelectModel(option.value)}
                   disabled={Boolean(changingModel)}
                   aria-label={`Select model ${option.value}`}
-                  className={`settings-content-enter group flex min-h-16 flex-col rounded-2xl border p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60 ${
+                  className={`settings-content-enter group flex min-h-16 flex-col rounded-2xl border p-3 text-left shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60 ${
                     isCurrent
                       ? 'border-primary/45 bg-primary/10'
                       : isPendingSelection

@@ -201,7 +201,7 @@ export default function SidebarRecentConversations({
                   isSelected ? 'bg-primary/10' : 'hover:bg-accent',
                 )}
               >
-                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted">
                   <LLMProviderLogo provider={conversation.provider} className="h-3.5 w-3.5" />
                 </span>
 
@@ -216,28 +216,28 @@ export default function SidebarRecentConversations({
                     <span className="truncate">{conversation.projectDisplayName}</span>
                     {isProcessing ? (
                       <>
-                        <span className="flex-shrink-0 text-muted-foreground/40">·</span>
+                        <span className="shrink-0 text-muted-foreground/40">·</span>
                         <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
-                          <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin" />
+                          <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
                         </Tooltip>
                       </>
                     ) : hasBackgroundWork ? (
                       // No spinner: nothing is responding. The purple of the
                       // workflow and agent cards says what is still running.
                       <>
-                        <span className="flex-shrink-0 text-muted-foreground/40">·</span>
+                        <span className="shrink-0 text-muted-foreground/40">·</span>
                         <Tooltip content={t('tooltips.backgroundWorkIndicator', 'Background work running')} position="top">
                           <span
                             role="status"
                             aria-label={t('tooltips.backgroundWorkIndicator', 'Background work running')}
-                            className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-purple-500 dark:bg-purple-400"
+                            className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-purple-500 dark:bg-purple-400"
                           />
                         </Tooltip>
                       </>
                     ) : age && (
                       <>
-                        <span className="flex-shrink-0 text-muted-foreground/40">·</span>
-                        <time className="flex-shrink-0 tabular-nums" dateTime={conversation.lastActivity ?? undefined}>
+                        <span className="shrink-0 text-muted-foreground/40">·</span>
+                        <time className="shrink-0 tabular-nums" dateTime={conversation.lastActivity ?? undefined}>
                           {age}
                         </time>
                       </>

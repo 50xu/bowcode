@@ -279,7 +279,7 @@ export default function CommandMenu({
                 aria-selected={isSelected}
                 className={`command-item group relative mb-1 flex cursor-pointer items-start gap-2 rounded-md border px-2.5 py-2 transition-all ${
                   isSelected
-                    ? 'border-primary/30 bg-primary/10 shadow-sm'
+                    ? 'border-primary/30 bg-primary/10 shadow-xs'
                     : 'border-transparent bg-transparent hover:border-border hover:bg-accent'
                 }`}
                 onMouseEnter={() => onSelect && commandIndex >= 0 && onSelect(command, commandIndex, true)}
@@ -301,7 +301,7 @@ export default function CommandMenu({
                       {command.name}
                     </span>
                     {command.metadata?.type && (
-                      <span className="command-metadata-badge shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm">
+                      <span className="command-metadata-badge shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground shadow-xs">
                         {command.metadata.type}
                       </span>
                     )}
@@ -316,7 +316,7 @@ export default function CommandMenu({
                   )}
                 </div>
                 {isSelected && (
-                  <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded border border-primary/30 bg-card text-primary shadow-sm">
+                  <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded border border-primary/30 bg-card text-primary shadow-xs">
                     <CornerDownLeft aria-hidden="true" size={13} strokeWidth={2.2} />
                   </span>
                 )}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { NavigateFunction } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 
 import { api } from '@/shared/api';
 import { useExternalSessionHolders, useProcessingSessions } from '@/shared/context/SessionProtectionContext';

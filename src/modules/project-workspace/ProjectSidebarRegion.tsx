@@ -118,7 +118,7 @@ function ProjectSidebarRegion({
   if (!isMobile) {
     return (
       <div
-        className="hairline-right relative h-full flex-shrink-0"
+        className="hairline-right relative h-full shrink-0"
         style={isSidebarResizable ? { width: sidebarWidth } : undefined}
       >
         <Sidebar {...sidebarSharedProps} />
@@ -131,7 +131,7 @@ function ProjectSidebarRegion({
             aria-valuemin={SIDEBAR_WIDTH_MIN}
             aria-valuemax={SIDEBAR_WIDTH_MAX}
             tabIndex={0}
-            className="absolute inset-y-0 -right-0.5 z-10 w-1 cursor-col-resize hover:bg-primary/40 focus-visible:bg-primary/60 focus-visible:outline-none"
+            className="absolute inset-y-0 -right-0.5 z-10 w-1 cursor-col-resize hover:bg-primary/40 focus-visible:bg-primary/60 focus-visible:outline-hidden"
             onPointerDown={handleResizeStart}
             onPointerMove={handleResizeMove}
             onPointerUp={handleResizeEnd}
@@ -151,7 +151,7 @@ function ProjectSidebarRegion({
       }`}
     >
       <button
-        className="fixed inset-0 bg-background/60 backdrop-blur-sm transition-opacity duration-150 ease-out"
+        className="fixed inset-0 bg-background/60 backdrop-blur-xs transition-opacity duration-150 ease-out"
         onClick={handleBackdropClick}
         onTouchStart={handleBackdropTouch}
         aria-label={t('versionUpdate.ariaLabels.closeSidebar')}

@@ -166,7 +166,7 @@ function TaskCard({ task, onClick = null, showParent = false, className = '' }: 
           )}
         </div>
 
-        <div className="flex-shrink-0">{renderPriorityIcon(task.priority)}</div>
+        <div className="shrink-0">{renderPriorityIcon(task.priority)}</div>
       </div>
 
       <div className="flex items-center justify-between">

@@ -305,7 +305,7 @@ export default function FileContextMenu({
                   onClick={() => runMenuActionAndClose(action.onSelect)}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2 text-sm text-left rounded-md transition-colors',
-                    'focus:outline-none focus:bg-accent',
+                    'focus:outline-hidden focus:bg-accent',
                     action.isDisabled
                       ? 'opacity-50 cursor-not-allowed'
                       : action.isDanger
@@ -314,7 +314,7 @@ export default function FileContextMenu({
                     isLoading && 'pointer-events-none',
                   )}
                 >
-                  {action.icon && <action.icon className="h-4 w-4 flex-shrink-0" />}
+                  {action.icon && <action.icon className="h-4 w-4 shrink-0" />}
                   <span className="flex-1">{action.label}</span>
                   {action.shortcut && <span className="font-mono text-xs text-muted-foreground">{action.shortcut}</span>}
                 </button>

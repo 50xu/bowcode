@@ -116,7 +116,7 @@ export default function QuickSettingsCommandsTab({
             placeholder={t('quickSettings.commands.searchPlaceholder')}
             aria-label={t('quickSettings.commands.searchPlaceholder')}
             disabled={!hasProject}
-            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden"
           />
         </label>
       </div>

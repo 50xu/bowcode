@@ -53,7 +53,7 @@ function getParentDirectoryPath(itemPath: string) {
 function TreeItemIcon({ item, isOpen, renderFileIcon }: TreeItemIconProps) {
   if (item.type === 'directory') {
     return (
-      <span className="flex flex-shrink-0 items-center gap-0.5">
+      <span className="flex shrink-0 items-center gap-0.5">
         <ChevronRight
           className={cn(
             'w-3.5 h-3.5 text-muted-foreground/70 transition-transform duration-150',
@@ -61,15 +61,15 @@ function TreeItemIcon({ item, isOpen, renderFileIcon }: TreeItemIconProps) {
           )}
         />
         {isOpen ? (
-          <FolderOpen className="h-4 w-4 flex-shrink-0 text-blue-500" />
+          <FolderOpen className="h-4 w-4 shrink-0 text-blue-500" />
         ) : (
-          <Folder className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
         )}
       </span>
     );
   }
 
-  return <span className="ml-[18px] flex flex-shrink-0 items-center">{renderFileIcon(item.name)}</span>;
+  return <span className="ml-[18px] flex shrink-0 items-center">{renderFileIcon(item.name)}</span>;
 }
 
 /** Rendered by FileTreeList for each file or directory row, including its context menu and inline rename input. */
@@ -201,7 +201,7 @@ export default function FileTreeNode({
             <TreeItemIcon item={item} isOpen={isOpen} renderFileIcon={renderFileIcon} />
             <span className={nameClassName}>{item.name}</span>
           </div>
-          <div className="ml-2 flex flex-shrink-0 items-center gap-3 text-sm text-muted-foreground">
+          <div className="ml-2 flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
             {item.type === 'file' && (
               <>
                 <span className="tabular-nums">{formatFileSize(item.size)}</span>

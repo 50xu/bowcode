@@ -122,7 +122,7 @@ function TokenUsageSummary({ usage, onCompact, compactDisabled = false }: TokenU
         }}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        className={cn('inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', isOpen && 'bg-accent text-foreground')}
+        className={cn('inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring', isOpen && 'bg-accent text-foreground')}
         title={t('misc.tokensUsed', { count: usedTokens })}
         aria-label={t('misc.showTokenUsage')}
       >

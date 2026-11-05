@@ -39,12 +39,12 @@ export default function LoadAllMessagesOverlay({
   // later, and an in-flow element coming and going above the reader's position
   // shifts the whole transcript on engines without scroll anchoring (iOS).
   if (!showLoadAllOverlay && !isLoadingAllMessages && !loadAllJustFinished) {
-    return <div aria-hidden className="!mt-0 h-0" />;
+    return <div aria-hidden className="mt-0! h-0" />;
   }
 
   return (
     <div
-      className={`pointer-events-none sticky top-2 z-20 !mt-0 flex h-0 items-start justify-center overflow-visible ${!isLoadingAllMessages ? 'load-all-overlay-auto-fade' : ''}`}
+      className={`pointer-events-none sticky top-2 z-20 mt-0! flex h-0 items-start justify-center overflow-visible ${!isLoadingAllMessages ? 'load-all-overlay-auto-fade' : ''}`}
       style={!isLoadingAllMessages ? { animation: 'loadAllOverlayAutoFade 2500ms ease forwards' } : undefined}
     >
       <style>{loadAllOverlayAnimationStyle}</style>

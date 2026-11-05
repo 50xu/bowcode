@@ -19,6 +19,7 @@
 
   "settings": {
     "react": { "version": "18.2.0" },
+    "tailwindcss": { "cssConfigPath": "src/index.css" },
 
     // Read by the bridged eslint-plugin-import-x rules. The key must stay "import-x/..."
     // (the plugin hardcodes its own name), even though the plugin is aliased to "importx".

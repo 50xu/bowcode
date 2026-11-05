@@ -256,7 +256,7 @@ export default function SidebarContent({
                           session.provider,
                         )}
                       >
-                        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-muted/60">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/60">
                           <LLMProviderLogo provider={session.provider} className="h-3.5 w-3.5" />
                         </span>
                         <span className="min-w-0 flex-1">
@@ -267,8 +267,8 @@ export default function SidebarContent({
                             <span className="truncate">{session.projectDisplayName}</span>
                             {age && (
                               <>
-                                <span className="flex-shrink-0 text-muted-foreground/40">·</span>
-                                <time className="flex-shrink-0 tabular-nums" dateTime={session.lastActivity ?? undefined}>
+                                <span className="shrink-0 text-muted-foreground/40">·</span>
+                                <time className="shrink-0 tabular-nums" dateTime={session.lastActivity ?? undefined}>
                                   {age}
                                 </time>
                               </>
@@ -319,7 +319,7 @@ export default function SidebarContent({
                   {conversationResults.results.map((projectResult) => (
                     <div key={projectResult.projectName} className="space-y-1">
                       <div className="flex items-center gap-1.5 px-1 py-1">
-                        <Folder className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                        <Folder className="h-3 w-3 shrink-0 text-muted-foreground" />
                         <span className="truncate text-xs font-normal text-foreground">
                           {projectResult.projectDisplayName}
                         </span>
@@ -339,12 +339,12 @@ export default function SidebarContent({
                           )}
                         >
                           <div className="mb-1 flex items-center gap-1.5">
-                            <MessageSquare className="h-3 w-3 flex-shrink-0 text-primary" />
+                            <MessageSquare className="h-3 w-3 shrink-0 text-primary" />
                             <span className="truncate text-xs font-normal text-foreground">
                               {session.sessionSummary}
                             </span>
                             {session.provider && session.provider !== 'claude' && (
-                              <span className="flex-shrink-0 rounded bg-muted px-1 py-0.5 text-[9px] uppercase text-muted-foreground">
+                              <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[9px] uppercase text-muted-foreground">
                                 {session.provider}
                               </span>
                             )}
@@ -352,7 +352,7 @@ export default function SidebarContent({
                           <div className="space-y-1 pl-4">
                             {session.matches.map((match, idx) => (
                               <div key={idx} className="flex items-start gap-1">
-                                <span className="mt-0.5 flex-shrink-0 text-[10px] font-normal uppercase text-muted-foreground/60">
+                                <span className="mt-0.5 shrink-0 text-[10px] font-normal uppercase text-muted-foreground/60">
                                   {match.role === 'user' ? 'U' : 'A'}
                                 </span>
                                 <HighlightedSnippet
@@ -403,7 +403,7 @@ export default function SidebarContent({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="mx-2 flex items-center justify-between rounded-lg border border-border/60 bg-card/50 px-3 py-2 shadow-sm">
+              <div className="mx-2 flex items-center justify-between rounded-lg border border-border/60 bg-card/50 px-3 py-2 shadow-xs">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <Activity className="h-3.5 w-3.5" />
@@ -450,7 +450,7 @@ export default function SidebarContent({
           ) : archivedProjects.length === 0 && groupedArchivedSessions.length === 0 ? (
             <div className="px-3 py-8 text-center">
               <div className="mx-auto max-w-[240px] rounded-2xl border border-dashed border-border/80 bg-muted/20 px-5 py-7">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-background shadow-sm">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-background shadow-xs">
                   <Archive className="h-[18px] w-[18px] text-muted-foreground" />
                 </div>
                 <h3 className="text-sm font-medium text-foreground">
@@ -501,7 +501,7 @@ export default function SidebarContent({
                     className="group/archive overflow-hidden rounded-xl border border-border/70 bg-card/45 shadow-[0_1px_0_hsl(var(--border)/0.2)] transition-colors hover:border-border"
                   >
                     <div className="flex items-center gap-2.5 px-2.5 py-2.5">
-                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/45 text-muted-foreground">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/45 text-muted-foreground">
                         <Folder className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -510,7 +510,7 @@ export default function SidebarContent({
                             {project.displayName}
                           </h3>
                           {projectSessions.length > 0 && (
-                            <span className="flex-shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 text-[9px] tabular-nums text-muted-foreground">
+                            <span className="shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 text-[9px] tabular-nums text-muted-foreground">
                               {projectSessions.length}
                             </span>
                           )}
@@ -520,7 +520,7 @@ export default function SidebarContent({
                         </p>
                       </div>
                       <button
-                        className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded-lg border border-emerald-600/15 bg-emerald-500/10 px-2 text-[10px] font-medium text-emerald-700 transition-all hover:border-emerald-600/25 hover:bg-emerald-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:text-emerald-300"
+                        className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-600/15 bg-emerald-500/10 px-2 text-[10px] font-medium text-emerald-700 transition-all hover:border-emerald-600/25 hover:bg-emerald-500/15 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:text-emerald-300"
                         onClick={() => onRestoreArchivedProject(project.projectId)}
                         title={t('archived.restoreProject', 'Restore workspace')}
                         aria-label={`${t('archived.restoreProject', 'Restore workspace')}: ${project.displayName}`}
@@ -534,7 +534,7 @@ export default function SidebarContent({
                         {projectSessions.map((session) => (
                           <button
                             key={String(session.id)}
-                            className="flex w-full items-center gap-2.5 border-b border-border/35 px-2.5 py-2 text-left transition-colors last:border-b-0 hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                            className="flex w-full items-center gap-2.5 border-b border-border/35 px-2.5 py-2 text-left transition-colors last:border-b-0 hover:bg-accent/35 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                             onClick={() => onArchivedSessionClick({
                               sessionId: String(session.id),
                               provider: session.__provider,
@@ -560,7 +560,7 @@ export default function SidebarContent({
                               isProjectArchived: true,
                             })}
                           >
-                            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-background/70">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-background/70">
                               <LLMProviderLogo provider={session.__provider} className="h-3.5 w-3.5" />
                             </span>
                             <div className="min-w-0 flex-1">
@@ -601,7 +601,7 @@ export default function SidebarContent({
                   className="group/archive overflow-hidden rounded-xl border border-border/70 bg-card/45 shadow-[0_1px_0_hsl(var(--border)/0.2)] transition-colors hover:border-border"
                 >
                   <div className="flex items-center gap-2.5 px-2.5 py-2.5">
-                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/45 text-muted-foreground">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/45 text-muted-foreground">
                       <Folder className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -609,7 +609,7 @@ export default function SidebarContent({
                         <h3 className="truncate text-[13px] font-medium text-foreground">
                           {group.projectDisplayName}
                         </h3>
-                        <span className="flex-shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 text-[9px] tabular-nums text-muted-foreground">
+                        <span className="shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 text-[9px] tabular-nums text-muted-foreground">
                           {group.sessions.length}
                         </span>
                       </div>
@@ -627,10 +627,10 @@ export default function SidebarContent({
                         className="group/session flex items-center gap-1 border-b border-border/35 px-2.5 py-2 last:border-b-0 hover:bg-accent/35"
                       >
                         <button
-                          className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() => onArchivedSessionClick(session)}
                         >
-                          <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-background/70">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-background/70">
                             <LLMProviderLogo provider={session.provider} className="h-3.5 w-3.5" />
                           </span>
                           <div className="min-w-0 flex-1">
@@ -650,9 +650,9 @@ export default function SidebarContent({
                             </div>
                           </div>
                         </button>
-                        <div className="flex flex-shrink-0 items-center gap-0.5">
+                        <div className="flex shrink-0 items-center gap-0.5">
                           <button
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-emerald-500/10 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:hover:text-emerald-300"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-emerald-500/10 hover:text-emerald-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:hover:text-emerald-300"
                             onClick={() => onRestoreArchivedSession(session.sessionId)}
                             title={t('archived.restore', 'Restore session')}
                             aria-label={`${t('archived.restore', 'Restore session')}: ${session.sessionTitle}`}
@@ -660,7 +660,7 @@ export default function SidebarContent({
                             <RotateCcw className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-destructive/40"
                             onClick={() => onDeleteArchivedSession(session)}
                             title={t('archived.deletePermanently', 'Delete permanently')}
                             aria-label={`${t('archived.deletePermanently', 'Delete permanently')}: ${session.sessionTitle}`}

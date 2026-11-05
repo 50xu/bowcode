@@ -19,7 +19,7 @@ Apply these rules only to frontend code under `src/`. Preserve the requested tas
 - Treat `@` as the alias for `src`.
 - Use `@/...` imports whenever the import target is frontend application code inside `src`, including imports within the same feature module.
 - Do not use relative paths such as `../`, `../../`, or `./` for application-source imports.
-- Continue using bare package specifiers for external dependencies, such as `react` or `react-router-dom`.
+- Continue using bare package specifiers for external dependencies, such as `react` or `react-router`.
 - Use `import type` for every type-only import.
 
 ## Organize feature modules

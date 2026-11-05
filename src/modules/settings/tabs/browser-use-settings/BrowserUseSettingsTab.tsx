@@ -172,7 +172,7 @@ export default function BrowserUseSettingsTab() {
                   size="sm"
                   onClick={() => void installBrowserBinaries()}
                   disabled={isInstalling || status?.installInProgress}
-                  className="flex-shrink-0"
+                  className="shrink-0"
                 >
                   {isInstalling || status?.installInProgress ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

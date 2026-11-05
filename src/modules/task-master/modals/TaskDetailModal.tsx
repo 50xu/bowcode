@@ -172,7 +172,7 @@ export default function TaskDetailModal({
                   type="text"
                   value={editableTask.title}
                   onChange={(event) => setEditableTask({ ...editableTask, title: event.target.value })}
-                  className="w-full border-b-2 border-blue-500 bg-transparent text-lg font-semibold text-gray-900 focus:outline-none dark:text-white"
+                  className="w-full border-b-2 border-blue-500 bg-transparent text-lg font-semibold text-gray-900 focus:outline-hidden dark:text-white"
                 />
               ) : (
                 <h1 className="line-clamp-2 text-lg font-semibold text-gray-900 dark:text-white md:text-xl">{task.title}</h1>

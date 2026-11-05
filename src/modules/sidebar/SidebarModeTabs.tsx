@@ -65,7 +65,7 @@ export default function SidebarModeTabs({
           tab.mode === 'archived' && 'px-2.5',
           canGrow && tab.showLabel && 'flex-1',
           isActive
-            ? 'bg-card text-foreground shadow-sm'
+            ? 'bg-card text-foreground shadow-xs'
             : 'text-muted-foreground hover:text-foreground',
           isActive && tab.mode === 'running' && 'ring-1 ring-emerald-500/15',
         )}
@@ -74,7 +74,7 @@ export default function SidebarModeTabs({
           <span className="relative flex h-3 w-3 items-center justify-center">
             <Activity className={cn('h-3 w-3', runningSessionsCount > 0 && 'text-emerald-500')} />
             {runningSessionsCount > 0 && (
-              <span className="absolute -right-2.5 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[8px] font-semibold leading-none text-white shadow-sm ring-1 ring-background">
+              <span className="absolute -right-2.5 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[8px] font-semibold leading-none text-white shadow-xs ring-1 ring-background">
                 {runningBadgeText}
               </span>
             )}

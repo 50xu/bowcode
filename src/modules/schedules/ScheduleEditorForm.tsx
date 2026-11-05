@@ -178,7 +178,7 @@ function formatInZone(iso: string, timeZone: string, locale: string): string {
   }
 }
 
-const FIELD_CLASS = 'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
+const FIELD_CLASS = 'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring';
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-muted-foreground';
 
 /** Rendered by this module's SchedulesDialog to create or edit one schedule. */
