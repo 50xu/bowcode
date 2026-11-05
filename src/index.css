@@ -373,7 +373,12 @@ body.pwa-mode .fixed.inset-0 {
   height: calc(100vh - var(--header-total-padding));
 }
 
-body.pwa-mode .workspace-shell {
+/*
+ * Repeats `.fixed.inset-0` so this outranks the rule above: both are unlayered,
+ * and with the lower specificity the shell kept its full height under the
+ * keyboard, hiding the terminal prompt and the chat composer behind it.
+ */
+body.pwa-mode .workspace-shell.fixed.inset-0 {
   height: calc(100vh - var(--header-total-padding) - var(--keyboard-height, 0px));
 }
 
