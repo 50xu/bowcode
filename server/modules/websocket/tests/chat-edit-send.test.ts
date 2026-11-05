@@ -81,6 +81,7 @@ async function withGateway(
   }) => Promise<void>,
   rows: unknown[] = TRANSCRIPT_ROWS,
   external?: { find: () => Promise<ExternalClaudeCliSession | null>; terminate: (session: ExternalClaudeCliSession) => Promise<void> },
+  extra: { aborts?: string[]; takeoverWatchIntervalMs?: number } = {},
 ): Promise<void> {
   const previousDatabasePath = process.env.DATABASE_PATH;
   const tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'chat-edit-send-'));
@@ -104,8 +105,15 @@ async function withGateway(
       {
         findExternalSession: external?.find,
         terminateExternalSession: external?.terminate,
+        findOwnedSessions: async () => [],
+        takeoverWatchIntervalMs: extra.takeoverWatchIntervalMs,
         runtime: {
           hasRuntime: () => true,
+          abort: async (_provider: string, abortedSessionId: string) => {
+            extra.aborts?.push(abortedSessionId);
+            releaseHeldRun?.();
+            return true;
+          },
           run: async (runProvider: string, command: string, options: Record<string, unknown>) => {
             runs.push({ provider: runProvider, command, options });
             if (holdRun) {
@@ -338,4 +346,24 @@ test('a provider that has to branch to rewind is rewound before the run, not dur
     assert.ok(socket.frames.some((frame) => frame.kind === 'history_truncated'));
     assert.equal(truncatedBeforeRewind, true);
   }, CODEX_TRANSCRIPT_ROWS);
+});
+
+test('a run steps aside when another Claude process starts a turn on its session', async () => {
+  const aborts: string[] = [];
+  let holder: ExternalClaudeCliSession | null = null;
+  await withGateway('claude', async ({ socket, runs }) => {
+    holdTheNextRun();
+    socket.emit('message', JSON.stringify({ type: 'chat.send', sessionId: SESSION_ID, content: 'long task' }));
+    await settle();
+    assert.equal(runs.length, 1);
+    assert.deepEqual(aborts, [], 'nothing else holds the session yet');
+
+    // The user's TUI (or another server) begins a turn on the same session.
+    holder = { providerSessionId: SESSION_ID, pid: 77, status: 'busy', startedAt: 2, cwd: '/work' };
+    await new Promise((resolve) => { setTimeout(resolve, 120); });
+    assert.deepEqual(aborts, [SESSION_ID], 'our run is aborted so only one agent works the session');
+  }, TRANSCRIPT_ROWS, {
+    find: async () => holder,
+    terminate: async () => {},
+  }, { aborts, takeoverWatchIntervalMs: 20 });
 });

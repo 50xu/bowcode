@@ -97,6 +97,8 @@ type ChatWebSocketDependencies = {
   terminateExternalSession?: typeof terminateExternalClaudeCliSession;
   findOwnedSessions?: typeof findOwnedClaudeCliSessions;
   terminateOwnedSession?: typeof terminateOwnedClaudeCliSession;
+  /** How often an active run checks for another process taking the session over. */
+  takeoverWatchIntervalMs?: number;
 };
 
 /**
@@ -335,6 +337,13 @@ async function dispatchRun(
     projectPath: session.project_path ?? clientOptions.projectPath,
   };
 
+  // One agent per session, whoever sent last: if another Claude process (the
+  // user's TUI, another server) starts a turn on this session while our run
+  // is going, ours steps aside instead of both editing the same session.
+  const stopTakeoverWatch = provider === 'claude' && session.provider_session_id
+    ? watchForExternalTakeover(run, sessionId, session.provider_session_id, dependencies)
+    : () => {};
+
   let failure: string | null = null;
   try {
     // Runs only now that the session is reserved, because an edit rewinds the
@@ -352,10 +361,51 @@ async function dispatchRun(
     // "processing" forever on every connected client. Scoped to THIS run —
     // a queued message can start the session's next run before this promise
     // settles, and the session-keyed completeRun would kill that new run.
+    stopTakeoverWatch();
     chatRunRegistry.completeRunIfCurrent(run, { exitCode: 1 });
   }
 
   return { started: true, error: failure };
+}
+
+const TAKEOVER_WATCH_INTERVAL_MS = 3_000;
+
+/**
+ * Polls the Claude CLI registry while one of our runs is active. Any external
+ * holder was stopped before the run began, so an external process that is
+ * busy on the same session now has started a turn of its own: abort ours.
+ */
+function watchForExternalTakeover(
+  run: NonNullable<ReturnType<typeof chatRunRegistry.getRun>>,
+  sessionId: string,
+  providerSessionId: string,
+  dependencies: ChatWebSocketDependencies,
+): () => void {
+  let checking = false;
+  let stopped = false;
+  const timer = setInterval(() => {
+    if (checking || stopped) return;
+    if (chatRunRegistry.getRun(sessionId) !== run || run.status !== 'running') return;
+    checking = true;
+    void (dependencies.findExternalSession ?? findExternalClaudeCliSession)(providerSessionId)
+      .then(async (holder) => {
+        if (stopped || holder?.status !== 'busy') return;
+        if (chatRunRegistry.getRun(sessionId) !== run || run.status !== 'running') return;
+        console.info('[Chat] Another Claude process started a turn on this session; stopping ours', {
+          sessionId, providerSessionId, pid: holder.pid,
+        });
+        stopped = true;
+        clearInterval(timer);
+        await abortActiveRun(run, sessionId, dependencies.runtime);
+      })
+      .catch(() => { /* registry unreadable this tick; try again */ })
+      .finally(() => { checking = false; });
+  }, dependencies.takeoverWatchIntervalMs ?? TAKEOVER_WATCH_INTERVAL_MS);
+  timer.unref?.();
+  return () => {
+    stopped = true;
+    clearInterval(timer);
+  };
 }
 
 /**
