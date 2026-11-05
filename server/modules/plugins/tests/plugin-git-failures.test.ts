@@ -16,7 +16,7 @@ import { AppError } from '@/shared/utils.js';
 
 const execFileAsync = promisify(execFile);
 
-// The registry resolves ~/.claude-code-ui/plugins when it is imported, so HOME
+// The registry resolves ~/.bowcode/plugins when it is imported, so HOME
 // has to point at a fixture first. Git must not borrow credentials from the
 // developer's setup either: GIT_CONFIG_GLOBAL points at a file each test
 // controls, askpass programs (an IDE terminal sets GIT_ASKPASS) are cleared, and
@@ -43,6 +43,10 @@ const { createPluginGitError, createPluginGitSpawnError, stopPluginGitOnServerEx
   '@/modules/plugins/plugin-git.service.js'
 );
 const { pluginsRoutes } = await import('@/modules/plugins/index.js');
+
+test('plugin registry uses the BowCode directory under the isolated home', () => {
+  assert.equal(getPluginsDir(), path.join(fixtureHome, '.bowcode', 'plugins'));
+});
 
 process.on('exit', () => {
   for (const [name, value] of Object.entries(savedEnvironment)) {
@@ -161,7 +165,7 @@ test('an install from a host that wants credentials fails fast as PLUGIN_GIT_AUT
     assert.equal(error.code, 'PLUGIN_GIT_AUTH_REQUIRED');
     assert.equal(error.statusCode, 422);
     assert.match(error.message, /^Could not install the plugin: .*private or does not exist/);
-    assert.match(error.message, /credentials of the user the CloudCLI server runs as/);
+    assert.match(error.message, /credentials of the user the Bowcode server runs as/);
     assert.match(error.message, /"gh auth setup-git"/);
     assert.match(error.message, /SSH key .* for git@ URLs/);
     // The message is shown as plain text.
@@ -229,7 +233,7 @@ test('a credential helper of the server user still installs a private plugin; wi
       const error = await rejection(updatePluginFromGit('private-demo'));
       assert.equal(error.code, 'PLUGIN_GIT_AUTH_REQUIRED');
       // The plugin was cloned from there before: no "private or does not exist".
-      assert.match(error.message, /^Could not update the plugin: .*credentials of the user the CloudCLI server runs as are missing or have expired/);
+      assert.match(error.message, /^Could not update the plugin: .*credentials of the user the Bowcode server runs as are missing or have expired/);
       assert.ok(!/private or does not exist/.test(error.message), error.message);
       const details = error.details as GitErrorDetails;
       assert.equal(details.gitCommand, 'git pull');
@@ -330,7 +334,7 @@ test('rejected credentials get their own code and advice, on install and on upda
     const error = createPluginGitError(action, 128, stderr);
     assert.equal(error.code, 'PLUGIN_GIT_AUTH_REJECTED');
     assert.equal(error.statusCode, 422);
-    assert.match(error.message, new RegExp(`^Could not ${action} the plugin: the git host rejected the credentials of the user the CloudCLI server runs as`));
+    assert.match(error.message, new RegExp(`^Could not ${action} the plugin: the git host rejected the credentials of the user the Bowcode server runs as`));
     assert.match(error.message, /Update or re-create them/);
     assert.ok(!/private or does not exist|set up a credential helper/i.test(error.message), error.message);
   }
@@ -395,7 +399,7 @@ test('an ssh login failure explains the SSH setup instead of calling the reposit
     const error = createPluginGitError('install', 128, stderr);
     assert.equal(error.code, 'PLUGIN_GIT_AUTH_REQUIRED');
     assert.equal(error.statusCode, 422);
-    assert.match(error.message, /^Could not install the plugin: ssh, run as the user the CloudCLI server runs as, could not log in to the git host/);
+    assert.match(error.message, /^Could not install the plugin: ssh, run as the user the Bowcode server runs as, could not log in to the git host/);
     assert.match(error.message, /known_hosts/);
     assert.match(error.message, /no passphrase, or loaded into an ssh-agent/);
     assert.ok(!/private or does not exist/.test(error.message), error.message);
@@ -552,7 +556,7 @@ test('a missing git binary is a 503 PLUGIN_GIT_UNAVAILABLE, for install and upda
     for (const [error, action] of [[installError, 'install'], [updateError, 'update']] as const) {
       assert.equal(error.code, 'PLUGIN_GIT_UNAVAILABLE');
       assert.equal(error.statusCode, 503);
-      assert.equal(error.message, `Could not ${action} the plugin: git is not installed or not on the PATH of the CloudCLI server.`);
+      assert.equal(error.message, `Could not ${action} the plugin: git is not installed or not on the PATH of the Bowcode server.`);
     }
   } finally {
     process.env.PATH = savedPath;

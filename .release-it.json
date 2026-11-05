@@ -6,13 +6,13 @@
     "requireCleanWorkingDir": true
   },
   "npm": {
-    "publish": true,
+    "publish": false,
     "skipChecks": true,
     "publishArgs": ["--access public", "--loglevel warn"]
   },
   "github": {
-    "release": true,
-    "releaseName": "CloudCLI UI v${version}"
+    "release": false,
+    "releaseName": "Bowcode v${version}"
   },
   "hooks": {
     "before:init": ["npm run build"]
@@ -20,7 +20,7 @@
   "plugins": {
     "@release-it/conventional-changelog": {
       "infile": "CHANGELOG.md",
-      "header": "# Changelog\n\nAll notable changes to CloudCLI UI will be documented in this file.\n",
+      "header": "# Changelog\n\nAll notable changes to Bowcode will be documented in this file.\n",
       "preset": {
         "name": "conventionalcommits",
         "types": [

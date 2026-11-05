@@ -20,7 +20,7 @@ export {
 export type { ExternalClaudeCliSession } from './services/claude-cli-liveness.service.js';
 
 // reapOrphanedOpenCodeServers: used by the server entrypoint at startup to stop
-// OpenCode turn servers a killed CloudCLI process left running.
+// OpenCode turn servers a killed Bowcode process left running.
 export { reapOrphanedOpenCodeServers } from './list/opencode/opencode-runtime.provider.js';
 
 export { initializeSessionsWatcher } from './services/sessions-watcher.service.js';

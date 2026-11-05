@@ -46,7 +46,7 @@ export default function AppearanceSettingsTab({
               value={themeMode}
               onChange={(event) => setThemeMode(event.target.value as ThemeMode)}
               aria-label={t('appearanceSettings.theme.label')}
-              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary sm:w-36"
+              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary max-w-[11rem] sm:w-48 sm:max-w-none"
             >
               <option value="light">{t('appearanceSettings.theme.light')}</option>
               <option value="dark">{t('appearanceSettings.theme.dark')}</option>
@@ -71,7 +71,7 @@ export default function AppearanceSettingsTab({
             <select
               value={projectSortOrder}
               onChange={(event) => onProjectSortOrderChange(event.target.value as ProjectSortOrder)}
-              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary sm:w-36"
+              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary max-w-[11rem] sm:w-48 sm:max-w-none"
             >
               <option value="name">{t('appearanceSettings.projectSorting.alphabetical')}</option>
               <option value="date">{t('appearanceSettings.projectSorting.recentActivity')}</option>

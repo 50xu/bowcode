@@ -1,7 +1,6 @@
 import { createRequire } from 'node:module';
 import { randomBytes, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 
 // cross-spawn: drop-in spawn with Windows .cmd/PATHEXT resolution.
@@ -9,14 +8,18 @@ import spawn from 'cross-spawn';
 
 import { appConfigDb } from '@/modules/database/index.js';
 import { providerMcpService } from '@/modules/providers/index.js';
+// eslint-disable-next-line boundaries/no-unknown -- Early bootstrap helper is not classified by the legacy boundary map.
+import { getAppDataDir } from '@/shared/data-directory.js';
+// eslint-disable-next-line boundaries/no-unknown -- Shared bootstrap environment helper is not classified by the legacy boundary map.
+import { readEnv } from '@/shared/env.js';
 import { getModuleDirectory } from '@/shared/utils.js';
 
 import { getBrowserUseRuntime } from './browser-use-runtime.js';
 
 const require = createRequire(import.meta.url);
 const __dirname = getModuleDirectory(import.meta.url);
-const MAX_SESSIONS_PER_OWNER = Number.parseInt(process.env.CLOUDCLI_BROWSER_USE_MAX_SESSIONS_PER_OWNER || '3', 10);
-const SESSION_TTL_MS = Number.parseInt(process.env.CLOUDCLI_BROWSER_USE_SESSION_TTL_MS || String(30 * 60 * 1000), 10);
+const MAX_SESSIONS_PER_OWNER = Number.parseInt(readEnv('BOWCODE_BROWSER_USE_MAX_SESSIONS_PER_OWNER') || '3', 10);
+const SESSION_TTL_MS = Number.parseInt(readEnv('BOWCODE_BROWSER_USE_SESSION_TTL_MS') || String(30 * 60 * 1000), 10);
 const BROWSER_USE_SETTINGS_KEY = 'browser_use_settings';
 const BROWSER_USE_MCP_TOKEN_KEY = 'browser_use_mcp_token';
 
@@ -99,9 +102,9 @@ const DEFAULT_SETTINGS: BrowserUseSettings = {
   enabled: false,
 };
 const AGENT_OWNER_ID = 'agent';
-const PROFILE_ROOT = path.join(os.homedir(), '.cloudcli', 'browser-use', 'profiles');
-const MCP_SERVER_NAME = 'cloudcli-browser';
-const LEGACY_MCP_SERVER_NAMES = ['cloudcli-browser-use'];
+const PROFILE_ROOT = path.join(getAppDataDir(), 'browser-use', 'profiles');
+const MCP_SERVER_NAME = 'bowcode-browser';
+const LEGACY_MCP_SERVER_NAMES = ['cloudcli-browser', 'cloudcli-browser-use'];
 const RUNTIME_READINESS_CACHE_TTL_MS = 30_000;
 
 function readSettings(): BrowserUseSettings {
@@ -174,7 +177,7 @@ function getMcpCommand(): { command: string; args: string[] } {
   }
 
   return {
-    command: 'cloudcli',
+    command: 'bowcode',
     args: ['browser-use-mcp'],
   };
 }
@@ -255,7 +258,7 @@ function getRuntimeReadiness(options: { force?: boolean } = {}): RuntimeReadines
 }
 
 const INSTALL_COMMAND_TIMEOUT_MS = Number.parseInt(
-  process.env.CLOUDCLI_BROWSER_USE_INSTALL_TIMEOUT_MS || String(10 * 60 * 1000),
+  readEnv('BOWCODE_BROWSER_USE_INSTALL_TIMEOUT_MS') || String(10 * 60 * 1000),
   10,
 );
 
@@ -305,7 +308,7 @@ function runCommand(command: string, args: string[]): Promise<void> {
 function formatInstallError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes('sudo') && message.includes('password')) {
-    return 'Installing Chromium system dependencies requires administrator privileges. Run `npx playwright install-deps chromium` on the machine where CloudCLI runs, then try again.';
+    return 'Installing Chromium system dependencies requires administrator privileges. Run `npx playwright install-deps chromium` on the machine where Bowcode runs, then try again.';
   }
   return message || 'Failed to install Browser runtime.';
 }
@@ -491,8 +494,8 @@ export const browserUseService = {
       command,
       args,
       env: {
-        CLOUDCLI_BROWSER_USE_MCP_TOKEN: getOrCreateMcpToken(),
-        CLOUDCLI_BROWSER_USE_API_URL: getMcpApiUrl(),
+        BOWCODE_BROWSER_USE_MCP_TOKEN: getOrCreateMcpToken(),
+        BOWCODE_BROWSER_USE_API_URL: getMcpApiUrl(),
       },
     });
     return { name: MCP_SERVER_NAME, command, args, results };

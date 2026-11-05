@@ -355,7 +355,7 @@
       "versionUnavailable": "Impossibile leggere la versione",
       "updateAvailable": "Aggiornamento disponibile: v{{version}}",
       "upToDate": "Aggiornata",
-      "bundled": "Inclusa in CloudCLI e aggiornata insieme a esso.",
+      "bundled": "Inclusa in Bowcode e aggiornata insieme a esso.",
       "updateTo": "Aggiorna a v{{version}}",
       "runUpdater": "Esegui aggiornamento",
       "updating": "Aggiornamento…",
@@ -516,7 +516,7 @@
   },
   "pluginSettings": {
     "title": "Plugin",
-    "description": "Estendi l'interfaccia con plugin personalizzati. Installa da git o inserisci una cartella in ~/.claude-code-ui/plugins/",
+    "description": "Estendi l'interfaccia con plugin personalizzati. Installa da git o inserisci una cartella in ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/utente/mio-plugin",
     "installButton": "Installa",
     "installing": "Installazione…",

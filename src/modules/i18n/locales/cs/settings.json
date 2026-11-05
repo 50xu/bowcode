@@ -374,7 +374,7 @@
       "versionUnavailable": "Verzi se nepodařilo zjistit",
       "updateAvailable": "K dispozici je aktualizace: v{{version}}",
       "upToDate": "Aktuální",
-      "bundled": "Dodává se s CloudCLI a aktualizuje se spolu s ním.",
+      "bundled": "Dodává se s Bowcode a aktualizuje se spolu s ním.",
       "updateTo": "Aktualizovat na v{{version}}",
       "runUpdater": "Spustit aktualizaci",
       "updating": "Aktualizace…",
@@ -537,7 +537,7 @@
     },
     "managed": {
       "badge": "Spravováno",
-      "hint": "Spravuje CloudCLI."
+      "hint": "Spravuje Bowcode."
     },
     "help": {
       "title": "O MCP pro Codex",
@@ -546,7 +546,7 @@
   },
   "pluginSettings": {
     "title": "Pluginy",
-    "description": "Rozšiřte rozhraní o vlastní pluginy. Nainstalujte je z git repozitáře nebo vložte složku do ~/.claude-code-ui/plugins/",
+    "description": "Rozšiřte rozhraní o vlastní pluginy. Nainstalujte je z git repozitáře nebo vložte složku do ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Instalovat",
     "installing": "Instalace…",
@@ -593,7 +593,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "neoficiální",
-      "description": "Analýza relací Claude Code přímo v CloudCLI. Zjistěte, proč vaše relace spalují tokeny, aniž byste opustili prohlížeč.",
+      "description": "Analýza relací Claude Code přímo v Bowcode. Zjistěte, proč vaše relace spalují tokeny, aniž byste opustili prohlížeč.",
       "install": "Instalovat"
     },
     "sessionManagerPlugin": {

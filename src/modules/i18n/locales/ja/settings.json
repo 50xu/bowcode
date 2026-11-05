@@ -355,7 +355,7 @@
       "versionUnavailable": "バージョンを取得できませんでした",
       "updateAvailable": "アップデートあり: v{{version}}",
       "upToDate": "最新です",
-      "bundled": "CloudCLI に同梱されており、CloudCLI と一緒に更新されます。",
+      "bundled": "Bowcode に同梱されており、Bowcode と一緒に更新されます。",
       "updateTo": "v{{version}} に更新",
       "runUpdater": "アップデーターを実行",
       "updating": "更新中…",
@@ -516,7 +516,7 @@
   },
   "pluginSettings": {
     "title": "プラグイン",
-    "description": "カスタムプラグインでインターフェースを拡張します。gitからインストールするか、~/.claude-code-ui/plugins/ にフォルダを配置してください。",
+    "description": "カスタムプラグインでインターフェースを拡張します。gitからインストールするか、~/.bowcode/plugins/ にフォルダを配置してください。",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "インストール",
     "installing": "インストール中…",

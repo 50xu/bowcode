@@ -100,8 +100,8 @@ function buildGitCloneEnvironment(githubToken: string | null): NodeJS.ProcessEnv
     GIT_CONFIG_KEY_0: 'credential.helper',
     GIT_CONFIG_VALUE_0: '',
     GIT_CONFIG_KEY_1: GITHUB_TOKEN_CREDENTIAL_SCOPE,
-    GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$CLOUDCLI_GITHUB_TOKEN"; }; f',
-    CLOUDCLI_GITHUB_TOKEN: githubToken,
+    GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$BOWCODE_GITHUB_TOKEN"; }; f',
+    BOWCODE_GITHUB_TOKEN: githubToken,
     GIT_TERMINAL_PROMPT: '0',
   };
 }

@@ -217,7 +217,7 @@ test('each provider reports the version its CLI prints for --version', async () 
     assert.equal(openCodeStatus.installed, true);
     assert.equal(openCodeStatus.installedVersion, '1.18.25');
 
-    // Codex chats run the @openai/codex build CloudCLI depends on, not a `codex` on PATH.
+    // Codex chats run the @openai/codex build Bowcode depends on, not a `codex` on PATH.
     const bundledCodex = createRequire(import.meta.url)('@openai/codex/package.json') as { version: string };
     const codexStatus = await new CodexProviderAuth().getStatus();
     assert.equal(codexStatus.installed, true);
@@ -417,7 +417,7 @@ test('getCliStatus does not ask the registry about a CLI that is not installed',
   });
 });
 
-test('Codex ships with CloudCLI and offers no separate update', async () => {
+test('Codex ships with Bowcode and offers no separate update', async () => {
   await withIsolatedCliEnv(async () => {
     const service = createService();
 

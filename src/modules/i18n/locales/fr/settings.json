@@ -363,7 +363,7 @@
       "versionUnavailable": "Impossible de lire la version",
       "updateAvailable": "Mise à jour disponible : v{{version}}",
       "upToDate": "À jour",
-      "bundled": "Fournie avec CloudCLI et mise à jour en même temps que lui.",
+      "bundled": "Fournie avec Bowcode et mise à jour en même temps que lui.",
       "updateTo": "Mettre à jour vers v{{version}}",
       "runUpdater": "Lancer la mise à jour",
       "updating": "Mise à jour…",
@@ -525,7 +525,7 @@
   },
   "pluginSettings": {
     "title": "Plugins",
-    "description": "Étendez l'interface avec des plugins personnalisés. Installez depuis git ou déposez un dossier dans ~/.claude-code-ui/plugins/",
+    "description": "Étendez l'interface avec des plugins personnalisés. Installez depuis git ou déposez un dossier dans ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/utilisateur/mon-plugin",
     "installButton": "Installer",
     "installing": "Installation…",
@@ -572,7 +572,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "non officiel",
-      "description": "Intelligence de session pour Claude Code, dans CloudCLI. Voyez pourquoi vos sessions consomment des tokens sans quitter le navigateur.",
+      "description": "Intelligence de session pour Claude Code, dans Bowcode. Voyez pourquoi vos sessions consomment des tokens sans quitter le navigateur.",
       "install": "Installer"
     },
     "sessionManagerPlugin": {

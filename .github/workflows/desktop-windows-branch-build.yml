@@ -11,7 +11,7 @@ jobs:
     name: Build unsigned Windows desktop artifact
     runs-on: windows-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -38,8 +38,8 @@ jobs:
         shell: bash
         run: |
           SAFE_REF="$(printf '%s' "${GITHUB_REF_NAME}" | tr -c 'A-Za-z0-9._-' '-')"
-          echo "name=CloudCLI-windows-${SAFE_REF}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "server_bundle_tag=cloudcli-local-server-${SAFE_REF}" >> "$GITHUB_OUTPUT"
+          echo "name=Bowcode-windows-${SAFE_REF}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "server_bundle_tag=bowcode-local-server-${SAFE_REF}" >> "$GITHUB_OUTPUT"
 
       - name: Configure branch server bundle source
         shell: bash
@@ -48,7 +48,7 @@ jobs:
       - name: Build unsigned Windows artifacts
         run: npm run desktop:dist:win -- --publish never
         env:
-          CLOUDCLI_SEMANTICS_BUILD_REQUIRED: "1"
+          BOWCODE_SEMANTICS_BUILD_REQUIRED: "1"
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
       - name: Build branch server bundle
@@ -57,25 +57,8 @@ jobs:
       - name: Verify branch server runtime artifacts
         shell: bash
         run: |
-          test -n "$(find release/local-server -maxdepth 1 -name 'cloudcli-local-server-*.tar.gz' -print -quit)"
-          test -n "$(find release/local-server -maxdepth 1 -name 'cloudcli-local-server-*.tar.gz.sha256' -print -quit)"
-
-      - name: Publish branch server bundle
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
-        with:
-          tag_name: ${{ steps.artifact.outputs.server_bundle_tag }}
-          name: CloudCLI Desktop Local Runtime (${{ github.ref_name }})
-          body: |
-            This prerelease is used by CloudCLI Desktop branch builds to run Local mode.
-
-            To test this branch, download the desktop app from this workflow run's artifacts. When you open Local CloudCLI, the desktop app automatically downloads the matching runtime from this prerelease.
-
-            You do not need to download these runtime files manually.
-          prerelease: true
-          fail_on_unmatched_files: false
-          overwrite_files: true
-          files: |
-            release/local-server/*
+          test -n "$(find release/local-server -maxdepth 1 -name 'bowcode-local-server-*.tar.gz' -print -quit)"
+          test -n "$(find release/local-server -maxdepth 1 -name 'bowcode-local-server-*.tar.gz.sha256' -print -quit)"
 
       - name: Verify Windows artifacts
         shell: bash

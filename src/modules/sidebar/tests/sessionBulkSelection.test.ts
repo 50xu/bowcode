@@ -619,29 +619,43 @@ test('opt-in multi-open groups survive reloads and toggle independently', () => 
 });
 
 test('hydrating the preference restores groups before writing browser storage', () => {
-  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['saved-1', 'saved-2']));
+  localStorage.setItem('bowcode-expanded-projects', JSON.stringify(['saved-1', 'saved-2']));
   const controller = renderController();
   controller.rerender({ ...IDLE, keepProjectsExpanded: true });
   assert.equal(controller.result.current.isProjectExpanded('saved-1'), true);
   assert.equal(controller.result.current.isProjectExpanded('saved-2'), true);
   controller.rerender({ ...IDLE, keepProjectsExpanded: false });
   assert.equal(controller.result.current.isProjectExpanded('saved-2'), false);
-  assert.deepEqual(JSON.parse(localStorage.getItem('cloudcli-expanded-projects')!), ['saved-1', 'saved-2']);
+  assert.deepEqual(JSON.parse(localStorage.getItem('bowcode-expanded-projects')!), ['saved-1', 'saved-2']);
+});
+
+test('legacy expansion is copied once to Bowcode storage and removed', () => {
+  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['legacy-project']));
+  const first = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
+  assert.equal(first.result.current.isProjectExpanded('legacy-project'), true);
+  assert.equal(localStorage.getItem('bowcode-expanded-projects'), JSON.stringify(['legacy-project']));
+  assert.equal(localStorage.getItem('cloudcli-expanded-projects'), null);
+  first.unmount();
+
+  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['stale-project']));
+  const second = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
+  assert.equal(second.result.current.isProjectExpanded('legacy-project'), true);
+  assert.equal(second.result.current.isProjectExpanded('stale-project'), false);
 });
 
 test('invalid saved expansion data does not break navigation', () => {
-  localStorage.setItem('cloudcli-expanded-projects', 'invalid JSON');
+  localStorage.setItem('bowcode-expanded-projects', 'invalid JSON');
   const { result } = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
   act(() => result.current.toggleProject('project-1'));
   assert.equal(result.current.isProjectExpanded('project-1'), true);
 });
 
 test('only string project IDs are restored from browser storage', () => {
-  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['saved-1', 5, null, {}, 'saved-2']));
+  localStorage.setItem('bowcode-expanded-projects', JSON.stringify(['saved-1', 5, null, {}, 'saved-2']));
   const { result } = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
   assert.equal(result.current.isProjectExpanded('saved-1'), true);
   assert.equal(result.current.isProjectExpanded('saved-2'), true);
-  assert.deepEqual(JSON.parse(localStorage.getItem('cloudcli-expanded-projects')!), ['saved-1', 'saved-2']);
+  assert.deepEqual(JSON.parse(localStorage.getItem('bowcode-expanded-projects')!), ['saved-1', 'saved-2']);
 });
 
 
@@ -668,21 +682,21 @@ test('Running groups keep their independent collapse state in multi-open mode', 
 
 
 test('a selected project intentionally collapsed before reload stays collapsed', () => {
-  localStorage.setItem('cloudcli-expanded-projects', JSON.stringify(['other-project']));
+  localStorage.setItem('bowcode-expanded-projects', JSON.stringify(['other-project']));
   const controller = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true, selectedProject: PROJECT });
   assert.equal(controller.result.current.isProjectExpanded(PROJECT.projectId), false);
   assert.equal(controller.result.current.isProjectExpanded('other-project'), true);
-  assert.deepEqual(JSON.parse(localStorage.getItem('cloudcli-expanded-projects')!), ['other-project']);
+  assert.deepEqual(JSON.parse(localStorage.getItem('bowcode-expanded-projects')!), ['other-project']);
   controller.rerender({ ...IDLE, keepProjectsExpanded: true, selectedProject: { ...PROJECT, projectId: 'new-selection' } });
   assert.equal(controller.result.current.isProjectExpanded('new-selection'), true);
 });
 
 test('an empty saved set also preserves a collapsed selection restored after mount', () => {
-  localStorage.setItem('cloudcli-expanded-projects', '[]');
+  localStorage.setItem('bowcode-expanded-projects', '[]');
   const controller = renderController(vi.fn(), { ...IDLE, keepProjectsExpanded: true });
   controller.rerender({ ...IDLE, keepProjectsExpanded: true, selectedProject: PROJECT });
   assert.equal(controller.result.current.isProjectExpanded(PROJECT.projectId), false);
-  assert.equal(localStorage.getItem('cloudcli-expanded-projects'), '[]');
+  assert.equal(localStorage.getItem('bowcode-expanded-projects'), '[]');
 });
 
 test('without saved expansion, initial project selection still opens normally', () => {

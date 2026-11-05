@@ -100,7 +100,7 @@ async function readRegistry(options: RegistryAccess): Promise<RegistryRecord[]> 
 }
 
 async function isExternal(record: RegistryRecord, options: RegistryAccess): Promise<boolean> {
-  if (record.entrypoint !== 'claudecodeui' || process.platform !== 'linux') return true;
+  if (record.entrypoint !== 'bowcode' || process.platform !== 'linux') return true;
   try {
     return Number(procFields(await access(options).readProcStat(record.pid))[1]) !== process.pid;
   } catch {

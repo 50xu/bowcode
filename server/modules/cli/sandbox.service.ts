@@ -26,6 +26,7 @@ type SandboxOptions = {
   environmentVariables: string[];
 };
 
+// TODO(bowcode): Publish Bowcode sandbox images before replacing these working templates.
 const SANDBOX_TEMPLATES: Record<string, string> = {
   claude: 'docker.io/cloudcliai/sandbox:claude-code',
   codex: 'docker.io/cloudcliai/sandbox:codex',
@@ -106,11 +107,11 @@ function readCommandError(error: unknown): string {
 
 function showSandboxHelp(output: CliOutput): void {
   output.log(`
-${terminalTextStyles.bright('CloudCLI Sandbox')} — Run CloudCLI inside Docker Sandboxes
+${terminalTextStyles.bright('Bowcode Sandbox')} — Run Bowcode inside Docker Sandboxes
 
 Usage:
-  cloudcli sandbox <workspace>            Create and start a sandbox
-  cloudcli sandbox <subcommand> [name]    Manage sandboxes
+  bowcode sandbox <workspace>            Create and start a sandbox
+  bowcode sandbox <subcommand> [name]    Manage sandboxes
 
 Subcommands:
   ${terminalTextStyles.bright('(default)')}    Create a sandbox and start the web UI
@@ -118,7 +119,7 @@ Subcommands:
   ${terminalTextStyles.bright('start')}        Restart a stopped sandbox and re-launch the web UI
   ${terminalTextStyles.bright('stop')}         Stop a sandbox (preserves state)
   ${terminalTextStyles.bright('rm')}           Remove a sandbox
-  ${terminalTextStyles.bright('logs')}         Show CloudCLI server logs
+  ${terminalTextStyles.bright('logs')}         Show Bowcode server logs
   ${terminalTextStyles.bright('help')}         Show this help
 
 Options:
@@ -129,13 +130,13 @@ Options:
       --port <port>         Host port for the web UI (default: 3001)
 
 Examples:
-  $ cloudcli sandbox ~/my-project
-  $ cloudcli sandbox ~/my-project --agent codex --port 8080
-  $ cloudcli sandbox ~/my-project --env SERVER_PORT=8080 --env HOST=0.0.0.0
-  $ cloudcli sandbox ls
-  $ cloudcli sandbox stop my-project
-  $ cloudcli sandbox start my-project
-  $ cloudcli sandbox rm my-project
+  $ bowcode sandbox ~/my-project
+  $ bowcode sandbox ~/my-project --agent codex --port 8080
+  $ bowcode sandbox ~/my-project --env SERVER_PORT=8080 --env HOST=0.0.0.0
+  $ bowcode sandbox ls
+  $ bowcode sandbox stop my-project
+  $ bowcode sandbox start my-project
+  $ bowcode sandbox rm my-project
 
 Prerequisites:
   1. Install sbx CLI: https://docs.docker.com/ai/sandboxes/get-started/
@@ -160,7 +161,7 @@ function requireSandboxName(options: SandboxOptions, output: CliOutput): string 
     return options.name;
   }
 
-  output.error(`\n${terminalTextStyles.error('❌')} Sandbox name required: cloudcli sandbox ${options.subcommand} <name>\n`);
+  output.error(`\n${terminalTextStyles.error('❌')} Sandbox name required: bowcode sandbox ${options.subcommand} <name>\n`);
   return null;
 }
 
@@ -258,7 +259,7 @@ export function createSandboxCommandService(
           }
           try {
             dependencies.runSandboxCommand(
-              ['exec', sandboxName, 'bash', '-c', 'cat /tmp/cloudcli-ui.log'],
+              ['exec', sandboxName, 'bash', '-c', 'cat /tmp/bowcode.log'],
               true,
             );
           } catch (error) {
@@ -279,18 +280,18 @@ export function createSandboxCommandService(
           );
           dependencies.spawnDetachedSandbox(['run', sandboxName]);
           await dependencies.wait(5_000);
-          dependencies.output.log(`${terminalTextStyles.info('▶')} Launching CloudCLI web server...`);
+          dependencies.output.log(`${terminalTextStyles.info('▶')} Launching Bowcode web server...`);
           dependencies.runSandboxCommand([
             'exec',
             sandboxName,
             'bash',
             '-c',
-            'nohup cloudcli start --port 3001 > /tmp/cloudcli-ui.log 2>&1 & disown',
+            'nohup bowcode start --port 3001 > /tmp/bowcode.log 2>&1 & disown',
           ]);
           if (!publishSandboxPort(options, dependencies)) {
             return 1;
           }
-          dependencies.output.log(`\n${terminalTextStyles.ok('✔')} ${terminalTextStyles.bright('CloudCLI is ready!')}`);
+          dependencies.output.log(`\n${terminalTextStyles.ok('✔')} ${terminalTextStyles.bright('Bowcode is ready!')}`);
           dependencies.output.log(`  ${terminalTextStyles.info('→')} ${terminalTextStyles.bright(`http://localhost:${options.port}`)}\n`);
           return 0;
         }
@@ -298,9 +299,9 @@ export function createSandboxCommandService(
         case 'create': {
           if (!options.workspace) {
             dependencies.output.error(
-              `\n${terminalTextStyles.error('❌')} Workspace path required: cloudcli sandbox <path>\n`,
+              `\n${terminalTextStyles.error('❌')} Workspace path required: bowcode sandbox <path>\n`,
             );
-            dependencies.output.log(`   Example: ${terminalTextStyles.bright('cloudcli sandbox ~/my-project')}\n`);
+            dependencies.output.log(`   Example: ${terminalTextStyles.bright('bowcode sandbox ~/my-project')}\n`);
             return 1;
           }
 
@@ -330,7 +331,7 @@ export function createSandboxCommandService(
             // proceed and let sbx report a credential error itself.
           }
 
-          dependencies.output.log(`\n${terminalTextStyles.bright('CloudCLI Sandbox')}`);
+          dependencies.output.log(`\n${terminalTextStyles.bright('Bowcode Sandbox')}`);
           dependencies.output.log(terminalTextStyles.dim('─'.repeat(50)));
           dependencies.output.log(`  Agent:     ${terminalTextStyles.info(options.agent)} ${terminalTextStyles.dim(`(${secret} credentials)`)}`);
           dependencies.output.log(`  Workspace: ${terminalTextStyles.dim(workspace)}`);
@@ -381,26 +382,26 @@ export function createSandboxCommandService(
             }
           }
 
-          dependencies.output.log(`${terminalTextStyles.info('▶')} Launching CloudCLI web server...`);
+          dependencies.output.log(`${terminalTextStyles.info('▶')} Launching Bowcode web server...`);
           dependencies.runSandboxCommand([
             'exec',
             sandboxName,
             'bash',
             '-c',
-            'nohup cloudcli start --port 3001 > /tmp/cloudcli-ui.log 2>&1 & disown',
+            'nohup bowcode start --port 3001 > /tmp/bowcode.log 2>&1 & disown',
           ]);
           if (!publishSandboxPort(options, dependencies)) {
             return 1;
           }
 
-          dependencies.output.log(`\n${terminalTextStyles.ok('✔')} ${terminalTextStyles.bright('CloudCLI is ready!')}`);
+          dependencies.output.log(`\n${terminalTextStyles.ok('✔')} ${terminalTextStyles.bright('Bowcode is ready!')}`);
           dependencies.output.log(`  ${terminalTextStyles.info('→')} Open ${terminalTextStyles.bright(`http://localhost:${options.port}`)}`);
           dependencies.output.log(`\n${terminalTextStyles.dim('  Manage with:')}`);
           dependencies.output.log(`  ${terminalTextStyles.dim('$')} sbx ls`);
           dependencies.output.log(`  ${terminalTextStyles.dim('$')} sbx stop ${sandboxName}`);
           dependencies.output.log(`  ${terminalTextStyles.dim('$')} sbx start ${sandboxName}`);
           dependencies.output.log(`  ${terminalTextStyles.dim('$')} sbx rm ${sandboxName}`);
-          dependencies.output.log(`\n${terminalTextStyles.dim('  Or install globally:')} npm install -g @cloudcli-ai/cloudcli\n`);
+          dependencies.output.log(`\n${terminalTextStyles.dim('  Or install globally:')} npm install -g bowcode\n`);
           return 0;
         }
 

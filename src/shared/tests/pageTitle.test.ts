@@ -31,9 +31,9 @@ test('uses the selected session name as the page title', () => {
 });
 
 test('falls back to the project title when no session is selected', () => {
-  assert.equal(getPageTitle(project, null), 'My Project - CloudCLI UI');
+  assert.equal(getPageTitle(project, null), 'My Project - Bowcode');
 });
 
 test('falls back to the app title when no project or session is selected', () => {
-  assert.equal(getPageTitle(null, null), 'CloudCLI UI');
+  assert.equal(getPageTitle(null, null), 'Bowcode');
 });

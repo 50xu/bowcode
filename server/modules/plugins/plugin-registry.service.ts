@@ -1,16 +1,18 @@
 // @ts-nocheck -- the registry's dynamic manifest schema is narrowed by Plugins service adapters.
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 
 import { spawn } from 'cross-spawn';
+
+// eslint-disable-next-line boundaries/no-unknown -- Early bootstrap helper is not classified by the legacy boundary map.
+import { getAppDataDir } from '@/shared/data-directory.js';
 
 import {
   createPluginGitError, createPluginGitSpawnError, getPluginGitSpawnOptions, stopPluginGitOnServerExit,
 } from './plugin-git.service.js';
 
-const PLUGINS_DIR = path.join(os.homedir(), '.claude-code-ui', 'plugins');
-const PLUGINS_CONFIG_PATH = path.join(os.homedir(), '.claude-code-ui', 'plugins.json');
+const PLUGINS_DIR = path.join(getAppDataDir(), 'plugins');
+const PLUGINS_CONFIG_PATH = path.join(getAppDataDir(), 'plugins.json');
 
 const REQUIRED_MANIFEST_FIELDS = ['name', 'displayName', 'entry'];
 

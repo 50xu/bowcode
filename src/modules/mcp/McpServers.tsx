@@ -53,10 +53,11 @@ const getServerKey = (server: ProviderMcpServer): string => (
   `${server.provider}:${server.scope}:${server.workspacePath || 'global'}:${server.name}`
 );
 
-// Servers prefixed with `cloudcli-` are written and removed automatically by a
-// CloudCLI feature toggle (e.g. the Browser tab), not added by the user. They are
-// shown read-only so users don't edit/delete them out of sync with the feature.
-const isManagedServer = (server: ProviderMcpServer): boolean => server.name.startsWith('cloudcli-');
+// Bowcode feature toggles own these servers; legacy CloudCLI-prefixed servers
+// remain read-only so users don't edit/delete them out of sync with the feature.
+const isManagedServer = (server: ProviderMcpServer): boolean => (
+  server.name.startsWith('bowcode-') || server.name.startsWith('cloudcli-')
+);
 
 function ConfigLine({ label, children }: { label: string; children: string }) {
   if (!children) {
@@ -210,7 +211,7 @@ export default function McpServers({ selectedProvider, currentProjects }: McpSer
                     {managed && (
                       <div className="text-xs text-muted-foreground">
                         {t('mcpServers.managed.hint', {
-                          defaultValue: 'Managed by CloudCLI.',
+                          defaultValue: 'Managed by Bowcode.',
                         })}
                       </div>
                     )}

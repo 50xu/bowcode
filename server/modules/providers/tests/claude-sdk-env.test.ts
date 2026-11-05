@@ -13,8 +13,8 @@ test('a host CLAUDE_CODE_ARTIFACT value wins over the default', () => {
   assert.equal(buildClaudeSdkEnv({ CLAUDE_CODE_ARTIFACT: '0' }).CLAUDE_CODE_ARTIFACT, '0');
 });
 
-test('SDK sessions are labeled claudecodeui, and a host value wins', () => {
-  assert.equal(buildClaudeSdkEnv({}).CLAUDE_CODE_ENTRYPOINT, 'claudecodeui');
+test('SDK sessions are labeled bowcode, and a host value wins', () => {
+  assert.equal(buildClaudeSdkEnv({}).CLAUDE_CODE_ENTRYPOINT, 'bowcode');
   assert.equal(buildClaudeSdkEnv({ CLAUDE_CODE_ENTRYPOINT: 'x' }).CLAUDE_CODE_ENTRYPOINT, 'x');
 });
 

@@ -499,7 +499,7 @@ function CostContent({ data }: { data: CostCommandData }) {
 function StatusContent({ data }: { data: StatusCommandData }) {
   const memoryRssMb = data.memoryUsage?.rssMb;
   const rows = [
-    { label: 'Package', value: data.packageName || 'claude-code-ui', icon: Package },
+    { label: 'Package', value: data.packageName || 'bowcode', icon: Package },
     { label: 'Version', value: data.version || 'Unknown', icon: BadgeCheck, tone: 'success' as const },
     { label: 'Uptime', value: data.uptime || 'Unknown', icon: Timer },
     { label: 'Provider', value: getProviderLabel(data.provider, data.provider || 'Unknown'), icon: Server, tone: 'primary' as const },

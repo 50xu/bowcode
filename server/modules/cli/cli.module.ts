@@ -1,10 +1,12 @@
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 import spawn from 'cross-spawn';
 
+// eslint-disable-next-line boundaries/no-unknown -- Early bootstrap helper is not classified by the legacy boundary map.
+import { getAppDataDir } from '@/shared/data-directory.js';
 import type { CliApplication, CliPackageMetadata } from '@/shared/types.js';
 import { findApplicationRoot, getModuleDirectory } from '@/shared/utils.js';
 
@@ -62,25 +64,13 @@ export function createCliApplication(): CliApplication {
 
   return createCliService({
     applicationRoot,
-    defaultDatabasePath: path.join(homeDirectory, '.cloudcli', 'auth.db'),
+    defaultDatabasePath: path.join(getAppDataDir(homeDirectory), 'auth.db'),
     homeDirectory,
     packageMetadata,
     environment: process.env,
     fileSystem,
     output,
     sandboxService,
-    getLatestPackageVersion: async () => {
-      // Yield first so the default `start` command can begin loading the server
-      // before this best-effort npm registry check runs.
-      await new Promise<void>((resolve) => setImmediate(resolve));
-      return execSync(
-        'npm show @cloudcli-ai/cloudcli version',
-        { encoding: 'utf8' },
-      ).trim();
-    },
-    updateGlobalPackage: () => {
-      execSync('npm update -g @cloudcli-ai/cloudcli', { stdio: 'inherit' });
-    },
     startServer: async () => {
       // The server executable is an entrypoint rather than a feature module,
       // so it has no barrel contract to import through.

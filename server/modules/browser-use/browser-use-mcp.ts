@@ -2,6 +2,8 @@
 // The MCP executable must load the root environment bootstrap before reading configuration.
 // eslint-disable-next-line boundaries/no-unknown
 import '../../load-env.js';
+// eslint-disable-next-line boundaries/no-unknown -- Early bootstrap helper is not classified by the legacy boundary map.
+import { readEnv } from '../../shared/env.js';
 
 type JsonRpcRequest = {
   jsonrpc: '2.0';
@@ -35,13 +37,13 @@ const readOptionalString = (value: unknown): string | undefined =>
 const readNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
-const apiUrl = (process.env.CLOUDCLI_BROWSER_USE_API_URL || 'http://127.0.0.1:3001/api/browser-use-mcp').replace(/\/$/, '');
-const apiToken = process.env.CLOUDCLI_BROWSER_USE_MCP_TOKEN || '';
-const API_TIMEOUT_MS = Number.parseInt(process.env.CLOUDCLI_BROWSER_USE_API_TIMEOUT_MS || '60000', 10);
+const apiUrl = (readEnv('BOWCODE_BROWSER_USE_API_URL') || 'http://127.0.0.1:3001/api/browser-use-mcp').replace(/\/$/, '');
+const apiToken = readEnv('BOWCODE_BROWSER_USE_MCP_TOKEN') || '';
+const API_TIMEOUT_MS = Number.parseInt(readEnv('BOWCODE_BROWSER_USE_API_TIMEOUT_MS') || '60000', 10);
 
 async function callBrowserUseApi(toolName: string, input: Record<string, unknown>) {
   if (!apiToken) {
-    throw new Error('CLOUDCLI_BROWSER_USE_MCP_TOKEN is not configured.');
+    throw new Error('BOWCODE_BROWSER_USE_MCP_TOKEN is not configured.');
   }
 
   const response = await fetch(`${apiUrl}/tools/${encodeURIComponent(toolName)}`, {
@@ -304,7 +306,7 @@ async function handleMessage(message: JsonRpcRequest) {
     return {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {} },
-      serverInfo: { name: 'cloudcli-browser', version: '1.0.0' },
+      serverInfo: { name: 'bowcode-browser', version: '1.0.0' },
     };
   }
 

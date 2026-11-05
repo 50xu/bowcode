@@ -402,7 +402,7 @@
       "versionUnavailable": "לא ניתן לקרוא את הגרסה",
       "updateAvailable": "עדכון זמין: v{{version}}",
       "upToDate": "מעודכנת",
-      "bundled": "מגיעה עם CloudCLI ומתעדכנת יחד איתו.",
+      "bundled": "מגיעה עם Bowcode ומתעדכנת יחד איתו.",
       "updateTo": "עדכון ל-v{{version}}",
       "runUpdater": "הפעלת העדכון",
       "updating": "מעדכן…",
@@ -557,7 +557,7 @@
     },
     "managed": {
       "badge": "מנוהל",
-      "hint": "מנוהל על ידי CloudCLI."
+      "hint": "מנוהל על ידי Bowcode."
     },
     "help": {
       "title": "על Codex MCP",
@@ -566,7 +566,7 @@
   },
   "pluginSettings": {
     "title": "תוספים",
-    "description": "הרחבת הממשק עם תוספים מותאמים אישית. אפשר להתקין מ-git או להניח תיקייה ב-~/.claude-code-ui/plugins/",
+    "description": "הרחבת הממשק עם תוספים מותאמים אישית. אפשר להתקין מ-git או להניח תיקייה ב-~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "התקנה",
     "installing": "מתקין…",
@@ -613,7 +613,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "לא רשמי",
-      "description": "ניתוח סשנים של Claude Code בתוך CloudCLI. אפשר לראות למה הסשנים צורכים טוקנים בלי לצאת מהדפדפן.",
+      "description": "ניתוח סשנים של Claude Code בתוך Bowcode. אפשר לראות למה הסשנים צורכים טוקנים בלי לצאת מהדפדפן.",
       "install": "התקנה"
     },
     "sessionManagerPlugin": {

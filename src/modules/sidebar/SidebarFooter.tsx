@@ -9,22 +9,34 @@ type SidebarFooterProps = {
   t: TFunction;
 };
 
-/** Rendered by SidebarContent as the settings and local version group at the bottom of the sidebar. */
+/**
+ * Rendered by SidebarContent at the bottom of the sidebar: one quiet row that
+ * opens Settings, styled like the rows above it rather than as a separate card,
+ * with the running version tucked in at the right.
+ */
 export default function SidebarFooter({ restartRequired, currentVersion, onShowSettings, t }: SidebarFooterProps) {
   return (
-    <div className="hairline-bottom flex-shrink-0 border-t border-border px-3 py-2" style={{ paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))' }}>
+    <div
+      className="flex-shrink-0 border-t border-border px-2 pt-1.5"
+      style={{ paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))' }}
+    >
       {restartRequired && (
-        <div className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-xs text-amber-600">
-          <AlertTriangle className="h-4 w-4" />{t('version.restartRequired')}
+        <div className="flex min-h-9 items-center gap-2 px-2.5 text-xs text-amber-600">
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          {t('version.restartRequired')}
         </div>
       )}
-      <div className="hairline overflow-hidden rounded-xl bg-card">
-        <button className="flex min-h-11 w-full items-center gap-3 px-3 text-left text-foreground hover:bg-accent" onClick={onShowSettings}>
-          <Settings className="h-5 w-5 text-muted-foreground" />
-          <span className="text-[17px]">{t('actions.settings')}</span>
-        </button>
-      </div>
-      <div className="pt-2 text-center text-xs text-muted-foreground">CloudCLI v{currentVersion}</div>
+      <button
+        type="button"
+        onClick={onShowSettings}
+        className="group flex h-10 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:bg-accent max-md:h-11 max-md:text-[15px]"
+      >
+        <Settings className="h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover:rotate-45" />
+        <span className="min-w-0 flex-1 truncate">{t('actions.settings')}</span>
+        {currentVersion && (
+          <span className="flex-shrink-0 text-[11px] tabular-nums text-muted-foreground/60">v{currentVersion}</span>
+        )}
+      </button>
     </div>
   );
 }

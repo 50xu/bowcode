@@ -19,6 +19,7 @@
 
 export { ActionMenu } from '@/shared/ui/ActionMenu';
 export { Badge } from '@/shared/ui/Badge';
+export { BrandMark } from '@/shared/ui/BrandMark';
 export { Button, buttonVariants } from '@/shared/ui/Button';
 export { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/shared/ui/Card';
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/shared/ui/Collapsible';

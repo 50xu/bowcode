@@ -384,7 +384,7 @@
       "versionUnavailable": "无法读取版本",
       "updateAvailable": "有可用更新：v{{version}}",
       "upToDate": "已是最新",
-      "bundled": "随 CloudCLI 一起提供，并随其一起更新。",
+      "bundled": "随 Bowcode 一起提供，并随其一起更新。",
       "updateTo": "更新到 v{{version}}",
       "runUpdater": "运行更新程序",
       "updating": "正在更新…",
@@ -541,7 +541,7 @@
     },
     "managed": {
       "badge": "已托管",
-      "hint": "由 CloudCLI 管理。"
+      "hint": "由 Bowcode 管理。"
     },
     "help": {
       "title": "关于 Codex MCP",
@@ -550,7 +550,7 @@
   },
   "pluginSettings": {
     "title": "插件",
-    "description": "通过自定义插件扩展界面。从 git 安装或直接将文件夹放入 ~/.claude-code-ui/plugins/",
+    "description": "通过自定义插件扩展界面。从 git 安装或直接将文件夹放入 ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "安装",
     "installing": "安装中…",
@@ -597,7 +597,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "非官方",
-      "description": "CloudCLI 内的 Claude Code 会话智能分析。无需离开浏览器即可了解会话为何消耗大量 Token。",
+      "description": "Bowcode 内的 Claude Code 会话智能分析。无需离开浏览器即可了解会话为何消耗大量 Token。",
       "install": "安装"
     },
     "sessionManagerPlugin": {

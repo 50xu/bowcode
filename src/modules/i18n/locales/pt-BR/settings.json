@@ -401,7 +401,7 @@
       "versionUnavailable": "Não foi possível ler a versão",
       "updateAvailable": "Atualização disponível: v{{version}}",
       "upToDate": "Atualizada",
-      "bundled": "Vem com o CloudCLI e é atualizada junto com ele.",
+      "bundled": "Vem com o Bowcode e é atualizada junto com ele.",
       "updateTo": "Atualizar para v{{version}}",
       "runUpdater": "Executar atualizador",
       "updating": "Atualizando…",
@@ -571,7 +571,7 @@
     },
     "managed": {
       "badge": "Gerenciado",
-      "hint": "Gerenciado pelo CloudCLI."
+      "hint": "Gerenciado pelo Bowcode."
     },
     "help": {
       "title": "Sobre MCP do Codex",
@@ -580,7 +580,7 @@
   },
   "pluginSettings": {
     "title": "Plugins",
-    "description": "Estenda a interface com plugins personalizados. Instale a partir do Git ou coloque uma pasta em ~/.claude-code-ui/plugins/",
+    "description": "Estenda a interface com plugins personalizados. Instale a partir do Git ou coloque uma pasta em ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/usuario/meu-plugin",
     "installButton": "Instalar",
     "installing": "Instalando…",
@@ -627,7 +627,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "não oficial",
-      "description": "Inteligência de sessão para o Claude Code, dentro do CloudCLI. Veja por que suas sessões estão queimando tokens sem sair do navegador.",
+      "description": "Inteligência de sessão para o Claude Code, dentro do Bowcode. Veja por que suas sessões estão queimando tokens sem sair do navegador.",
       "install": "Instalar"
     },
     "sessionManagerPlugin": {

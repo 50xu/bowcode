@@ -249,11 +249,11 @@ test('a new session runs on a private, authenticated server that stops with the 
   assert.deepEqual(prompt?.body.parts, [{ type: 'text', text: 'Hi' }]);
   assert.equal(prompt?.body.agent, undefined);
 
-  // Loopback only, with a password of its own that never stays in CloudCLI's environment.
+  // Loopback only, with a password of its own that never stays in Bowcode's environment.
   assert.ok(turn.started?.args.includes('--hostname=127.0.0.1'));
   assert.equal(turn.started?.passwordSet, true);
   assert.equal(process.env.OPENCODE_SERVER_PASSWORD, undefined);
-  assert.equal(process.env.CLOUDCLI_OPENCODE_OWNER_PID, undefined);
+  assert.equal(process.env.BOWCODE_OPENCODE_OWNER_PID, undefined);
 
   assert.ok(turn.serverPid, 'the fake server reported its pid');
   assert.ok(await waitForExit(turn.serverPid!), 'the turn\'s server process is gone');
@@ -309,7 +309,7 @@ test('Always allow is remembered for the same chat, not for others', async () =>
   });
   assert.deepEqual(findRequest(first.requests, 'POST', /\/permission\/per_1\/reply$/)?.body, { reply: 'always' });
 
-  // The next turn's server knows nothing of it, so CloudCLI answers for the chat.
+  // The next turn's server knows nothing of it, so Bowcode answers for the chat.
   const second = await runTurn({
     appSessionId: 'app-always',
     resumeSessionId: 'ses_always',
@@ -552,33 +552,33 @@ test('an event that cannot be handled does not end the turn', async () => {
   assert.equal(turn.frames.at(-1)?.exitCode, 0);
 });
 
-test('turn servers a killed CloudCLI left running are stopped, and nothing else', { skip: process.platform !== 'linux' }, async () => {
+test('turn servers a killed Bowcode left running are stopped, and nothing else', { skip: process.platform !== 'linux' }, async () => {
   const deadOwner = spawn(process.execPath, ['-e', '']);
   await new Promise((resolve) => deadOwner.once('exit', resolve));
   const keepAlive = 'setInterval(() => {}, 1000)';
   const start = (args: string[], ownerPid: number) => spawn(process.execPath, ['-e', keepAlive, ...args], {
-    env: { ...process.env, CLOUDCLI_OPENCODE_OWNER_PID: String(ownerPid) },
+    env: { ...process.env, BOWCODE_OPENCODE_OWNER_PID: String(ownerPid) },
     stdio: 'ignore',
   });
   const orphan = start(['serve', '--hostname=127.0.0.1', '--port=1'], deadOwner.pid!);
-  const ownedByLiveCloudCli = start(['serve', '--hostname=127.0.0.1', '--port=2'], process.pid);
+  const ownedByLiveBowcode = start(['serve', '--hostname=127.0.0.1', '--port=2'], process.pid);
   const leftoverCommand = start(['npm', 'run', 'dev'], deadOwner.pid!);
   await new Promise((resolve) => setTimeout(resolve, 300));
 
   try {
     assert.ok(await reapOrphanedOpenCodeServers() >= 1);
     assert.ok(await waitForExit(orphan.pid!), 'the orphaned turn server is stopped');
-    assert.equal(isProcessAlive(ownedByLiveCloudCli.pid!), true, 'a live CloudCLI\'s server is left alone');
+    assert.equal(isProcessAlive(ownedByLiveBowcode.pid!), true, 'a live Bowcode\'s server is left alone');
     assert.equal(isProcessAlive(leftoverCommand.pid!), true, 'a command the agent left running is left alone');
   } finally {
-    for (const child of [orphan, ownedByLiveCloudCli, leftoverCommand]) {
+    for (const child of [orphan, ownedByLiveBowcode, leftoverCommand]) {
       child.kill('SIGKILL');
     }
   }
 });
 
 test('the leftover-server sweep only trusts owner pids from its own PID namespace', { skip: process.platform !== 'linux' }, async () => {
-  // A CloudCLI on the host also sees a container's processes in /proc; their
+  // A Bowcode on the host also sees a container's processes in /proc; their
   // owner pid is the container's and would look dead from the host.
   const deadOwner = spawn(process.execPath, ['-e', '']);
   await new Promise((resolve) => deadOwner.once('exit', resolve));
@@ -590,7 +590,7 @@ test('the leftover-server sweep only trusts owner pids from its own PID namespac
   const addProcess = async (pid: number, namespace: string) => {
     const dir = path.join(procRoot, String(pid));
     await mkdir(path.join(dir, 'ns'), { recursive: true });
-    await writeFile(path.join(dir, 'environ'), `PATH=/usr/bin\0CLOUDCLI_OPENCODE_OWNER_PID=${deadOwner.pid}\0`);
+    await writeFile(path.join(dir, 'environ'), `PATH=/usr/bin\0BOWCODE_OPENCODE_OWNER_PID=${deadOwner.pid}\0`);
     await writeFile(path.join(dir, 'cmdline'), 'opencode\0serve\0--hostname=127.0.0.1\0--port=4242\0');
     await symlink(namespace, path.join(dir, 'ns', 'pid'));
   };
@@ -708,14 +708,14 @@ test('permission modes map onto automatic replies', () => {
 });
 
 test('remembered approvals cover a request only when every pattern matches', () => {
-  const approvals = [{ permission: 'bash', pattern: 'git status *' }, { permission: 'external_directory', pattern: '/home/u/.cloudcli/assets/*' }];
+  const approvals = [{ permission: 'bash', pattern: 'git status *' }, { permission: 'external_directory', pattern: '/home/u/.bowcode/assets/*' }];
 
   assert.equal(isCoveredByApprovals(approvals, 'bash', ['git status']), true);
   assert.equal(isCoveredByApprovals(approvals, 'bash', ['git status --short']), true);
   assert.equal(isCoveredByApprovals(approvals, 'bash', ['git statusx']), false);
   assert.equal(isCoveredByApprovals(approvals, 'bash', ['git status', 'git push']), false);
   assert.equal(isCoveredByApprovals(approvals, 'edit', ['git status']), false);
-  assert.equal(isCoveredByApprovals(approvals, 'external_directory', ['/home/u/.cloudcli/assets/*']), true);
+  assert.equal(isCoveredByApprovals(approvals, 'external_directory', ['/home/u/.bowcode/assets/*']), true);
   assert.equal(isCoveredByApprovals(undefined, 'bash', ['git status']), false);
   assert.equal(isCoveredByApprovals(approvals, 'bash', []), false);
 });

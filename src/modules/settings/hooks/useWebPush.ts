@@ -25,7 +25,7 @@ export function useWebPush(): WebPushState {
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() => {
     if (
       typeof window === 'undefined'
-      || Boolean((window as any).cloudcliDesktopNotifications)
+      || Boolean((window as any).bowcodeDesktopNotifications)
       || !('Notification' in window)
       || !('serviceWorker' in navigator)
     ) {

@@ -190,7 +190,7 @@ sequenceDiagram
 
 Three details worth pinning:
 
-- **The name.** `buildCloudCliSessionName(initialMessage)` derives a four-word title from
+- **The name.** `buildSessionName(initialMessage)` derives a four-word title from
   the first message, so the sidebar row is never blank. The composer keeps its own summary
   and uses it if the server returns an empty string.
 - **The optimistic row.** `registerOptimisticSession` builds a local `SessionUpsertedEvent`

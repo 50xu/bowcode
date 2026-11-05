@@ -15,16 +15,16 @@ export default function SyncSettingsTab() {
   const { config, setConfig, tokens, status, busy, message, missingPlugins, save, push, pull, disconnect } = useSettingsSync();
   return (
     <div className="space-y-6">
-      <SettingsSection title={t('sync.title')} description={t('sync.description')}>
+      <SettingsSection title={t('sync.repositorySection', { defaultValue: 'Repository' })} description={t('sync.description')}>
         <SettingsCard divided>
-          <SettingsRow label={t('sync.repository')} description={t('sync.repositoryHint')}>
-            <Input className="w-full max-w-xs" type="text" value={config.repoUrl} placeholder="https://github.com/owner/settings.git" onChange={(event) => setConfig({ ...config, repoUrl: event.target.value })} />
+          <SettingsRow stacked label={t('sync.repository')} description={t('sync.repositoryHint')}>
+            <Input className="w-full" type="text" value={config.repoUrl} placeholder="https://github.com/owner/settings.git" onChange={(event) => setConfig({ ...config, repoUrl: event.target.value })} />
           </SettingsRow>
-          <SettingsRow label={t('sync.branch')}>
-            <Input className="w-full max-w-xs" value={config.branch} onChange={(event) => setConfig({ ...config, branch: event.target.value })} />
+          <SettingsRow stacked label={t('sync.branch')}>
+            <Input className="w-full" value={config.branch} onChange={(event) => setConfig({ ...config, branch: event.target.value })} />
           </SettingsRow>
-          <SettingsRow label={t('sync.token')} description={t('sync.tokenHint')}>
-            <select className="max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm" value={config.githubTokenId ?? ''} onChange={(event) => setConfig({ ...config, githubTokenId: event.target.value ? Number(event.target.value) : null })}>
+          <SettingsRow stacked label={t('sync.token')} description={t('sync.tokenHint')}>
+            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={config.githubTokenId ?? ''} onChange={(event) => setConfig({ ...config, githubTokenId: event.target.value ? Number(event.target.value) : null })}>
               <option value="">{t('sync.noToken')}</option>
               {tokens.map((token) => <option key={token.id} value={token.id}>{token.credential_name}</option>)}
             </select>

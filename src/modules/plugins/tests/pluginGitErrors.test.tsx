@@ -142,7 +142,7 @@ describe('PluginsContext reads the structured error envelope of every plugin cal
   it('exposes the message of a failed plugin list as pluginsError', async () => {
     const message = 'Plugins directory is not readable';
     stubPluginsApi({
-      '/api/plugins': { status: 500, body: envelope('PLUGINS_UNREADABLE', message, { path: '~/.claude-code-ui/plugins' }) },
+      '/api/plugins': { status: 500, body: envelope('PLUGINS_UNREADABLE', message, { path: '~/.bowcode/plugins' }) },
     });
 
     const { result } = renderHook(() => usePlugins(), { wrapper: PluginsProvider });

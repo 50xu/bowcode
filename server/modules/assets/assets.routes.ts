@@ -50,7 +50,7 @@ const attachmentUpload = multer({
 });
 
 /**
- * Stores chat image attachments in the global `~/.cloudcli/assets` folder and
+ * Stores chat image attachments in the global `~/.bowcode/assets` folder and
  * returns their absolute paths for use in provider prompts and chat history.
  */
 router.post('/images', (req, res) => {

@@ -104,21 +104,21 @@ export class DesktopWindowManager {
   emitDesktopState() {
     const state = this.getDesktopState();
     if (this.mainWindow && !this.mainWindow.webContents.isDestroyed()) {
-      this.mainWindow.webContents.send('cloudcli-desktop:state-updated', state);
+      this.mainWindow.webContents.send('bowcode-desktop:state-updated', state);
     }
     if (this.settingsWindow && !this.settingsWindow.webContents.isDestroyed()) {
-      this.settingsWindow.webContents.send('cloudcli-desktop:state-updated', state);
+      this.settingsWindow.webContents.send('bowcode-desktop:state-updated', state);
     }
   }
 
   emitLauncherCommand(command) {
     if (!this.mainWindow || this.mainWindow.webContents.isDestroyed()) return;
-    this.mainWindow.webContents.send('cloudcli-desktop:launcher-command', command);
+    this.mainWindow.webContents.send('bowcode-desktop:launcher-command', command);
   }
 
   emitSettingsCommand(command) {
     if (!this.settingsWindow || this.settingsWindow.webContents.isDestroyed()) return;
-    this.settingsWindow.webContents.send('cloudcli-desktop:launcher-command', command);
+    this.settingsWindow.webContents.send('bowcode-desktop:launcher-command', command);
   }
 
   syncSettingsWindowBounds() {
@@ -371,9 +371,9 @@ export class DesktopWindowManager {
           },
           { type: 'separator' },
           {
-            label: 'Open Local CloudCLI',
+            label: 'Open Local Bowcode',
             accelerator: 'CmdOrCtrl+L',
-            click: () => void this.actions.openLocalInDesktop().catch((error) => this.actions.showError('Could not open local CloudCLI', error)),
+            click: () => void this.actions.openLocalInDesktop().catch((error) => this.actions.showError('Could not open local Bowcode', error)),
           },
           {
             label: 'Open Local Web UI in Browser',
@@ -476,8 +476,8 @@ export class DesktopWindowManager {
         label: 'Local',
         submenu: [
           {
-            label: localState.localServerRunning ? 'Open Local in CloudCLI' : 'Start Local in CloudCLI',
-            click: () => void this.actions.openLocalInDesktop().catch((error) => this.actions.showError('Could not open local CloudCLI', error)),
+            label: localState.localServerRunning ? 'Open Local in Bowcode' : 'Start Local in Bowcode',
+            click: () => void this.actions.openLocalInDesktop().catch((error) => this.actions.showError('Could not open local Bowcode', error)),
           },
           {
             label: 'Open Local in Browser',

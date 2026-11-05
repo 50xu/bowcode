@@ -17,12 +17,12 @@ function createHarness() {
   let sandboxArguments: string[] = [];
   const service = createCliService({
     applicationRoot: '/application',
-    defaultDatabasePath: '/home/user/.cloudcli/auth.db',
+    defaultDatabasePath: '/home/user/.bowcode/auth.db',
     homeDirectory: '/home/user',
     packageMetadata: {
       version: '1.2.3',
-      homepage: 'https://cloudcli.example',
-      bugsUrl: 'https://cloudcli.example/issues',
+      homepage: 'https://bowcode.example',
+      bugsUrl: 'https://bowcode.example/issues',
     },
     environment,
     fileSystem: {
@@ -36,8 +36,6 @@ function createHarness() {
         return 7;
       },
     },
-    getLatestPackageVersion: async () => '1.2.3',
-    updateGlobalPackage: () => undefined,
     startServer: async () => {
       serverStarts += 1;
     },
@@ -76,6 +74,28 @@ test('passes only sandbox arguments to the injected sandbox service', async () =
 
   assert.equal(exitCode, 7);
   assert.deepEqual(harness.getSandboxArguments(), ['ls']);
+});
+
+test('help and status present Bowcode command examples without an update command', async () => {
+  const harness = createHarness();
+
+  assert.equal(await harness.service.run(['help']), 0);
+  const help = harness.logMessages.join('\n');
+  assert.match(help, /Bowcode - Command Line Tool/);
+  assert.match(help, /bowcode \[command\] \[options\]/);
+  assert.doesNotMatch(help, /claude-code-ui|cloudcli|\bupdate\b/i);
+
+  assert.equal(await harness.service.run(['status']), 0);
+  const status = harness.logMessages.join('\n');
+  assert.match(status, /Bowcode UI - Status/);
+  assert.match(status, /bowcode --port 8080/);
+});
+
+test('update is no longer a CLI command', async () => {
+  const harness = createHarness();
+
+  assert.equal(await harness.service.run(['update']), 1);
+  assert.match(harness.errorMessages[0], /Unknown command: update/);
 });
 
 test('returns a failure code for an unknown command without exiting the process', async () => {

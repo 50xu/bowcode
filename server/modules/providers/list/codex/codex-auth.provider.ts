@@ -17,7 +17,7 @@ type CodexCredentialsStatus = {
 export class CodexProviderAuth implements IProviderAuth {
   /**
    * Checks whether the Codex CLI that chats run is available, and which version
-   * it is. That is the `@openai/codex` package CloudCLI depends on, which
+   * it is. That is the `@openai/codex` package Bowcode depends on, which
    * `@openai/codex-sdk` resolves from node_modules, not a `codex` on PATH.
    */
   checkInstalled(): CliVersionProbe {

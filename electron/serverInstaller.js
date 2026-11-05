@@ -5,15 +5,16 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
+import { desktopEnv } from './env.js';
 
 /**
- * Installs the versioned local server runtime used by CloudCLI Desktop.
+ * Installs the versioned local server runtime used by Bowcode Desktop.
  *
  * Server bundles are cached under:
- *   ~/.cloudcli/server/<version>/dist-server/server/index.js
+ *   ~/.bowcode/server/<version>/dist-server/server/index.js
  */
 
-const DEFAULT_INSTALL_ROOT = path.join(os.homedir(), '.cloudcli', 'server');
+const DEFAULT_INSTALL_ROOT = path.join(os.homedir(), '.bowcode', 'server');
 // TODO(rebrand): migrate the server bundle download source when releases move to the rebranded repository.
 const DEFAULT_BUNDLE_BASE_URL = 'https://github.com/siteboon/claudecodeui' + '/releases/download';
 const MAX_REDIRECTS = 5;
@@ -34,9 +35,9 @@ export class ServerInstaller {
     version,
     platform = process.platform,
     arch = process.arch,
-    installRoot = process.env.CLOUDCLI_SERVER_DIR || DEFAULT_INSTALL_ROOT,
-    bundleBaseUrl = process.env.CLOUDCLI_SERVER_BUNDLE_URL || DEFAULT_BUNDLE_BASE_URL,
-    bundleReleaseTag = process.env.CLOUDCLI_SERVER_BUNDLE_RELEASE_TAG || '',
+    installRoot = desktopEnv('BOWCODE_SERVER_DIR', DEFAULT_INSTALL_ROOT),
+    bundleBaseUrl = desktopEnv('BOWCODE_SERVER_BUNDLE_URL', DEFAULT_BUNDLE_BASE_URL),
+    bundleReleaseTag = desktopEnv('BOWCODE_SERVER_BUNDLE_RELEASE_TAG', ''),
     onLog,
   } = {}) {
     if (!version) throw new Error('ServerInstaller requires the app version');
@@ -60,7 +61,7 @@ export class ServerInstaller {
   }
 
   getBundleName() {
-    return `cloudcli-local-server-${this.version}-${this.platform}-${this.arch}.tar.gz`;
+    return `bowcode-local-server-${this.version}-${this.platform}-${this.arch}.tar.gz`;
   }
 
   getBundleUrl() {

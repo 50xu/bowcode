@@ -186,7 +186,7 @@ async function scanCommandsDirectory(dir, baseDir, namespace) {
 const builtInCommands = [
   {
     name: "/help",
-    description: "Show help documentation for Claude Code",
+    description: "Show help documentation for Bowcode",
     namespace: "builtin",
     metadata: { type: "builtin" },
   },
@@ -228,7 +228,7 @@ const builtInCommands = [
  */
 const builtInHandlers = {
   "/help": async (args, context) => {
-    const helpText = `# Claude Code Commands
+    const helpText = `# Bowcode Commands
 
 ## Built-in Commands
 
@@ -360,7 +360,7 @@ Custom commands can be created in:
     // Read version from package.json
     const packageJsonPath = path.join(APP_ROOT, "package.json");
     let version = "unknown";
-    let packageName = "claude-code-ui";
+    let packageName = "bowcode";
 
     try {
       const packageJson = JSON.parse(

@@ -80,7 +80,7 @@ test('claude history: file reference blocks restore non-image attachments', () =
       content: [{
         type: 'text',
         text: appendFilesInputTag('Summarize this', [
-          { path: 'C:/Users/x/.cloudcli/assets/brief.pdf', name: 'brief.pdf' },
+          { path: 'C:/Users/x/.bowcode/assets/brief.pdf', name: 'brief.pdf' },
         ]),
       }],
     },
@@ -89,7 +89,7 @@ test('claude history: file reference blocks restore non-image attachments', () =
   const messages = provider.normalizeMessage(entry, SESSION_ID);
   assert.equal(messages[0].content, 'Summarize this');
   assert.deepEqual(messages[0].files, [
-    { path: 'C:/Users/x/.cloudcli/assets/brief.pdf', name: 'brief.pdf' },
+    { path: 'C:/Users/x/.bowcode/assets/brief.pdf', name: 'brief.pdf' },
   ]);
 });
 
@@ -103,9 +103,9 @@ test('codex history: user_message payload images become path attachments', () =>
       type: 'user_message',
       message: 'can u see attached image?',
       images: [],
-      local_images: ['C:\\proj\\.cloudcli\\assets\\a.png'],
+      local_images: ['C:\\proj\\.bowcode\\assets\\a.png'],
     }),
-    [{ path: 'C:/proj/.cloudcli/assets/a.png' }],
+    [{ path: 'C:/proj/.bowcode/assets/a.png' }],
   );
   assert.deepEqual(
     extractCodexUserImages({ type: 'user_message', message: 'hi', images: ['/proj/b.jpg'] }),
@@ -134,7 +134,7 @@ test('codex history: normalized user entries keep their images', () => {
     {
       timestamp: '2026-07-03T10:00:00.000Z',
       message: { role: 'user', content: 'Look at this' },
-      images: [{ path: '.cloudcli/assets/a.png' }],
+      images: [{ path: '.bowcode/assets/a.png' }],
     },
     SESSION_ID,
   );
@@ -142,7 +142,7 @@ test('codex history: normalized user entries keep their images', () => {
   assert.equal(messages.length, 1);
   assert.equal(messages[0].role, 'user');
   assert.equal(messages[0].content, 'Look at this');
-  assert.deepEqual(messages[0].images, [{ path: '.cloudcli/assets/a.png' }]);
+  assert.deepEqual(messages[0].images, [{ path: '.bowcode/assets/a.png' }]);
 });
 
 test('codex history: normalized user entries restore file reference blocks', () => {
@@ -153,7 +153,7 @@ test('codex history: normalized user entries restore file reference blocks', () 
       message: {
         role: 'user',
         content: appendFilesInputTag('Review this', [
-          { path: 'C:/Users/x/.cloudcli/assets/spec.docx', name: 'spec.docx' },
+          { path: 'C:/Users/x/.bowcode/assets/spec.docx', name: 'spec.docx' },
         ]),
       },
     },
@@ -162,6 +162,6 @@ test('codex history: normalized user entries restore file reference blocks', () 
 
   assert.equal(messages[0].content, 'Review this');
   assert.deepEqual(messages[0].files, [
-    { path: 'C:/Users/x/.cloudcli/assets/spec.docx', name: 'spec.docx' },
+    { path: 'C:/Users/x/.bowcode/assets/spec.docx', name: 'spec.docx' },
   ]);
 });

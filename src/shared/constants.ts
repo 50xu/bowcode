@@ -21,14 +21,14 @@ type GitStatusFileGroup = 'modified' | 'added' | 'deleted' | 'untracked';
 //----------------- BRANDING ------------
 
 /**
- * Font stack used to render the CloudCLI wordmark consistently wherever the brand name
+ * Font stack used to render the Bowcode wordmark consistently wherever the brand name
  * appears as text. Apply it inline so the wordmark does not inherit a themed font.
  */
-export const CLOUDCLI_WORDMARK_FONT_FAMILY =
+export const BOWCODE_WORDMARK_FONT_FAMILY =
   'ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji';
 
 /** Repository of this fork; use it for neutral Source links and release information. */
-export const PROJECT_REPO_URL = 'https://github.com/vantran-se/claudecodeui';
+export const PROJECT_REPO_URL = 'https://github.com/vantran-se/bowcode';
 
 // ---------------------------
 

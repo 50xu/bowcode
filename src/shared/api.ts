@@ -487,7 +487,7 @@ export const api = {
     execute: (payload: unknown) => post('/api/commands/execute', payload),
   },
 
-  // Chat attachments, stored globally under ~/.cloudcli/assets
+  // Chat attachments, stored globally under ~/.bowcode/assets
   assets: {
     uploadFiles: (formData: FormData) =>
       authenticatedFetch('/api/assets/files', {
@@ -634,7 +634,7 @@ export const api = {
 
 /**
  * Builds a URL against the user's own OpenAI-compatible voice endpoint. Private to the
- * voice helpers below, which bypass the CloudCLI proxy when a base URL is configured.
+ * voice helpers below, which bypass the Bowcode proxy when a base URL is configured.
  */
 function voiceDirectUrl(baseUrl: string, path: string): string {
   return `${baseUrl.replace(/\/$/, '')}${path}`;
@@ -650,7 +650,7 @@ export function voiceConfigSignature(): string {
 
 /**
  * Transcribes recorded audio, posting directly to the user's configured OpenAI-compatible
- * endpoint when one is set and otherwise going through the CloudCLI voice proxy.
+ * endpoint when one is set and otherwise going through the Bowcode voice proxy.
  */
 export function transcribeVoice(blob: Blob, filename: string): Promise<Response> {
   const config = readVoiceConfig();
@@ -672,7 +672,7 @@ export function transcribeVoice(blob: Blob, filename: string): Promise<Response>
 
 /**
  * Synthesizes speech for the given text, using the user's configured OpenAI-compatible
- * endpoint when one is set and otherwise the CloudCLI voice proxy.
+ * endpoint when one is set and otherwise the Bowcode voice proxy.
  */
 export function synthesizeVoice(text: string, signal: AbortSignal): Promise<Response> {
   const config = readVoiceConfig();

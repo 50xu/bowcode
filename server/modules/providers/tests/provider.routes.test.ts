@@ -57,7 +57,7 @@ async function withProviderServer(
   }
 }
 
-test('session creation route names a CloudCLI session from the initial message', async () => {
+test('session creation route names a Bowcode session from the initial message', async () => {
   await withProviderServer(async (baseUrl, workspacePath) => {
     const response = await fetch(`${baseUrl}/api/providers/sessions`, {
       method: 'POST',
@@ -483,7 +483,7 @@ test('the CLI update route refuses while that provider is busy in a session', as
       assert.equal(busyPayload.error.code, 'PROVIDER_CLI_BUSY');
       assert.equal(await readFile(callLog, 'utf8'), '', 'a refused update never runs the CLI');
 
-      // Codex ships with CloudCLI: nothing to update, and the status says why.
+      // Codex ships with Bowcode: nothing to update, and the status says why.
       const codex = await fetch(`${baseUrl}/api/providers/codex/cli/update`, { method: 'POST' });
       assert.equal(codex.status, 400);
       const codexStatus = await fetch(`${baseUrl}/api/providers/codex/cli`);

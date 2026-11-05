@@ -1,8 +1,9 @@
 // Load environment variables from .env before other imports execute.
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import { getAppDataDir, migrateLegacyDataDirectory, migrateLegacyPlugins } from './shared/data-directory.js';
 
 // This bootstrap cannot import shared/utils.ts: that module reads environment
 // defaults during evaluation, before this file has loaded `.env`.
@@ -38,9 +39,14 @@ try {
   console.error('No .env file found or error reading it:', e.message);
 }
 
+// Migrate before other server imports initialize the database or plugin stores.
+// Failed moves retain the legacy directory and log a warning.
+migrateLegacyDataDirectory();
+migrateLegacyPlugins();
+
 // Keep the default database in a stable user-level location so rebuilding dist-server
 // never changes where the backend stores auth.db when DATABASE_PATH is not set explicitly.
-const DEFAULT_DATABASE_PATH = path.join(os.homedir(), '.cloudcli', 'auth.db');
+const DEFAULT_DATABASE_PATH = path.join(getAppDataDir(), 'auth.db');
 
 if (!process.env.DATABASE_PATH) {
   process.env.DATABASE_PATH = DEFAULT_DATABASE_PATH;

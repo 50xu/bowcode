@@ -45,7 +45,7 @@ async function executeCommand(
 ): Promise<Record<string, unknown>> {
   const router = createCommandsRouter({
     fileSystem: {
-      readFile: async () => JSON.stringify({ name: 'claude-code-ui', version: '0.0.0-test' }),
+      readFile: async () => JSON.stringify({ name: 'bowcode', version: '0.0.0-test' }),
     } as unknown as typeof import('node:fs/promises'),
     homeDirectory: () => '/home/test',
     appRoot: '/app',
@@ -71,6 +71,16 @@ async function executeCommand(
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 }
+
+test('help and status identify Bowcode', async () => {
+  const help = await executeCommand('/help', {});
+  const data = help.data as { content: string; commands: { description: string }[] };
+  assert.match(data.content, /^# Bowcode Commands/);
+  assert.match(data.commands[0].description, /Bowcode/);
+
+  const status = await executeCommand('/status', {});
+  assert.equal((status.data as { packageName: string }).packageName, 'bowcode');
+});
 
 test('models command returns models only for the active provider using injected catalog', async () => {
   const result = await executeCommand('/models', { provider: 'codex' });

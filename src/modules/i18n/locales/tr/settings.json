@@ -356,7 +356,7 @@
       "versionUnavailable": "Sürüm okunamadı",
       "updateAvailable": "Güncelleme var: v{{version}}",
       "upToDate": "Güncel",
-      "bundled": "CloudCLI ile birlikte gelir ve onunla birlikte güncellenir.",
+      "bundled": "Bowcode ile birlikte gelir ve onunla birlikte güncellenir.",
       "updateTo": "v{{version}} sürümüne güncelle",
       "runUpdater": "Güncelleyiciyi çalıştır",
       "updating": "Güncelleniyor…",
@@ -517,7 +517,7 @@
   },
   "pluginSettings": {
     "title": "Eklentiler",
-    "description": "Arayüzü özel eklentilerle genişlet. Git'ten yükle veya ~/.claude-code-ui/plugins/ klasörüne bir dizin bırak.",
+    "description": "Arayüzü özel eklentilerle genişlet. Git'ten yükle veya ~/.bowcode/plugins/ klasörüne bir dizin bırak.",
     "installPlaceholder": "https://github.com/kullanici/benim-eklentim",
     "installButton": "Yükle",
     "installing": "Yükleniyor…",

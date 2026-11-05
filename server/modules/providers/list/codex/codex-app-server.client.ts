@@ -171,7 +171,7 @@ async function withAppServer<T>(
     // in the stable protocol; only `beforeTurnId` and the turn-listing methods
     // are gated behind `experimentalApi`, and neither is needed here.
     await call('initialize', {
-      clientInfo: { name: 'cloudcli', title: 'CloudCLI', version: '1' },
+      clientInfo: { name: 'bowcode', title: 'Bowcode', version: '1' },
       capabilities: {},
     });
     child.stdin?.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'initialized', params: {} })}\n`);

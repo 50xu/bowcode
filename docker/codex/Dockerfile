@@ -1,20 +1,12 @@
 FROM docker/sandbox-templates:codex
 
 USER root
-COPY shared/install-cloudcli.sh /tmp/install-cloudcli.sh
-RUN chmod +x /tmp/install-cloudcli.sh && /tmp/install-cloudcli.sh
+COPY shared/install-bowcode.sh /tmp/install-bowcode.sh
+RUN chmod +x /tmp/install-bowcode.sh && /tmp/install-bowcode.sh
 
 USER agent
-RUN --mount=type=cache,target=/tmp/npm-cache,sharing=locked,mode=0777 \
-    npm install -g @cloudcli-ai/cloudcli \
-      --cache=/tmp/npm-cache \
-      --fetch-retries=5 \
-      --fetch-retry-mintimeout=20000 \
-      --fetch-retry-maxtimeout=120000 \
-      --fetch-timeout=600000 \
-      --no-audit \
-      --no-fund && \
-    cloudcli --version
+# TODO(bowcode): build and package this fork before publishing sandbox images.
+# The Bowcode CLI is not available from npm yet.
 
-COPY --chown=agent:agent shared/start-cloudcli.sh /home/agent/.cloudcli-start.sh
-RUN echo '. ~/.cloudcli-start.sh' >> /home/agent/.bashrc
+COPY --chown=agent:agent shared/start-bowcode.sh /home/agent/.bowcode-start.sh
+RUN echo '. ~/.bowcode-start.sh' >> /home/agent/.bashrc

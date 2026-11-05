@@ -1,9 +1,13 @@
-import { Bell, BellOff, BellRing, Loader2, Play, Volume2 } from 'lucide-react';
+import { Loader2, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/shared/ui';
 import { playChatCompletionSound } from '@/shared/utils';
 import type { NotificationPreferencesState } from '@/shared/types';
+import SettingsCard from '@/modules/settings/SettingsCard';
+import SettingsRow from '@/modules/settings/SettingsRow';
+import SettingsSection from '@/modules/settings/SettingsSection';
+import SettingsToggle from '@/modules/settings/SettingsToggle';
 
 type NotificationsSettingsTabProps = {
   notificationPreferences: NotificationPreferencesState;
@@ -44,218 +48,117 @@ export default function NotificationsSettingsTab({
   const pushSupported = pushPermission !== 'unsupported';
   const pushDenied = pushPermission === 'denied';
 
-  return (
-    <div className="space-y-6 md:space-y-8">
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Bell className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-medium text-foreground">{t('notifications.title')}</h3>
-        </div>
-        <p className="text-sm text-muted-foreground">{t('notifications.description')}</p>
-      </div>
+  const setChannel = (key: keyof NotificationPreferencesState['channels'], value: boolean) =>
+    onNotificationPreferencesChange({
+      ...notificationPreferences,
+      channels: { ...notificationPreferences.channels, [key]: value },
+    });
+  const setEvent = (key: keyof NotificationPreferencesState['events'], value: boolean) =>
+    onNotificationPreferencesChange({
+      ...notificationPreferences,
+      events: { ...notificationPreferences.events, [key]: value },
+    });
 
-      {isDesktop ? (
-        <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-          <h4 className="font-medium text-foreground">
-            {t('notifications.desktop.title', { defaultValue: 'Notify this desktop app' })}
-          </h4>
-          {desktopNotifications?.supported === false ? (
-            <p className="text-sm text-muted-foreground">
-              {t('notifications.desktop.unsupported', { defaultValue: 'Desktop notifications are not supported on this system.' })}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (desktopNotifications?.enabled) {
-                      onDisableDesktopNotifications?.();
-                    } else {
-                      onEnableDesktopNotifications?.();
-                    }
-                  }}
-                  className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                    desktopNotifications?.enabled
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-                  }`}
-                >
-                  {desktopNotifications?.enabled ? (
-                    <BellOff className="h-4 w-4" />
-                  ) : (
-                    <BellRing className="h-4 w-4" />
-                  )}
-                  {desktopNotifications?.enabled
-                    ? t('notifications.desktop.disable', { defaultValue: 'Disable desktop notifications' })
-                    : t('notifications.desktop.enable', { defaultValue: 'Enable desktop notifications' })}
-                </button>
-                {desktopNotifications?.enabled && (
-                  <span className="text-sm text-green-600 dark:text-green-400">
-                    {t('notifications.desktop.enabled', { defaultValue: 'Desktop notifications are enabled' })}
-                  </span>
-                )}
-              </div>
-              {desktopNotifications?.lastError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{desktopNotifications.lastError}</p>
-              )}
-            </div>
-          )}
-        </div>
+  const deliveryRow = isDesktop ? (
+    <SettingsRow
+      label={t('notifications.desktop.title', { defaultValue: 'Notify this desktop app' })}
+      description={
+        desktopNotifications?.supported === false
+          ? t('notifications.desktop.unsupported', { defaultValue: 'Desktop notifications are not supported on this system.' })
+          : desktopNotifications?.lastError || undefined
+      }
+    >
+      <SettingsToggle
+        checked={Boolean(desktopNotifications?.enabled)}
+        disabled={desktopNotifications?.supported === false}
+        ariaLabel={t('notifications.desktop.title', { defaultValue: 'Notify this desktop app' })}
+        onChange={(value) => (value ? onEnableDesktopNotifications?.() : onDisableDesktopNotifications?.())}
+      />
+    </SettingsRow>
+  ) : (
+    <SettingsRow
+      label={t('notifications.webPush.title')}
+      description={
+        !pushSupported
+          ? t('notifications.webPush.unsupported')
+          : pushDenied
+            ? t('notifications.webPush.denied')
+            : isPushSubscribed
+              ? t('notifications.webPush.enabled')
+              : undefined
+      }
+    >
+      {isPushLoading ? (
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       ) : (
-        <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-          <h4 className="font-medium text-foreground">{t('notifications.webPush.title')}</h4>
-          {!pushSupported ? (
-            <p className="text-sm text-muted-foreground">{t('notifications.webPush.unsupported')}</p>
-          ) : pushDenied ? (
-            <p className="text-sm text-muted-foreground">{t('notifications.webPush.denied')}</p>
-          ) : (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={isPushLoading}
-                onClick={() => {
-                  if (isPushSubscribed) {
-                    onDisablePush();
-                  } else {
-                    onEnablePush();
-                  }
-                }}
-                className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  isPushSubscribed
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-                }`}
-              >
-                {isPushLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isPushSubscribed ? (
-                  <BellOff className="h-4 w-4" />
-                ) : (
-                  <BellRing className="h-4 w-4" />
-                )}
-                {isPushLoading
-                  ? t('notifications.webPush.loading')
-                  : isPushSubscribed
-                    ? t('notifications.webPush.disable')
-                    : t('notifications.webPush.enable')}
-              </button>
-              {isPushSubscribed && (
-                <span className="text-sm text-green-600 dark:text-green-400">
-                  {t('notifications.webPush.enabled')}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        <SettingsToggle
+          checked={isPushSubscribed}
+          disabled={!pushSupported || pushDenied}
+          ariaLabel={t('notifications.webPush.title')}
+          onChange={(value) => (value ? onEnablePush() : onDisablePush())}
+        />
       )}
+    </SettingsRow>
+  );
 
-      <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
+  return (
+    <div className="space-y-8">
+      <SettingsSection title={t('notifications.channels', { defaultValue: 'Delivery' })}>
+        <SettingsCard divided>
+          {deliveryRow}
+          <SettingsRow
+            label={t('notifications.sound.title', { defaultValue: 'Sound' })}
+            description={t('notifications.sound.description', { defaultValue: 'Play a short tone when a chat run finishes.' })}
+          >
             <div className="flex items-center gap-2">
-              <Volume2 className="h-4 w-4 text-blue-600" />
-              <h4 className="font-medium text-foreground">
-                {t('notifications.sound.title', { defaultValue: 'Sound' })}
-              </h4>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground"
+                aria-label={t('notifications.sound.test', { defaultValue: 'Test sound' })}
+                title={t('notifications.sound.test', { defaultValue: 'Test sound' })}
+                onClick={() => {
+                  void playChatCompletionSound({ force: true });
+                }}
+              >
+                <Play className="h-4 w-4" />
+              </Button>
+              <SettingsToggle
+                checked={notificationPreferences.channels.sound}
+                ariaLabel={t('notifications.sound.title', { defaultValue: 'Sound' })}
+                onChange={(value) => setChannel('sound', value)}
+              />
             </div>
-            <p className="text-sm text-muted-foreground">
-              {t('notifications.sound.description', {
-                defaultValue: 'Play a short tone when a chat run finishes.',
-              })}
-            </p>
-          </div>
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
 
-          <label className="flex shrink-0 items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={notificationPreferences.channels.sound}
-              onChange={(event) =>
-                onNotificationPreferencesChange({
-                  ...notificationPreferences,
-                  channels: {
-                    ...notificationPreferences.channels,
-                    sound: event.target.checked,
-                  },
-                })
-              }
-              className="h-4 w-4"
-            />
-            {t('notifications.sound.enabled', { defaultValue: 'Enabled' })}
-          </label>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            void playChatCompletionSound({ force: true });
-          }}
-        >
-          <Play className="h-4 w-4" />
-          {t('notifications.sound.test', { defaultValue: 'Test sound' })}
-        </Button>
-      </div>
-
-      <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-        <h4 className="font-medium text-foreground">{t('notifications.events.title')}</h4>
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
+      <SettingsSection title={t('notifications.events.title')}>
+        <SettingsCard divided>
+          <SettingsRow label={t('notifications.events.actionRequired')}>
+            <SettingsToggle
               checked={notificationPreferences.events.actionRequired}
-              onChange={(event) =>
-                onNotificationPreferencesChange({
-                  ...notificationPreferences,
-                  events: {
-                    ...notificationPreferences.events,
-                    actionRequired: event.target.checked,
-                  },
-                })
-              }
-              className="h-4 w-4"
+              ariaLabel={t('notifications.events.actionRequired')}
+              onChange={(value) => setEvent('actionRequired', value)}
             />
-            {t('notifications.events.actionRequired')}
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
+          </SettingsRow>
+          <SettingsRow label={t('notifications.events.stop')}>
+            <SettingsToggle
               checked={notificationPreferences.events.stop}
-              onChange={(event) =>
-                onNotificationPreferencesChange({
-                  ...notificationPreferences,
-                  events: {
-                    ...notificationPreferences.events,
-                    stop: event.target.checked,
-                  },
-                })
-              }
-              className="h-4 w-4"
+              ariaLabel={t('notifications.events.stop')}
+              onChange={(value) => setEvent('stop', value)}
             />
-            {t('notifications.events.stop')}
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
+          </SettingsRow>
+          <SettingsRow label={t('notifications.events.error')}>
+            <SettingsToggle
               checked={notificationPreferences.events.error}
-              onChange={(event) =>
-                onNotificationPreferencesChange({
-                  ...notificationPreferences,
-                  events: {
-                    ...notificationPreferences.events,
-                    error: event.target.checked,
-                  },
-                })
-              }
-              className="h-4 w-4"
+              ariaLabel={t('notifications.events.error')}
+              onChange={(value) => setEvent('error', value)}
             />
-            {t('notifications.events.error')}
-          </label>
-        </div>
-      </div>
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
     </div>
   );
 }

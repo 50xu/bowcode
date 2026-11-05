@@ -8,8 +8,8 @@ import { LocalServerController } from './localServer.js';
 import { TabsController } from './tabs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const APP_NAME = 'CloudCLI';
-const APP_USER_MODEL_ID = 'ai.cloudcli.desktop';
+const APP_NAME = 'Bowcode';
+const APP_USER_MODEL_ID = 'dev.bowcode.desktop';
 const tabs = new TabsController();
 
 if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -114,7 +114,7 @@ function getDiagnosticsText() {
 async function copyDiagnostics() {
   clipboard.writeText(getDiagnosticsText());
   await dialog.showMessageBox(desktopWindow?.getMainWindow() || undefined, {
-    type: 'info', title: 'Diagnostics copied', message: 'CloudCLI desktop diagnostics were copied to the clipboard.',
+    type: 'info', title: 'Diagnostics copied', message: 'Bowcode desktop diagnostics were copied to the clipboard.',
   });
 }
 
@@ -122,7 +122,7 @@ async function copyLocalWebUrl() {
   await localServer.ensureLocalServer();
   const shareableUrl = localServer.getShareableWebUrl();
   const localUrl = localServer.getLocalServerUrl();
-  if (!shareableUrl) throw new Error('Local CloudCLI URL is not available yet.');
+  if (!shareableUrl) throw new Error('Local Bowcode URL is not available yet.');
 
   clipboard.writeText(shareableUrl);
   const isLanUrl = shareableUrl !== localUrl;
@@ -131,7 +131,7 @@ async function copyLocalWebUrl() {
     message: isLanUrl ? 'LAN web URL copied.' : 'Local web URL copied.',
     detail: isLanUrl
       ? `${shareableUrl}\n\nUse this URL from another device on the same network.`
-      : `${shareableUrl}\n\nThis URL works on this computer. Enable LAN access before starting Local CloudCLI to copy a phone-accessible URL.`,
+      : `${shareableUrl}\n\nThis URL works on this computer. Enable LAN access before starting Local Bowcode to copy a phone-accessible URL.`,
   });
   return getDesktopState();
 }
@@ -139,7 +139,7 @@ async function copyLocalWebUrl() {
 async function openLocalWebUi() {
   await localServer.ensureLocalServer();
   const url = localServer.getShareableWebUrl() || localServer.getLocalServerUrl();
-  if (!url) throw new Error('Local CloudCLI URL is not available yet.');
+  if (!url) throw new Error('Local Bowcode URL is not available yet.');
   await shell.openExternal(url);
   return getDesktopState();
 }
@@ -151,7 +151,7 @@ async function updateDesktopSetting(key, value) {
     await dialog.showMessageBox(desktopWindow?.getMainWindow() || undefined, {
       type: 'info', title: 'Restart local server to apply',
       message: 'LAN access changes apply the next time the local server starts.',
-      detail: 'Quit CloudCLI and stop the local server, then open Local CloudCLI again.',
+      detail: 'Quit Bowcode and stop the local server, then open Local Bowcode again.',
     });
   }
   return getDesktopState();
@@ -189,32 +189,32 @@ async function openNotificationTarget({ sessionId = null }) {
 }
 
 function registerIpcHandlers() {
-  ipcMain.handle('cloudcli-desktop:copy-diagnostics', async () => {
+  ipcMain.handle('bowcode-desktop:copy-diagnostics', async () => {
     await copyDiagnostics();
     return getDesktopState();
   });
-  ipcMain.handle('cloudcli-desktop:copy-local-web-url', copyLocalWebUrl);
-  ipcMain.handle('cloudcli-desktop:get-state', getDesktopState);
-  ipcMain.handle('cloudcli-desktop:open-local', openLocalInDesktop);
-  ipcMain.handle('cloudcli-desktop:open-local-web-ui', openLocalWebUi);
-  ipcMain.handle('cloudcli-desktop:reload-active-tab', () => desktopWindow.reloadActiveTab());
-  ipcMain.handle('cloudcli-desktop:show-launcher', async () => {
+  ipcMain.handle('bowcode-desktop:copy-local-web-url', copyLocalWebUrl);
+  ipcMain.handle('bowcode-desktop:get-state', getDesktopState);
+  ipcMain.handle('bowcode-desktop:open-local', openLocalInDesktop);
+  ipcMain.handle('bowcode-desktop:open-local-web-ui', openLocalWebUi);
+  ipcMain.handle('bowcode-desktop:reload-active-tab', () => desktopWindow.reloadActiveTab());
+  ipcMain.handle('bowcode-desktop:show-launcher', async () => {
     await desktopWindow.showLauncher();
     return getDesktopState();
   });
-  ipcMain.handle('cloudcli-desktop:update-desktop-notifications', async (_event, settings) => {
+  ipcMain.handle('bowcode-desktop:update-desktop-notifications', async (_event, settings) => {
     await desktopNotifications.saveSettings(settings);
     return getDesktopState();
   });
-  ipcMain.handle('cloudcli-desktop:show-desktop-settings', () => desktopWindow.showDesktopSettings());
-  ipcMain.handle('cloudcli-desktop:show-local-settings', () => desktopWindow.showLocalSettings());
-  ipcMain.handle('cloudcli-desktop:close-settings-window', () => {
+  ipcMain.handle('bowcode-desktop:show-desktop-settings', () => desktopWindow.showDesktopSettings());
+  ipcMain.handle('bowcode-desktop:show-local-settings', () => desktopWindow.showLocalSettings());
+  ipcMain.handle('bowcode-desktop:close-settings-window', () => {
     desktopWindow.closeSettingsWindow();
     return getDesktopState();
   });
-  ipcMain.handle('cloudcli-desktop:switch-tab', (_event, tabId) => desktopWindow.switchDesktopTab(tabId));
-  ipcMain.handle('cloudcli-desktop:close-tab', (_event, tabId) => desktopWindow.closeDesktopTab(tabId));
-  ipcMain.handle('cloudcli-desktop:update-setting', (_event, key, value) => updateDesktopSetting(key, value));
+  ipcMain.handle('bowcode-desktop:switch-tab', (_event, tabId) => desktopWindow.switchDesktopTab(tabId));
+  ipcMain.handle('bowcode-desktop:close-tab', (_event, tabId) => desktopWindow.closeDesktopTab(tabId));
+  ipcMain.handle('bowcode-desktop:update-setting', (_event, key, value) => updateDesktopSetting(key, value));
 }
 
 function registerAppEvents() {
@@ -295,7 +295,7 @@ async function bootstrap() {
   process.title = APP_NAME;
   await app.whenReady();
   app.setName(APP_NAME);
-  app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion(), copyright: 'CloudCLI' });
+  app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion(), copyright: 'Bowcode' });
   localServer = new LocalServerController({
     appRoot: getAppRoot(),
     settingsPath: getSettingsPath(),
@@ -323,7 +323,7 @@ async function bootstrap() {
 
 if (registerSingleInstance()) {
   bootstrap().catch(async (error) => {
-    await showError('CloudCLI failed to start', error);
+    await showError('Bowcode failed to start', error);
     app.quit();
   });
 }

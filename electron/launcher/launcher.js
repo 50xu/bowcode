@@ -1,5 +1,5 @@
 (function () {
-  var bridge = window.cloudcliDesktop;
+  var bridge = window.bowcodeDesktop;
   var state = { desktopSettings: {}, tabs: [], localServerRunning: false };
   var app = document.getElementById('app');
   var modal = new URLSearchParams(location.search).get('modal') === '1';
@@ -15,10 +15,10 @@
     var tabs = state.tabs || [];
     var active = tabs.find(function (tab) { return tab.active; });
     var url = state.shareableWebUrl || state.localWebUrl || 'Starts on demand';
-    var titlebar = '<div class="titlebar"><div class="brand">CloudCLI</div><div class="tb-tabs no-drag">' + tabs.map(function (tab) {
+    var titlebar = '<div class="titlebar"><div class="brand">Bowcode</div><div class="tb-tabs no-drag">' + tabs.map(function (tab) {
       return '<button class="tb-tab no-drag' + (tab.active ? ' active' : '') + '" data-tab="' + escape(tab.id) + '">' + escape(tab.title) + (tab.closable ? '<span class="tb-close" data-close="' + escape(tab.id) + '">&times;</span>' : '') + '</button>';
     }).join('') + '</div><span style="flex:1"></span>' + (active && active.id !== 'home' ? '<button class="btn sm" data-action="refresh">Refresh</button>' : '') + '<button class="btn sm" data-action="settings">Settings</button></div>';
-    var body = '<div class="cc-body v-sidebar"><div class="sb"><div class="sb-grp"><div class="lbl">Launcher</div><div class="sb-item active">Local servers</div></div></div><div class="sb-main"><div class="pane-h"><h2 class="pane-title">Local servers</h2></div><div class="card"><div class="card-head"><div><div class="card-t">Local server</div><div class="card-sub mono">' + escape(url) + '</div></div><button class="btn sm" data-action="local-settings">Local settings</button></div><div class="card-actions"><button class="btn pri" data-action="local">Open Local CloudCLI</button><button class="btn" data-action="web">Open in browser</button><button class="btn" data-action="copy">Copy URL</button></div></div></div></div>';
+    var body = '<div class="cc-body v-sidebar"><div class="sb"><div class="sb-grp"><div class="lbl">Launcher</div><div class="sb-item active">Local servers</div></div></div><div class="sb-main"><div class="pane-h"><h2 class="pane-title">Local servers</h2></div><div class="card"><div class="card-head"><div><div class="card-t">Local server</div><div class="card-sub mono">' + escape(url) + '</div></div><button class="btn sm" data-action="local-settings">Local settings</button></div><div class="card-actions"><button class="btn pri" data-action="local">Open Local Bowcode</button><button class="btn" data-action="web">Open in browser</button><button class="btn" data-action="copy">Copy URL</button></div></div></div></div>';
     var statusbar = '<div class="statusbar">local ' + (state.localServerRunning ? 'running' : 'idle') + '<span style="flex:1"></span>' + escape(status) + '</div>';
     app.innerHTML = modal ? '' : titlebar + body + statusbar;
     var overlay = document.getElementById('cc-overlay');

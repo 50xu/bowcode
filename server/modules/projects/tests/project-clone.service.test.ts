@@ -306,18 +306,18 @@ for (const [label, input, token] of [
     assert.equal(cloneUrl, 'https://github.com/example/repo.git');
     assert.equal(clonePath, path.join('/workspace/root', 'repo'));
 
-    assert.equal(environment.CLOUDCLI_GITHUB_TOKEN, token);
+    assert.equal(environment.BOWCODE_GITHUB_TOKEN, token);
     assert.equal(environment.GIT_CONFIG_COUNT, '2');
     assert.equal(environment.GIT_CONFIG_KEY_0, 'credential.helper');
     assert.equal(environment.GIT_CONFIG_VALUE_0, '');
     assert.equal(environment.GIT_CONFIG_KEY_1, 'credential.https://github.com.helper');
-    assert.match(environment.GIT_CONFIG_VALUE_1 ?? '', /\$CLOUDCLI_GITHUB_TOKEN/);
+    assert.match(environment.GIT_CONFIG_VALUE_1 ?? '', /\$BOWCODE_GITHUB_TOKEN/);
     assert.equal(environment.GIT_TERMINAL_PROMPT, '0');
 
     // The helper's command line is itself a process argv, so the token must be
     // read from the variable rather than pasted into the helper text.
     for (const [name, value] of Object.entries(environment)) {
-      if (name === 'CLOUDCLI_GITHUB_TOKEN') {
+      if (name === 'BOWCODE_GITHUB_TOKEN') {
         continue;
       }
       assert.ok(!(value ?? '').includes(token), `token leaked into ${name}`);
@@ -331,7 +331,7 @@ test('startCloneProject leaves the credential helper unset when no token was giv
   assert.equal(cloneUrl, 'https://github.com/example/repo.git');
   assert.equal(environment.GIT_TERMINAL_PROMPT, '0');
   assert.equal(environment.GIT_CONFIG_COUNT, undefined);
-  assert.equal(environment.CLOUDCLI_GITHUB_TOKEN, undefined);
+  assert.equal(environment.BOWCODE_GITHUB_TOKEN, undefined);
 });
 
 /**

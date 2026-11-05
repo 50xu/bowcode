@@ -15,7 +15,7 @@ type BootstrapResult = {
   runtime: string;
 };
 
-const RESULT_PREFIX = '__CLOUDCLI_BOOTSTRAP_RESULT__';
+const RESULT_PREFIX = '__BOWCODE_BOOTSTRAP_RESULT__';
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const applicationRoot = path.resolve(testDirectory, '..', '..', '..', '..');
 
@@ -24,17 +24,23 @@ function sourceModuleUrl(...segments: string[]): string {
 }
 
 async function runCliBootstrapFixture(): Promise<BootstrapResult> {
-  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'cloudcli-cli-bootstrap-'));
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'bowcode-cli-bootstrap-'));
   const fixtureServerDirectory = path.join(fixtureRoot, 'server');
   const fixtureCliDirectory = path.join(fixtureServerDirectory, 'modules', 'cli');
+  const fixtureSharedDirectory = path.join(fixtureServerDirectory, 'shared');
   const fixtureDatabasePath = path.join(fixtureRoot, 'auth.db');
 
   try {
     await mkdir(fixtureCliDirectory, { recursive: true });
+    await mkdir(fixtureSharedDirectory, { recursive: true });
     await Promise.all([
       copyFile(
         path.join(applicationRoot, 'server', 'load-env.ts'),
         path.join(fixtureServerDirectory, 'load-env.ts'),
+      ),
+      copyFile(
+        path.join(applicationRoot, 'server', 'shared', 'data-directory.ts'),
+        path.join(fixtureSharedDirectory, 'data-directory.ts'),
       ),
       copyFile(
         path.join(applicationRoot, 'server', 'modules', 'cli', 'cli.ts'),
@@ -74,8 +80,6 @@ export function createCliApplication() {
     },
     output: { log: () => undefined, error: () => undefined },
     sandboxService: { execute: async () => 0 },
-    getLatestPackageVersion: async () => '1.0.0',
-    updateGlobalPackage: () => undefined,
     startServer: async () => undefined,
     startBrowserUseMcp: async () => undefined,
   });
@@ -125,7 +129,11 @@ export function createCliApplication() {
 `;
     await writeFile(path.join(fixtureCliDirectory, 'index.ts'), fixtureIndexSource, 'utf8');
 
-    const childEnvironment = { ...process.env };
+    const childEnvironment: NodeJS.ProcessEnv = {
+      ...process.env,
+      HOME: fixtureRoot,
+      BOWCODE_DATA_DIR: path.join(fixtureRoot, 'data'),
+    };
     delete childEnvironment.DATABASE_PATH;
     const stdout = execFileSync(
       process.execPath,

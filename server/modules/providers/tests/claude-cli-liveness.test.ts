@@ -18,7 +18,7 @@ test('external CLI includes idle entries and excludes only direct server-owned S
   const directory = await mkdtemp(path.join(os.tmpdir(), 'claude-registry-'));
   try {
     for (const [pid, entrypoint, status] of [
-      [101, 'claudecodeui', 'idle'], [102, 'cli', 'idle'], [103, 'claudecodeui', 'busy'],
+      [101, 'bowcode', 'idle'], [102, 'cli', 'idle'], [103, 'bowcode', 'busy'],
     ] as const) {
       await writeFile(path.join(directory, `${pid}.json`), JSON.stringify({
         pid, sessionId: `session-${pid}`, entrypoint, status, procStart: '123', cwd: '/work', startedAt: 10,
@@ -69,7 +69,7 @@ test('a leftover server-owned process holding a session is found and stopped; ex
   const directory = await mkdtemp(path.join(os.tmpdir(), 'claude-leftover-'));
   try {
     await writeFile(path.join(directory, '201.json'), JSON.stringify({
-      pid: 201, sessionId: 'dup', entrypoint: 'claudecodeui', status: 'busy', procStart: '123',
+      pid: 201, sessionId: 'dup', entrypoint: 'bowcode', status: 'busy', procStart: '123',
     }));
     await writeFile(path.join(directory, '202.json'), JSON.stringify({
       pid: 202, sessionId: 'dup', entrypoint: 'cli', status: 'idle', procStart: '123',

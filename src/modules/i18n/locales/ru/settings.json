@@ -355,7 +355,7 @@
       "versionUnavailable": "Не удалось определить версию",
       "updateAvailable": "Доступно обновление: v{{version}}",
       "upToDate": "Актуальная версия",
-      "bundled": "Поставляется вместе с CloudCLI и обновляется вместе с ним.",
+      "bundled": "Поставляется вместе с Bowcode и обновляется вместе с ним.",
       "updateTo": "Обновить до v{{version}}",
       "runUpdater": "Запустить обновление",
       "updating": "Обновление…",
@@ -516,7 +516,7 @@
   },
   "pluginSettings": {
     "title": "Плагины",
-    "description": "Расширяйте интерфейс с помощью кастомных плагинов. Установите из git или добавьте папку в ~/.claude-code-ui/plugins/",
+    "description": "Расширяйте интерфейс с помощью кастомных плагинов. Установите из git или добавьте папку в ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Установить",
     "installing": "Установка…",

@@ -30,6 +30,8 @@ import {
   CLAUDE_ULTRACODE_EFFORT
 } from '@/modules/providers/list/claude/claude-models.provider.js';
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
+// eslint-disable-next-line boundaries/no-unknown -- Shared configuration helper is not classified by the legacy boundary map.
+import { readEnv } from '@/shared/env.js';
 import {
   createNotificationEvent,
   notifyBackgroundWorkCompleted,
@@ -164,8 +166,8 @@ const TOOL_APPROVAL_TIMEOUT_MS = parseInt(process.env.CLAUDE_TOOL_APPROVAL_TIMEO
 // new turn supersedes the previous hold. This ceiling only catches background work
 // that never reports at all, so an abandoned session cannot leak a CLI process
 // forever. The timer resets on every message, so it measures silence, not total time.
-// Override with CLOUDCLI_BG_WAIT_CEILING_MS to cap how long idle held processes linger.
-const BG_WAIT_CEILING_MS = parseInt(process.env.CLOUDCLI_BG_WAIT_CEILING_MS ?? '', 10) || 30 * 60 * 1000;
+// Override with BOWCODE_BG_WAIT_CEILING_MS to cap how long idle held processes linger.
+const BG_WAIT_CEILING_MS = parseInt(readEnv('BOWCODE_BG_WAIT_CEILING_MS') ?? '', 10) || 30 * 60 * 1000;
 
 const TOOLS_REQUIRING_INTERACTION = new Set(['AskUserQuestion', 'ExitPlanMode']);
 
@@ -337,7 +339,7 @@ function matchesToolPermission(entry: string, toolName: string, input: unknown) 
 export function buildClaudeSdkEnv(hostEnv: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   return {
     CLAUDE_CODE_ARTIFACT: '1',
-    CLAUDE_CODE_ENTRYPOINT: 'claudecodeui',
+    CLAUDE_CODE_ENTRYPOINT: 'bowcode',
     ...hostEnv,
     CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: String(BG_WAIT_CEILING_MS),
   };
@@ -938,7 +940,7 @@ export function createBackgroundWorkTracker() {
  * the turn's `result` arrives, which kills the CLI's background tasks. Plain
  * text turns carry string content; turns with image attachments carry the
  * prompt text plus one base64 `image` block per attachment (read from the
- * global `~/.cloudcli/assets` folder).
+ * global `~/.bowcode/assets` folder).
  *
  * @param {string} command - User prompt
  * @param {Array} images - Image descriptors ({ path, name?, mimeType? })

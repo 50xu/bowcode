@@ -401,7 +401,7 @@
       "versionUnavailable": "Versi tidak dapat dibaca",
       "updateAvailable": "Pembaruan tersedia: v{{version}}",
       "upToDate": "Sudah terbaru",
-      "bundled": "Disertakan bersama CloudCLI dan diperbarui bersamanya.",
+      "bundled": "Disertakan bersama Bowcode dan diperbarui bersamanya.",
       "updateTo": "Perbarui ke v{{version}}",
       "runUpdater": "Jalankan pembaru",
       "updating": "Memperbarui…",
@@ -558,7 +558,7 @@
     },
     "managed": {
       "badge": "Dikelola",
-      "hint": "Dikelola oleh CloudCLI."
+      "hint": "Dikelola oleh Bowcode."
     },
     "help": {
       "title": "Tentang MCP Codex",
@@ -567,7 +567,7 @@
   },
   "pluginSettings": {
     "title": "Plugin",
-    "description": "Perluas antarmuka dengan plugin kustom. Instal dari Git atau letakkan folder di ~/.claude-code-ui/plugins/",
+    "description": "Perluas antarmuka dengan plugin kustom. Instal dari Git atau letakkan folder di ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Instal",
     "installing": "Menginstal…",
@@ -614,7 +614,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "tidak resmi",
-      "description": "Intelijen sesi untuk Claude Code di dalam CloudCLI. Lihat penyebab penggunaan token tinggi tanpa meninggalkan browser.",
+      "description": "Intelijen sesi untuk Claude Code di dalam Bowcode. Lihat penyebab penggunaan token tinggi tanpa meninggalkan browser.",
       "install": "Instal"
     },
     "sessionManagerPlugin": {

@@ -92,7 +92,7 @@ function redactGitOutput(text: string, token: string | null): string {
 async function present(file: string) { try { await lstat(file); return true; } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error; } }
 async function git(args: string[], cwd: string, token: string | null): Promise<string> {
   const env: NodeJS.ProcessEnv = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_ASKPASS: '', GCM_INTERACTIVE: 'never' };
-  if (token) Object.assign(env, { GIT_CONFIG_COUNT: '2', GIT_CONFIG_KEY_0: 'credential.helper', GIT_CONFIG_VALUE_0: '', GIT_CONFIG_KEY_1: 'credential.https://github.com.helper', GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$CLOUDCLI_GITHUB_TOKEN"; }; f', CLOUDCLI_GITHUB_TOKEN: token });
+  if (token) Object.assign(env, { GIT_CONFIG_COUNT: '2', GIT_CONFIG_KEY_0: 'credential.helper', GIT_CONFIG_VALUE_0: '', GIT_CONFIG_KEY_1: 'credential.https://github.com.helper', GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$BOWCODE_GITHUB_TOKEN"; }; f', BOWCODE_GITHUB_TOKEN: token });
   return new Promise((resolve, reject) => {
     const child = spawn('git', args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let output = '';
@@ -173,11 +173,11 @@ export function createSettingsSyncService(sources: Sources) {
           await mkdir(path.dirname(dest), { recursive: true });
           await writeFile(dest, output, { mode: 0o600 });
         }
-        if (!await present(path.join(root, 'README.md'))) await writeFile(path.join(root, 'README.md'), '# CloudCLI Settings Sync\n\nSensitive MCP values are redacted. Keep this repository private.\n');
+        if (!await present(path.join(root, 'README.md'))) await writeFile(path.join(root, 'README.md'), '# Bowcode Settings Sync\n\nSensitive MCP values are redacted. Keep this repository private.\n');
         await git(['add', '-A'], root, token);
         if (await git(['status', '--porcelain'], root, token)) {
           const identity = object(snapshot.gitIdentity);
-          await git(['-c', `user.name=${typeof identity.name === 'string' && identity.name ? identity.name : 'CloudCLI Settings Sync'}`, '-c', `user.email=${typeof identity.email === 'string' && identity.email ? identity.email : 'settings-sync@localhost'}`, 'commit', '-m', `settings: sync from ${os.hostname()}`], root, token);
+          await git(['-c', `user.name=${typeof identity.name === 'string' && identity.name ? identity.name : 'Bowcode Settings Sync'}`, '-c', `user.email=${typeof identity.email === 'string' && identity.email ? identity.email : 'settings-sync@localhost'}`, 'commit', '-m', `settings: sync from ${os.hostname()}`], root, token);
           await git(['push', '-u', 'origin', config.branch], root, token);
         }
       } else {

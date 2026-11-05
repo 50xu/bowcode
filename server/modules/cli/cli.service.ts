@@ -19,8 +19,6 @@ type CliServiceDependencies = {
   fileSystem: CliFileSystem;
   output: CliOutput;
   sandboxService: SandboxCommandService;
-  getLatestPackageVersion(): Promise<string>;
-  updateGlobalPackage(): void;
   startServer(): Promise<void>;
   startBrowserUseMcp(): Promise<void>;
 };
@@ -67,16 +65,6 @@ function parseCliArguments(argumentsList: string[]): ParsedCliArguments {
   return parsedArguments;
 }
 
-function isNewerVersion(candidateVersion: string, currentVersion: string): boolean {
-  const candidateParts = candidateVersion.split('.').map(Number);
-  const currentParts = currentVersion.split('.').map(Number);
-  for (let partIndex = 0; partIndex < 3; partIndex += 1) {
-    if (candidateParts[partIndex] > currentParts[partIndex]) return true;
-    if (candidateParts[partIndex] < currentParts[partIndex]) return false;
-  }
-  return false;
-}
-
 function showStatus(dependencies: CliServiceDependencies): void {
   const { environment, fileSystem, output } = dependencies;
   const databasePath = environment.DATABASE_PATH || dependencies.defaultDatabasePath;
@@ -84,7 +72,7 @@ function showStatus(dependencies: CliServiceDependencies): void {
   const claudeProjectsPath = path.join(dependencies.homeDirectory, '.claude', 'projects');
   const environmentFilePath = path.join(dependencies.applicationRoot, '.env');
 
-  output.log(`\n${terminalTextStyles.bright('CloudCLI UI - Status')}\n`);
+  output.log(`\n${terminalTextStyles.bright('Bowcode UI - Status')}\n`);
   output.log(terminalTextStyles.dim('═'.repeat(60)));
   output.log(`\n${terminalTextStyles.info('[INFO]')} Version: ${terminalTextStyles.bright(dependencies.packageMetadata.version)}`);
   output.log(`\n${terminalTextStyles.info('[INFO]')} Installation Directory:`);
@@ -118,28 +106,26 @@ function showStatus(dependencies: CliServiceDependencies): void {
     : terminalTextStyles.warn('[WARN] Not found (using defaults)')}`);
   output.log(`\n${terminalTextStyles.dim('═'.repeat(60))}`);
   output.log(`\n${terminalTextStyles.tip('[TIP]')} Hints:`);
-  output.log(`      ${terminalTextStyles.dim('>')} Use ${terminalTextStyles.bright('cloudcli --port 8080')} to run on a custom port`);
-  output.log(`      ${terminalTextStyles.dim('>')} Use ${terminalTextStyles.bright('cloudcli --database-path /path/to/db')} for custom database`);
-  output.log(`      ${terminalTextStyles.dim('>')} Run ${terminalTextStyles.bright('cloudcli help')} for all options`);
+  output.log(`      ${terminalTextStyles.dim('>')} Use ${terminalTextStyles.bright('bowcode --port 8080')} to run on a custom port`);
+  output.log(`      ${terminalTextStyles.dim('>')} Use ${terminalTextStyles.bright('bowcode --database-path /path/to/db')} for custom database`);
+  output.log(`      ${terminalTextStyles.dim('>')} Run ${terminalTextStyles.bright('bowcode help')} for all options`);
   output.log(`      ${terminalTextStyles.dim('>')} Access the UI at http://localhost:${environment.SERVER_PORT || environment.PORT || '3001'}\n`);
 }
 
 function showHelp(dependencies: CliServiceDependencies): void {
   dependencies.output.log(`
 ╔═══════════════════════════════════════════════════════════════╗
-║              CloudCLI - Command Line Tool               ║
+║              Bowcode - Command Line Tool               ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 Usage:
-  claude-code-ui [command] [options]
-  cloudcli [command] [options]
+  bowcode [command] [options]
 
 Commands:
-  start            Start the CloudCLI server (default)
+  start            Start the Bowcode server (default)
   sandbox          Manage Docker sandbox environments
   browser-use-mcp  Run Browser MCP stdio server
   status           Show configuration and data locations
-  update           Update to the latest version
   help             Show this help information
   version          Show version information
 
@@ -150,10 +136,10 @@ Options:
   -v, --version               Show version information
 
 Examples:
-  $ cloudcli                        # Start with defaults
-  $ cloudcli --port 8080            # Start on port 8080
-  $ cloudcli sandbox ~/my-project   # Run in a Docker sandbox
-  $ cloudcli status                 # Show configuration
+  $ bowcode                        # Start with defaults
+  $ bowcode --port 8080            # Start on port 8080
+  $ bowcode sandbox ~/my-project   # Run in a Docker sandbox
+  $ bowcode status                 # Show configuration
 
 Environment Variables:
   SERVER_PORT         Set server port (default: 3001)
@@ -163,10 +149,10 @@ Environment Variables:
   CONTEXT_WINDOW      Fallback context window size (default: 160000)
 
 Documentation:
-  ${dependencies.packageMetadata.homepage || 'https://github.com/siteboon/claudecodeui'}
+  ${dependencies.packageMetadata.homepage || 'https://github.com/vantran-se/bowcode'}
 
 Report Issues:
-  ${dependencies.packageMetadata.bugsUrl || 'https://github.com/siteboon/claudecodeui/issues'}
+  ${dependencies.packageMetadata.bugsUrl || 'https://github.com/vantran-se/bowcode/issues'}
 `);
 }
 
@@ -176,46 +162,6 @@ Report Issues:
  * cross-module startup dependency is explicit and required.
  */
 export function createCliService(dependencies: CliServiceDependencies): CliApplication {
-  const checkForUpdates = async (silent = false): Promise<boolean> => {
-    try {
-      const latestVersion = await dependencies.getLatestPackageVersion();
-      const currentVersion = dependencies.packageMetadata.version;
-      if (isNewerVersion(latestVersion, currentVersion)) {
-        dependencies.output.log(`\n${terminalTextStyles.warn('[UPDATE]')} New version available: ${terminalTextStyles.bright(latestVersion)} (current: ${currentVersion})`);
-        dependencies.output.log(`         Run ${terminalTextStyles.bright('cloudcli update')} to update\n`);
-        return true;
-      }
-      if (!silent) {
-        dependencies.output.log(`${terminalTextStyles.ok('[OK]')} You are on the latest version (${currentVersion})`);
-      }
-      return false;
-    } catch {
-      if (!silent) {
-        dependencies.output.log(`${terminalTextStyles.warn('[WARN]')} Could not check for updates`);
-      }
-      return false;
-    }
-  };
-
-  const updatePackage = async (): Promise<void> => {
-    dependencies.output.log(`${terminalTextStyles.info('[INFO]')} Checking for updates...`);
-    const hasUpdate = await checkForUpdates(true);
-    if (!hasUpdate) {
-      dependencies.output.log(`${terminalTextStyles.ok('[OK]')} Already on the latest version (${dependencies.packageMetadata.version})`);
-      return;
-    }
-
-    try {
-      dependencies.output.log(`${terminalTextStyles.info('[INFO]')} Updating ${dependencies.packageMetadata.version}...`);
-      dependencies.updateGlobalPackage();
-      dependencies.output.log(`${terminalTextStyles.ok('[OK]')} Update complete! Restart cloudcli to use the new version.`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      dependencies.output.error(`${terminalTextStyles.error('[ERROR]')} Update failed: ${message}`);
-      dependencies.output.log(`${terminalTextStyles.tip('[TIP]')} Try running manually: npm update -g @cloudcli-ai/cloudcli`);
-    }
-  };
-
   return {
     async run(argumentsList) {
       const parsedArguments = parseCliArguments(argumentsList);
@@ -230,7 +176,6 @@ export function createCliService(dependencies: CliServiceDependencies): CliAppli
 
       switch (parsedArguments.command) {
         case 'start':
-          void checkForUpdates(true);
           await dependencies.startServer();
           return 0;
         case 'sandbox':
@@ -248,12 +193,9 @@ export function createCliService(dependencies: CliServiceDependencies): CliAppli
         case 'version':
           dependencies.output.log(dependencies.packageMetadata.version);
           return 0;
-        case 'update':
-          await updatePackage();
-          return 0;
         default:
           dependencies.output.error(`\n❌ Unknown command: ${parsedArguments.command}`);
-          dependencies.output.log('   Run "cloudcli help" for usage information.\n');
+          dependencies.output.log('   Run "bowcode help" for usage information.\n');
           return 1;
       }
     },

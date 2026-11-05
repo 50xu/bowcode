@@ -1,12 +1,12 @@
 {
-  "name": "@cloudcli-ai/cloudcli",
+  "name": "bowcode",
   "version": "1.37.7",
-  "productName": "CloudCLI",
-  "description": "A web-based UI for Claude Code CLI",
+  "productName": "Bowcode",
+  "description": "Self-hosted remote web UI for Claude Code, Codex and OpenCode",
   "type": "module",
   "main": "dist-server/server/index.js",
   "bin": {
-    "cloudcli": "dist-server/server/modules/cli/cli.js"
+    "bowcode": "dist-server/server/modules/cli/cli.js"
   },
   "files": [
     "electron/",
@@ -18,13 +18,13 @@
     "scripts/",
     "README.md"
   ],
-  "homepage": "https://cloudcli.ai",
+  "homepage": "https://github.com/vantran-se/bowcode",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/siteboon/claudecodeui.git"
+    "url": "git+https://github.com/vantran-se/bowcode.git"
   },
   "bugs": {
-    "url": "https://github.com/siteboon/claudecodeui/issues"
+    "url": "https://github.com/vantran-se/bowcode/issues"
   },
   "scripts": {
     "dev": "concurrently --kill-others \"npm run server:dev\" \"npm run client\"",
@@ -62,10 +62,10 @@
     "update:platform": "./update-platform.sh"
   },
   "build": {
-    "appId": "ai.cloudcli.desktop",
-    "productName": "CloudCLI",
+    "appId": "dev.bowcode.desktop",
+    "productName": "Bowcode",
     "asar": false,
-    "artifactName": "cloudcli-desktop-${version}-${os}-${arch}.${ext}",
+    "artifactName": "bowcode-desktop-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release/desktop"
     },
@@ -90,8 +90,8 @@
         "dmg"
       ],
       "extendInfo": {
-        "CFBundleName": "CloudCLI",
-        "CFBundleDisplayName": "CloudCLI"
+        "CFBundleName": "Bowcode",
+        "CFBundleDisplayName": "Bowcode"
       }
     },
     "win": {
@@ -108,8 +108,7 @@
   "keywords": [
     "claude code",
     "claude-code",
-    "claude-code-ui",
-    "cloudcli",
+    "bowcode",
     "codex",
     "cursor",
     "cursor-cli",
@@ -121,7 +120,7 @@
     "ui",
     "mobile IDE"
   ],
-  "author": "CloudCLI UI Contributors",
+  "author": "Bowcode contributors",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.165",

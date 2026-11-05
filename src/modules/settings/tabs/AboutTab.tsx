@@ -1,7 +1,9 @@
-import { MessageSquare } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { APP_VERSION, CLOUDCLI_WORDMARK_FONT_FAMILY, PROJECT_REPO_URL } from '@/shared/constants';
+import { APP_VERSION, PROJECT_REPO_URL } from '@/shared/constants';
+import { BrandMark } from '@/shared/ui';
+import SettingsCard from '@/modules/settings/SettingsCard';
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -11,36 +13,54 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-/** Rendered by Settings to show the app's identity, source repository and license. */
+const UPSTREAM_URL = 'https://github.com/siteboon/claudecodeui';
+
+/**
+ * Rendered by Settings to show the app's identity, source repository and license.
+ * The upstream attribution is required by the Section 7 terms in LICENSE — keep it.
+ */
 export default function AboutTab() {
   const { t } = useTranslation('settings');
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/90 shadow-sm">
-          <MessageSquare className="h-5 w-5 text-primary-foreground" />
-        </div>
+    <div className="space-y-8">
+      <div className="flex flex-col items-center gap-3 pt-2 text-center">
+        <BrandMark size={72} className="shadow-lg" />
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-base font-semibold text-foreground" style={{ fontFamily: CLOUDCLI_WORDMARK_FONT_FAMILY }}>CloudCLI</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">v{APP_VERSION}</span>
+          <div className="text-2xl font-semibold tracking-tight text-foreground">Bowcode</div>
+          <div className="mt-1 text-sm tabular-nums text-muted-foreground">
+            {t('about.version', { defaultValue: 'Version {{version}}', version: APP_VERSION })}
           </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">{t('about.tagline')}</p>
         </div>
+        <p className="max-w-sm text-sm text-muted-foreground">{t('about.tagline')}</p>
       </div>
-      <a
-        href={PROJECT_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-      >
-        <GitHubIcon className="h-4 w-4" />
-        <span>Source</span>
-      </a>
-      <div className="border-t border-border/50 pt-4">
-        <p className="text-xs text-muted-foreground/60">{t('about.licensed')}</p>
-      </div>
+
+      <SettingsCard divided>
+        <a
+          href={PROJECT_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-4 py-3.5 text-sm text-foreground transition-colors hover:bg-accent/50"
+        >
+          <GitHubIcon className="h-4 w-4 text-muted-foreground" />
+          <span className="flex-1">{t('about.source', { defaultValue: 'Source code' })}</span>
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+        </a>
+        <div className="space-y-1 px-4 py-3.5 text-sm">
+          <div className="text-foreground">{t('about.license', { defaultValue: 'License' })}</div>
+          <p className="text-muted-foreground">{t('about.licensed')}</p>
+        </div>
+        <div className="space-y-1 px-4 py-3.5 text-sm">
+          <div className="text-foreground">{t('about.origin', { defaultValue: 'Origin' })}</div>
+          <p className="text-muted-foreground">
+            {t('about.basedOn', { defaultValue: 'A modified fork of' })}{' '}
+            <a href={UPSTREAM_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              CloudCLI UI ({UPSTREAM_URL})
+            </a>
+            . {t('about.notAffiliated', { defaultValue: 'Not affiliated with or endorsed by Siteboon AI B.V.' })}
+          </p>
+        </div>
+      </SettingsCard>
     </div>
   );
 }

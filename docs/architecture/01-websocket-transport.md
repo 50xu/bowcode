@@ -212,7 +212,7 @@ over REST first (`:184-189`) — that is the entry point in
 [conversation handoff](./03-conversation-handoff.md).
 
 Attachments get the same treatment. `filterAttachmentsToUploadStore` (`:34-56`) resolves
-every path against the global upload store (`~/.cloudcli/assets`, where
+every path against the global upload store (`~/.bowcode/assets`, where
 `POST /api/assets/images` writes) and keeps it only if it is a **direct child** of that
 directory: relative paths are anchored there, absolute paths must already be inside it, and
 traversal or subdirectories are dropped with a warning. Survivors are deduped by path and
@@ -577,7 +577,7 @@ The parts worth knowing:
   `type: 'auth_url'`, deduplicated per connection (`:459-475`).
 - **The app theme reaches the Claude CLI at launch.** `init` may carry
   `colorScheme: 'light' | 'dark'`. The server then sets `COLORFGBG`, and in a light tab
-  it starts `claude` with `--settings <file>` (a file under `~/.cloudcli` holding the
+  it starts `claude` with `--settings <file>` (a file under `~/.bowcode` holding the
   light variant of the user's own dark theme) when that theme is a dark one. When the
   CLI's colours follow the app theme, the server sends `type: 'claude_theme'` with the
   scheme the CLI was launched in. It sends it again on reattach, so the Shell can offer

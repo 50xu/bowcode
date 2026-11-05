@@ -164,7 +164,7 @@ test('GitHub cloning keeps credentials out of arguments and remote URL', async (
   ]);
   assert.equal(cloneArgs.length, 6);
   assert.equal(cloneArgs.join(' ').includes(token), false);
-  assert.equal(cloneEnvironment?.CLOUDCLI_GITHUB_TOKEN, token);
+  assert.equal(cloneEnvironment?.BOWCODE_GITHUB_TOKEN, token);
   assert.equal(cloneEnvironment?.GIT_CONFIG_KEY_0, 'credential.helper');
   assert.equal(cloneEnvironment?.GIT_CONFIG_VALUE_0, '');
   assert.equal(cloneEnvironment?.GIT_CONFIG_KEY_1, 'credential.https://github.com.helper');

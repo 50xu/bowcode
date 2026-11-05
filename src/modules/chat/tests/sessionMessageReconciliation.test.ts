@@ -22,7 +22,7 @@ const createUserMessage = (
 
 test('replaces an optimistic image-only turn with its persisted Claude copy', () => {
   const local = createUserMessage('local_image', '2026-07-28T20:30:21.000Z', {
-    images: [{ path: 'C:/Users/test/.cloudcli/assets/upload.png', name: 'image.png' }],
+    images: [{ path: 'C:/Users/test/.bowcode/assets/upload.png', name: 'image.png' }],
   });
   const persisted = createUserMessage('claude_image', '2026-07-28T20:30:26.000Z', {
     images: [{ data: 'data:image/png;base64,AAAA' }],
@@ -33,7 +33,7 @@ test('replaces an optimistic image-only turn with its persisted Claude copy', ()
 
 test('does not collapse an attachment-only turn into a server row without attachments', () => {
   const local = createUserMessage('local_image', '2026-07-28T20:30:21.000Z', {
-    images: [{ path: 'C:/Users/test/.cloudcli/assets/upload.png' }],
+    images: [{ path: 'C:/Users/test/.bowcode/assets/upload.png' }],
   });
   const persisted = createUserMessage('claude_empty', '2026-07-28T20:30:22.000Z');
 
@@ -42,10 +42,10 @@ test('does not collapse an attachment-only turn into a server row without attach
 
 test('matches optimistic attachment turns to persisted turns one-to-one', () => {
   const firstLocal = createUserMessage('local_first', '2026-07-28T20:30:21.000Z', {
-    images: [{ path: 'C:/Users/test/.cloudcli/assets/first.png' }],
+    images: [{ path: 'C:/Users/test/.bowcode/assets/first.png' }],
   });
   const secondLocal = createUserMessage('local_second', '2026-07-28T20:30:25.000Z', {
-    images: [{ path: 'C:/Users/test/.cloudcli/assets/second.png' }],
+    images: [{ path: 'C:/Users/test/.bowcode/assets/second.png' }],
   });
   const firstPersisted = createUserMessage('claude_first', '2026-07-28T20:30:22.000Z', {
     images: [{ data: 'data:image/png;base64,AAAA' }],

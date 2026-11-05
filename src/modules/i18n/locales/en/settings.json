@@ -48,7 +48,9 @@
   "actions": {
     "saveChanges": "Save Changes",
     "resetToDefaults": "Reset to Defaults",
-    "cancelChanges": "Cancel Changes"
+    "cancelChanges": "Cancel Changes",
+    "done": "Done",
+    "close": "Close"
   },
   "voiceSettings": {
     "title": "Voice",
@@ -200,7 +202,8 @@
       "actionRequired": "Action required",
       "stop": "Run stopped",
       "error": "Run failed"
-    }
+    },
+    "channels": "Delivery"
   },
   "appearanceSettings": {
     "darkMode": {
@@ -318,7 +321,8 @@
   "saveStatus": {
     "success": "Settings saved successfully!",
     "error": "Failed to save settings",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "saved": "Saved"
   },
   "footerActions": {
     "save": "Save Settings",
@@ -441,7 +445,7 @@
       "versionUnavailable": "Could not read the version",
       "updateAvailable": "Update available: v{{version}}",
       "upToDate": "Up to date",
-      "bundled": "Ships with CloudCLI and is updated together with it.",
+      "bundled": "Ships with Bowcode and is updated together with it.",
       "updateTo": "Update to v{{version}}",
       "runUpdater": "Run updater",
       "updating": "Updating…",
@@ -611,7 +615,7 @@
     },
     "managed": {
       "badge": "Managed",
-      "hint": "Managed by CloudCLI."
+      "hint": "Managed by Bowcode."
     },
     "help": {
       "title": "About Codex MCP",
@@ -620,7 +624,7 @@
   },
   "pluginSettings": {
     "title": "Plugins",
-    "description": "Extend the interface with custom plugins. Install from git or drop a folder in ~/.claude-code-ui/plugins/",
+    "description": "Extend the interface with custom plugins. Install from git or drop a folder in ~/.bowcode/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Install",
     "installing": "Installing…",
@@ -667,7 +671,7 @@
     "prismCloudCLI": {
       "name": "PRISM CloudCLI",
       "badge": "unofficial",
-      "description": "Session intelligence for Claude Code, inside CloudCLI. See why your sessions are burning tokens without leaving the browser.",
+      "description": "Session intelligence for Claude Code, inside Bowcode. See why your sessions are burning tokens without leaving the browser.",
       "install": "Install"
     },
     "sessionManagerPlugin": {
@@ -897,7 +901,32 @@
     "unknownError": "Unknown error"
   },
   "about": {
-    "tagline": "Open-source AI coding assistant interface",
-    "licensed": "Licensed under AGPL-3.0"
+    "tagline": "Drive Claude Code, Codex and OpenCode from any browser — your phone included.",
+    "licensed": "AGPL-3.0-or-later, with the additional terms in the LICENSE file.",
+    "version": "Version {{version}}",
+    "source": "Source code",
+    "license": "License",
+    "origin": "Origin",
+    "basedOn": "A modified fork of",
+    "notAffiliated": "Not affiliated with or endorsed by Siteboon AI B.V."
+  },
+  "navGroups": {
+    "agents": "Agents",
+    "general": "General",
+    "account": "Account & sync",
+    "about": "About"
+  },
+  "pageDescriptions": {
+    "agents": "Sign-in, permissions, MCP servers and skills for each coding agent.",
+    "tasks": "TaskMaster integration for planning work as tasks.",
+    "browser": "Let agents drive a real browser for testing and research.",
+    "plugins": "Extend the interface with plugins.",
+    "appearance": "Theme, project list and code editor.",
+    "notifications": "How and when Bowcode lets you know an agent needs you.",
+    "voice": "Speech-to-text for dictating prompts.",
+    "git": "The identity used for commits made from this app.",
+    "api": "API keys for external access and GitHub tokens for private repos.",
+    "sync": "Keep settings in a git repository you own and share them between installs.",
+    "about": "Version, source code and license."
   }
 }
