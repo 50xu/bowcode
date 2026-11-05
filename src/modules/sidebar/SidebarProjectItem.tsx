@@ -212,9 +212,10 @@ function SidebarProjectItem({
             </>
           ) : (
             <>
+              {/* Hover actions appear to the LEFT of +, which never moves: delete must not slide under the pointer aimed at +. */}
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-red-600 hover:bg-red-500/10 md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onDeleteProject(project)} title={t('tooltips.deleteProject')} aria-label={t('tooltips.deleteProject')}><Trash2 className="h-3.5 w-3.5" /></button>
               <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-accent md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onStartEditingProject(project)} title={t('tooltips.renameProject')} aria-label={t('tooltips.renameProject')}><Edit3 className="h-3.5 w-3.5" /></button>
               <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-primary hover:bg-primary/10" onClick={() => { if (isCompact) onProjectSelect(project); onNewSession(project); }} title={t('sessions.newSession')} aria-label={t('sessions.newSession')}><Plus className="h-4 w-4" /></button>
-              <button type="button" className="flex h-8 w-8 items-center justify-center rounded text-red-600 hover:bg-red-500/10 md:hidden md:group-hover:flex md:group-focus-within:flex" onClick={() => onDeleteProject(project)} title={t('tooltips.deleteProject')} aria-label={t('tooltips.deleteProject')}><Trash2 className="h-3.5 w-3.5" /></button>
             </>
           )}
         </div>

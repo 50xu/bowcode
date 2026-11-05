@@ -15,6 +15,7 @@ import { EditorSidebar, useEditorSidebar } from '@/modules/code-editor';
 import WorkspaceHeader from '@/modules/project-workspace/WorkspaceHeader';
 import WorkspaceStateView from '@/modules/project-workspace/WorkspaceStateView';
 import WorkspaceErrorBoundary from '@/modules/project-workspace/WorkspaceErrorBoundary';
+import WorkspaceSidePanel from '@/modules/project-workspace/WorkspaceSidePanel';
 
 type WorkspaceMainProps = {
   selectedProject: Project | null;
@@ -137,6 +138,74 @@ function WorkspaceMain({
     return <WorkspaceStateView mode="loading" isMobile={isMobile} onMenuClick={onMenuClick} />;
   }
 
+  // Desktop splits chat and tools; phones keep one full-screen tab at a time.
+  const splitView = !isMobile;
+  const panelTab: AppTab | null = splitView && activeTab !== 'chat' ? activeTab : null;
+  const chatVisible = splitView || activeTab === 'chat';
+
+  const panelTitle = (tab: AppTab): string => {
+    if (tab.startsWith('plugin:')) return tab.replace('plugin:', '');
+    const titles: Record<string, string> = { files: 'Files', shell: 'Terminal', git: 'Git', tasks: 'Tasks', browser: 'Browser' };
+    return titles[tab] ?? tab;
+  };
+
+  const renderToolTab = (tab: AppTab) => {
+    if (!selectedProject) return null;
+    if (tab === 'files') {
+      return (
+        <div className="h-full overflow-hidden">
+          <FileTree
+            selectedProject={selectedProject}
+            onFileOpen={handleFileOpen}
+            revealDirectory={revealDirectory}
+          />
+        </div>
+      );
+    }
+    if (tab === 'shell') {
+      return (
+        <div className="h-full w-full overflow-hidden">
+          <TerminalView key={selectedProject.path ?? selectedProject.fullPath} projectPath={selectedProject.path ?? selectedProject.fullPath ?? ''} />
+        </div>
+      );
+    }
+    if (tab === 'git') {
+      return (
+        <div className="h-full overflow-hidden">
+          <GitPanel
+            selectedProject={selectedProject}
+            isMobile={isMobile}
+            onFileOpen={handleFileOpen}
+            onProjectSelect={onProjectSelect}
+            onProjectsRefresh={onProjectsRefresh}
+          />
+        </div>
+      );
+    }
+    if (tab === 'tasks') {
+      return shouldShowTasksTab ? <TaskMasterPanel isVisible /> : null;
+    }
+    if (tab === 'browser') {
+      return shouldShowBrowserTab ? (
+        <div className="h-full overflow-hidden">
+          <BrowserUsePanel isVisible onShowSettings={onShowSettings} />
+        </div>
+      ) : null;
+    }
+    if (tab.startsWith('plugin:')) {
+      return (
+        <div className="h-full overflow-hidden">
+          <PluginTabContent
+            pluginName={tab.replace('plugin:', '')}
+            selectedProject={selectedProject}
+            selectedSession={selectedSession}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (!selectedProject) {
     return <WorkspaceStateView mode="empty" isMobile={isMobile} onMenuClick={onMenuClick} />;
   }
@@ -157,10 +226,10 @@ function WorkspaceMain({
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div className={`flex min-h-0 min-w-[200px] flex-col overflow-hidden ${editorExpanded ? 'hidden' : ''} flex-1`}>
-          <div className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}>
+          <div className={`h-full ${chatVisible ? 'block' : 'hidden'}`}>
             <WorkspaceErrorBoundary showDetails>
               <ChatInterface
-                isActive={activeTab === 'chat'}
+                isActive={chatVisible}
                 selectedProject={selectedProject}
                 selectedSession={selectedSession}
                 ws={ws}
@@ -179,52 +248,16 @@ function WorkspaceMain({
             </WorkspaceErrorBoundary>
           </div>
 
-          {activeTab === 'files' && (
-            <div className="h-full overflow-hidden">
-              <FileTree
-                selectedProject={selectedProject}
-                onFileOpen={handleFileOpen}
-                revealDirectory={revealDirectory}
-              />
-            </div>
-          )}
-
-          {activeTab === 'shell' && (
-            <div className="h-full w-full overflow-hidden">
-              <TerminalView key={selectedProject.path ?? selectedProject.fullPath} projectPath={selectedProject.path ?? selectedProject.fullPath ?? ''} />
-            </div>
-          )}
-
-          {activeTab === 'git' && (
-            <div className="h-full overflow-hidden">
-              <GitPanel
-                selectedProject={selectedProject}
-                isMobile={isMobile}
-                onFileOpen={handleFileOpen}
-                onProjectSelect={onProjectSelect}
-                onProjectsRefresh={onProjectsRefresh}
-              />
-            </div>
-          )}
-
-          {shouldShowTasksTab && <TaskMasterPanel isVisible={activeTab === 'tasks'} />}
-
-          {shouldShowBrowserTab && activeTab === 'browser' && (
-            <div className="h-full overflow-hidden">
-              <BrowserUsePanel isVisible={activeTab === 'browser'} onShowSettings={onShowSettings} />
-            </div>
-          )}
-
-          {activeTab.startsWith('plugin:') && (
-            <div className="h-full overflow-hidden">
-              <PluginTabContent
-                pluginName={activeTab.replace('plugin:', '')}
-                selectedProject={selectedProject}
-                selectedSession={selectedSession}
-              />
-            </div>
-          )}
+          {/* Phones: one surface at a time, the tool replaces the chat. */}
+          {!splitView && renderToolTab(activeTab)}
         </div>
+
+        {/* Desktop: chat stays the main surface; tools open beside it. */}
+        {panelTab && !editorExpanded && (
+          <WorkspaceSidePanel title={panelTitle(panelTab)} onClose={() => setActiveTab('chat')}>
+            {renderToolTab(panelTab)}
+          </WorkspaceSidePanel>
+        )}
 
         <EditorSidebar
           editingFile={editingFile}
@@ -238,7 +271,7 @@ function WorkspaceMain({
           onToggleEditorExpand={handleToggleEditorExpand}
           onUnsavedChangesChange={handleUnsavedChangesChange}
           projectPath={selectedProject.path}
-          fillSpace={activeTab === 'files'}
+          fillSpace={!splitView && activeTab === 'files'}
         />
       </div>
     </div>

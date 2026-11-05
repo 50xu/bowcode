@@ -12,6 +12,11 @@ type WorkspaceTabsProps = {
   setActiveTab: Dispatch<SetStateAction<AppTab>>;
   shouldShowTasksTab: boolean;
   shouldShowBrowserTab: boolean;
+  /**
+   * Desktop split view: tool tabs open a side panel next to the chat, so
+   * clicking the open tool again closes it (back to chat alone).
+   */
+  toggleable?: boolean;
 };
 
 type BuiltInTab = { kind: 'builtin'; id: AppTab; labelKey: string; icon: LucideIcon };
@@ -28,7 +33,8 @@ const BROWSER_TAB: BuiltInTab = { kind: 'builtin', id: 'browser', labelKey: 'tab
 const TASKS_TAB: BuiltInTab = { kind: 'builtin', id: 'tasks', labelKey: 'tabs.tasks', icon: ClipboardCheck };
 
 /** Rendered by WorkspaceHeader as compact icon tabs and a narrow-screen overflow menu. */
-export default function WorkspaceTabs({ activeTab, setActiveTab, shouldShowTasksTab, shouldShowBrowserTab }: WorkspaceTabsProps) {
+export default function WorkspaceTabs({ activeTab, setActiveTab, shouldShowTasksTab, shouldShowBrowserTab, toggleable = false }: WorkspaceTabsProps) {
+  const selectTab = (id: AppTab) => setActiveTab(toggleable && id === activeTab && id !== 'chat' ? 'chat' : id);
   const { t } = useTranslation();
   const { plugins } = usePlugins();
   const tabs: TabDefinition[] = [
@@ -64,7 +70,7 @@ export default function WorkspaceTabs({ activeTab, setActiveTab, shouldShowTasks
         {tabs.map((tab) => (
           <Tooltip key={tab.id} content={label(tab)} position="bottom">
             <button type="button" role="tab" aria-label={label(tab)} aria-selected={tab.id === activeTab}
-              tabIndex={tab.id === activeTab ? 0 : -1} onClick={() => setActiveTab(tab.id)} onKeyDown={handleTabKeyDown}
+              tabIndex={tab.id === activeTab ? 0 : -1} onClick={() => selectTab(tab.id)} onKeyDown={handleTabKeyDown}
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab.id === activeTab ? 'text-primary' : 'text-muted-foreground'}`}>
               {icon(tab)}
             </button>

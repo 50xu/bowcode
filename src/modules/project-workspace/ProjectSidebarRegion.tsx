@@ -157,7 +157,7 @@ function ProjectSidebarRegion({
         aria-label={t('versionUpdate.ariaLabels.closeSidebar')}
       />
       <div
-        className={`relative h-full w-[85vw] max-w-sm hairline-right transform bg-background transition-transform duration-150 ease-out sm:w-80 ${
+        className={`hairline-right relative h-full w-[85vw] max-w-sm transform bg-background transition-transform duration-150 ease-out sm:w-80 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         onClick={(event) => event.stopPropagation()}

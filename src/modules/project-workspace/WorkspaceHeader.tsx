@@ -40,7 +40,9 @@ export default function WorkspaceHeader({
         {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
         <div className="flex min-w-0 flex-1 items-center gap-1 sm:max-w-[min(38%,24rem)]">
           <WorkspaceTitle
-            activeTab={activeTab}
+            // Desktop keeps the chat on screen with tools beside it, so the
+            // title stays the conversation's.
+            activeTab={isMobile ? activeTab : 'chat'}
             selectedProject={selectedProject}
             selectedSession={selectedSession}
             shouldShowTasksTab={shouldShowTasksTab}
@@ -54,6 +56,7 @@ export default function WorkspaceHeader({
             setActiveTab={setActiveTab}
             shouldShowTasksTab={shouldShowTasksTab}
             shouldShowBrowserTab={shouldShowBrowserTab}
+            toggleable={!isMobile}
           />
           <button
             type="button"
