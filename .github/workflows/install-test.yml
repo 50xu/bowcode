@@ -1,0 +1,61 @@
+name: Install test
+
+# Installs a published release the way users do (install.sh), on Linux and macOS.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to install (vX.Y.Z)"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+
+      - name: Install with install.sh
+        env:
+          TAG: ${{ inputs.tag }}
+        run: bash install.sh --version "$TAG" --no-service
+
+      - name: Start and probe
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          export HOME="$RUNNER_TEMP/home" && mkdir -p "$HOME"
+          SERVER_PORT=3080 HOST=127.0.0.1 bowcode start > "$RUNNER_TEMP/bowcode.log" 2>&1 &
+          for _ in $(seq 1 60); do curl -fs http://127.0.0.1:3080/health > "$RUNNER_TEMP/health.json" && break; sleep 1; done
+          cat "$RUNNER_TEMP/health.json" || { cat "$RUNNER_TEMP/bowcode.log"; exit 1; }
+          node -e "const h=require(process.argv[1]); if (h.version !== process.argv[2].slice(1) || h.installMode !== 'npm') process.exit(1)" "$RUNNER_TEMP/health.json" "$TAG"
+          curl -fs http://127.0.0.1:3080/ | grep -q '<title>Bowcode'
+          bowcode version
+          bowcode update --check
+
+      - name: Service install (launchd on macOS)
+        if: runner.os == 'macOS'
+        run: |
+          bowcode service install --port 3081
+          for _ in $(seq 1 60); do curl -fs http://127.0.0.1:3081/health && break; sleep 1; done
+          curl -fs http://127.0.0.1:3081/health
+          bowcode service status
+          bowcode service uninstall
