@@ -107,19 +107,43 @@ const createOpenCodeDatabase = async (homeDir: string, workspacePath: string): P
         finish: 'stop',
       },
     });
+    insertOpenCodeMessage(db, {
+      id: 'message-assistant-latest',
+      sessionId: 'open-session-1',
+      type: 'assistant',
+      seq: 3,
+      timeCreated: 1_700_000_003_500,
+      data: {
+        content: [],
+        tokens: { input: 100, output: 6, reasoning: 50, cache: { read: 20, write: 5 } },
+        finish: 'stop',
+      },
+    });
+    insertOpenCodeMessage(db, {
+      id: 'message-assistant-empty',
+      sessionId: 'open-session-1',
+      type: 'assistant',
+      seq: 4,
+      timeCreated: 1_700_000_003_750,
+      data: {
+        content: [],
+        tokens: { input: 0, output: 0, reasoning: 10, cache: { read: 0, write: 0 } },
+        finish: 'stop',
+      },
+    });
     // Neither of these is a transcript row.
     insertOpenCodeMessage(db, {
       id: 'message-idle',
       sessionId: 'open-session-1',
       type: 'idle',
-      seq: 3,
+      seq: 5,
       data: { outcome: 'succeeded' },
     });
     insertOpenCodeMessage(db, {
       id: 'message-system',
       sessionId: 'open-session-1',
       type: 'system',
-      seq: 4,
+      seq: 6,
       data: { text: 'The available skills have changed.' },
     });
   } finally {
@@ -372,12 +396,12 @@ test('OpenCode sessions provider reads sqlite history with the ids live events g
     assert.equal(history.messages[3]?.toolName, 'Bash');
     assert.deepEqual(history.messages[3]?.toolResult, { content: 'ok', isError: false });
     assert.deepEqual(history.tokenUsage, {
-      used: 42,
-      inputTokens: 13,
-      outputTokens: 20,
+      used: 131,
+      inputTokens: 125,
+      outputTokens: 6,
       breakdown: {
-        input: 13,
-        output: 20,
+        input: 125,
+        output: 6,
       },
     });
 
