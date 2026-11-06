@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { ChevronDown, FileText, FolderPlus, Loader2, RefreshCw, Search, Upload, X } from 'lucide-react';
+import { ChevronsDownUp, FileText, FolderPlus, Loader2, RefreshCw, Search, Upload, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '@/shared/ui';
@@ -16,6 +16,8 @@ type FileTreeHeaderProps = {
   onUploadFiles?: (files: FileList) => void;
   onRefresh?: () => void;
   onCollapseAll?: () => void;
+  /** False when no folder is open, so Collapse All has nothing to do. */
+  canCollapseAll?: boolean;
   // Loading state
   loading?: boolean;
   operationLoading?: boolean;
@@ -32,6 +34,7 @@ export default function FileTreeHeader({
   onUploadFiles,
   onRefresh,
   onCollapseAll,
+  canCollapseAll = true,
   loading,
   operationLoading,
   isUploading,
@@ -144,10 +147,11 @@ export default function FileTreeHeader({
               size="sm"
               className="h-7 w-7 p-0"
               onClick={onCollapseAll}
+              disabled={!canCollapseAll}
               title={t('fileTree.collapseAll', 'Collapse All')}
               aria-label={t('fileTree.collapseAll', 'Collapse All')}
             >
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronsDownUp className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
