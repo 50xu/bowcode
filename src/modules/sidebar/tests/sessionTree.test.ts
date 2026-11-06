@@ -5,8 +5,8 @@ import { test } from 'vitest';
 import type { SessionWithProvider } from '@/shared/types';
 import { buildSessionTree } from '@/modules/sidebar/utils/sessionTree';
 
-const session = (id: string, parentSessionId?: string): SessionWithProvider =>
-  ({ id, parentSessionId } as SessionWithProvider);
+const session = (id: string, parentSessionId?: string, lastActivity?: string): SessionWithProvider =>
+  ({ id, parentSessionId, lastActivity } as SessionWithProvider);
 
 const ids = (nodes: ReturnType<typeof buildSessionTree>) => nodes.map((node) => node.session.id);
 
@@ -22,6 +22,18 @@ test('preserves loaded order at each level and nests children recursively', () =
 
 test('missing and unloaded parents leave sessions top-level', () => {
   assert.deepEqual(ids(buildSessionTree([session('orphan', 'not-loaded'), session('plain')])), ['orphan', 'plain']);
+});
+
+test('roots sort by latest activity in their subtree, children by their own activity', () => {
+  const tree = buildSessionTree([
+    session('older-parent', undefined, '2026-01-01'),
+    session('newer-root', undefined, '2026-01-03'),
+    session('older-child', 'older-parent', '2026-01-02'),
+    session('newest-grandchild', 'older-child', '2026-01-05'),
+    session('newer-child', 'older-parent', '2026-01-04'),
+  ]);
+  assert.deepEqual(ids(tree), ['older-parent', 'newer-root']);
+  assert.deepEqual(ids(tree[0].children), ['newer-child', 'older-child']);
 });
 
 test('self and multi-session cycles stay visible at top level', () => {

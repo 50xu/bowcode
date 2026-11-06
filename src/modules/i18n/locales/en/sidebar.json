@@ -42,9 +42,9 @@
     "clearSelection": "Clear",
     "deleteSelected_one": "Delete {{count}} session",
     "deleteSelected_other": "Delete {{count}} sessions",
-    "subagentSessions_one": "{{count}} subagent session",
-    "subagentSessions_other": "{{count}} subagent sessions",
-    "startedByAnotherSession": "Started by another session"
+    "startedByAnotherSession": "Started by another session",
+    "expandChildren": "Show sessions it started",
+    "collapseChildren": "Hide sessions it started"
   },
   "tooltips": {
     "hideSidebar": "Hide sidebar",

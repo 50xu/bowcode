@@ -38,7 +38,9 @@
     "selectAllLoaded": "全选已加载",
     "clearSelection": "清除选择",
     "deleteSelected_one": "删除 {{count}} 个会话",
-    "deleteSelected_other": "删除 {{count}} 个会话"
+    "deleteSelected_other": "删除 {{count}} 个会话",
+    "expandChildren": "显示它启动的会话",
+    "collapseChildren": "隐藏它启动的会话"
   },
   "tooltips": {
     "hideSidebar": "隐藏侧边栏",

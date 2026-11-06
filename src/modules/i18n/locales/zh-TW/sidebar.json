@@ -38,7 +38,9 @@
     "selectAllLoaded": "全選已載入",
     "clearSelection": "清除選取",
     "deleteSelected_one": "刪除 {{count}} 個工作階段",
-    "deleteSelected_other": "刪除 {{count}} 個工作階段"
+    "deleteSelected_other": "刪除 {{count}} 個工作階段",
+    "expandChildren": "顯示它啟動的工作階段",
+    "collapseChildren": "隱藏它啟動的工作階段"
   },
   "tooltips": {
     "hideSidebar": "隱藏側邊欄",

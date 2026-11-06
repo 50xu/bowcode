@@ -39,7 +39,9 @@
     "clearSelection": "ניקוי",
     "deleteSelected_one": "מחיקת סשן אחד",
     "deleteSelected_two": "מחיקת שני סשנים",
-    "deleteSelected_other": "מחיקת {{count}} סשנים"
+    "deleteSelected_other": "מחיקת {{count}} סשנים",
+    "expandChildren": "הצגת ההפעלות שהתחיל",
+    "collapseChildren": "הסתרת ההפעלות שהתחיל"
   },
   "tooltips": {
     "hideSidebar": "הסתרת סרגל הצד",

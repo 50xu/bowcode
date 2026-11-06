@@ -38,7 +38,9 @@
     "selectAllLoaded": "불러온 항목 모두 선택",
     "clearSelection": "선택 해제",
     "deleteSelected_one": "세션 {{count}}개 삭제",
-    "deleteSelected_other": "세션 {{count}}개 삭제"
+    "deleteSelected_other": "세션 {{count}}개 삭제",
+    "expandChildren": "시작한 세션 표시",
+    "collapseChildren": "시작한 세션 숨기기"
   },
   "tooltips": {
     "hideSidebar": "사이드바 숨기기",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
@@ -42,6 +42,17 @@ type SidebarProjectSessionsProps = {
   onDeleteSelectedSessions: (sessionIds: string[]) => void;
   t: TFunction;
 };
+
+const EXPANDED_SESSION_PARENTS_KEY = 'sidebar-expanded-session-parents';
+
+function readExpandedParents(): ReadonlySet<string> {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(EXPANDED_SESSION_PARENTS_KEY) ?? 'null');
+    return new Set(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
 
 function SessionListSkeleton() {
   return (
@@ -94,10 +105,45 @@ export default function SidebarProjectSessions({
   t,
 }: SidebarProjectSessionsProps) {
   const tree = useMemo(() => buildSessionTree(sessions), [sessions]);
-  // Preserve manual expansion while opening the ancestors of a newly selected descendant.
-  const [expandedParentIds, setExpandedParentIds] = useState<ReadonlySet<string>>(() => new Set());
+  // Browser-local parent expansion survives remounts and is shared across project lists.
+  const [expandedParentIds, setExpandedParentIds] = useState<ReadonlySet<string>>(readExpandedParents);
+  const previouslyLoadedIds = useRef<Set<string>>(new Set());
+  const removedLoadedIds = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (!selectedSession?.id) return;
+    if (!initialSessionsLoaded) return;
+    const loadedIds = new Set(sessions.map((session) => session.id));
+    const removed = [...previouslyLoadedIds.current].filter((id) => !loadedIds.has(id));
+    removed.forEach((id) => removedLoadedIds.current.add(id));
+    loadedIds.forEach((id) => removedLoadedIds.current.delete(id));
+    previouslyLoadedIds.current = loadedIds;
+    if (removed.length) {
+      setExpandedParentIds((previous) => {
+        const next = new Set(previous);
+        removed.forEach((id) => next.delete(id));
+        return next.size === previous.size ? previous : next;
+      });
+    }
+  }, [initialSessionsLoaded, sessions]);
+  useEffect(() => {
+    try {
+      const saved = readExpandedParents();
+      const next = new Set([...saved, ...expandedParentIds]);
+      // The currently loaded project's known ids are authoritative for its own expansions.
+      for (const session of sessions) {
+        if (!expandedParentIds.has(session.id)) next.delete(session.id);
+      }
+      removedLoadedIds.current.forEach((id) => next.delete(id));
+      localStorage.setItem(EXPANDED_SESSION_PARENTS_KEY, JSON.stringify([...next]));
+    } catch { /* Expansion still works when storage is unavailable. */ }
+  }, [expandedParentIds, sessions]);
+  // A selected descendant opens its ancestors once per selection, not on every websocket list refresh.
+  const autoExpandedSelection = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedSession?.id) {
+      autoExpandedSelection.current = null;
+      return;
+    }
+    if (autoExpandedSelection.current === selectedSession.id) return;
     const ancestors: string[] = [];
     const findSelected = (nodes: SessionTreeNode[], path: string[]): boolean => {
       for (const node of nodes) {
@@ -109,18 +155,21 @@ export default function SidebarProjectSessions({
       }
       return false;
     };
-    if (findSelected(tree, []) && ancestors.length) {
-      setExpandedParentIds((previous) => new Set([...previous, ...ancestors]));
+    if (findSelected(tree, [])) {
+      autoExpandedSelection.current = selectedSession.id;
+      if (ancestors.length) {
+        setExpandedParentIds((previous) => ancestors.every((id) => previous.has(id)) ? previous : new Set([...previous, ...ancestors]));
+      }
     }
   }, [selectedSession?.id, tree]);
-  const onToggleParent = (id: string) => {
+  const onToggleParent = useCallback((id: string) => {
     setExpandedParentIds((previous) => {
       const next = new Set(previous);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
 
   if (!isExpanded) {
     return null;
@@ -151,7 +200,7 @@ export default function SidebarProjectSessions({
       ? t('sessions.selectAllLoaded')
       : t('sessions.selectAll');
 
-  const renderRow = (node: SessionTreeNode, isOrphanedChild: boolean) => {
+  const renderRow = (node: SessionTreeNode, isOrphanedChild: boolean, alignChevron: boolean, expanded: boolean, containsSelection: boolean, hiddenActivity: 'processing' | 'attention' | 'background' | null) => {
     const session = node.session;
     return (
       <SidebarSessionItem
@@ -162,6 +211,12 @@ export default function SidebarProjectSessions({
         hasBackgroundWork={backgroundSessionIds.has(session.id)}
         needsAttention={attentionSessionIds.has(session.id)}
         isOrphanedChild={isOrphanedChild || undefined}
+        hasChildren={node.children.length > 0}
+        alignChevron={alignChevron}
+        isChildrenExpanded={expanded}
+        containsSelection={containsSelection}
+        hiddenActivity={hiddenActivity}
+        onToggleChildren={onToggleParent}
         currentTime={currentTime}
         onRenameDraftChange={onRenameDraftChange}
         isEditing={session.id === sessionRenameId}
@@ -241,11 +296,10 @@ export default function SidebarProjectSessions({
             nodes={tree}
             renderRow={renderRow}
             expandedParentIds={expandedParentIds}
-            onToggleParent={onToggleParent}
+            selectedSessionId={selectedSession?.id}
             activeSessions={activeSessions}
             backgroundSessionIds={backgroundSessionIds}
             attentionSessionIds={attentionSessionIds}
-            t={t}
           />
 
           {hasMoreSessions && (
