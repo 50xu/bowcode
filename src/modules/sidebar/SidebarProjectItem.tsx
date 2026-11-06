@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Check, ChevronRight, Edit3, MoreHorizontal, Plus, Star, Trash2, X } from 'lucide-react';
+import { Check, CheckSquare, ChevronRight, Edit3, MoreHorizontal, Plus, Star, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { cn } from '@/shared/utils';
@@ -106,6 +106,8 @@ function SidebarProjectItem({
   // Project identity is tracked by the DB-assigned `projectId` everywhere
   // after the projectName → projectId migration.
   const isSelected = selectedProject?.projectId === project.projectId;
+  // With the selected session visible underneath, that row carries the highlight alone.
+  const isRowHighlighted = isSelected && !(isExpanded && selectedSession);
   const { Icon, hue } = getProjectIdentity(project);
   const summary = getProjectSummary(project, sessions, currentTime);
   const taskStatus = getTaskIndicatorStatus(project, mcpServerStatus);
@@ -154,7 +156,7 @@ function SidebarProjectItem({
 
   return (
     <div className={cn('min-w-0', isDeleting && 'pointer-events-none opacity-50')}>
-      <div className={cn('group flex h-12 min-w-0 items-center gap-1.5 rounded-lg px-1.5 transition-colors hover:bg-accent md:h-11', isSelected && 'bg-primary/10')}
+      <div className={cn('group flex h-12 min-w-0 items-center gap-1.5 rounded-lg px-1.5 transition-colors hover:bg-accent md:h-11', isRowHighlighted && 'bg-primary/10')}
         data-testid="project-tree-row"
       >
         <button type="button" onClick={isCompact ? toggleProject : selectAndToggleProject}
@@ -165,7 +167,7 @@ function SidebarProjectItem({
           <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-90')} />
         </button>
         <button type="button" onClick={isCompact ? toggleProject : selectAndToggleProject}
-          className={cn('flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-0.5 text-left', isSelected && 'text-primary')}
+          className={cn('flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-0.5 text-left', isRowHighlighted && 'text-primary')}
           title={project.fullPath}
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--project-icon-bg)] text-[var(--project-icon-fg)] dark:bg-[var(--project-icon-dark-bg)] dark:text-[var(--project-icon-dark-fg)]"
@@ -194,9 +196,10 @@ function SidebarProjectItem({
                 placeholder={t('projects.projectNamePlaceholder')} autoFocus autoComplete="off"
               />
             ) : (
-              <span className={cn('block truncate text-sm font-medium leading-5', isSelected ? 'text-primary' : 'text-foreground')}>{project.displayName}</span>
+              <span className={cn('block truncate text-sm font-semibold leading-5', isRowHighlighted ? 'text-primary' : 'text-foreground')}>{project.displayName}</span>
             )}
-            <span className="block truncate text-xs leading-4 text-muted-foreground/90" title={summary}>{summary}</span>
+            {/* Expanded, the summary only repeats the newest session listed right below. */}
+            {!isExpanded && <span className="block truncate text-xs leading-4 text-muted-foreground/90" title={summary}>{summary}</span>}
           </span>
         </button>
         {tasksEnabled && <TaskIndicator status={taskStatus} size="xs" className="hidden shrink-0 md:inline-flex" />}
@@ -239,6 +242,19 @@ function SidebarProjectItem({
                       icon: Edit3,
                       onSelect: () => onStartEditingProject(project),
                     },
+                    ...(sessions.length > 0 && selectedSessionIds === null
+                      ? [{
+                          key: 'select',
+                          label: t('sessions.select'),
+                          icon: CheckSquare,
+                          onSelect: () => {
+                            if (!isExpanded) {
+                              onToggleProject(project.projectId);
+                            }
+                            onSetSessionSelection({ projectId: project.projectId, sessionIds: new Set() });
+                          },
+                        }]
+                      : []),
                     {
                       key: 'delete',
                       label: t('projectMenu.remove'),

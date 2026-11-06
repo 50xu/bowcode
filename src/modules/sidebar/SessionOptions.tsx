@@ -64,6 +64,8 @@ export default function SessionOptions({
   t,
 }: SessionOptionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Keeps the "…" visible while its menu is open, after the pointer leaves the row.
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Keeps the menu item busy until the title request settles; prevents duplicate requests.
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   // Shows the request failure beside the action without hiding it when the menu stays open.
@@ -115,7 +117,11 @@ export default function SessionOptions({
   };
 
   return (
-    <div ref={containerRef} className={cn('flex items-center gap-1', className)}>
+    <div ref={containerRef} className={cn(
+      'flex items-center gap-1 transition-opacity',
+      !isEditing && !isMenuOpen && 'md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100',
+      className,
+    )}>
       {isEditing ? (
         <>
           <input
@@ -164,8 +170,11 @@ export default function SessionOptions({
           portal
           variant="ghost"
           size="icon"
-          onOpenChange={setOptionsOpen}
-          triggerClassName="h-7 w-7 text-muted-foreground opacity-70 hover:bg-muted hover:opacity-100"
+          onOpenChange={(open) => {
+            setIsMenuOpen(open);
+            setOptionsOpen(open);
+          }}
+          triggerClassName="h-7 w-7 text-muted-foreground hover:bg-muted hover:text-foreground"
           menuClassName="w-[260px] rounded-xl p-1.5 shadow-xl"
           header={(
             <div className="mb-1 border-b border-border px-3 py-2">

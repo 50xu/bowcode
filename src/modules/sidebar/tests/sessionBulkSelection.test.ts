@@ -50,6 +50,7 @@ vi.mock('@/modules/sidebar/hooks/useCompactSidebar', () => ({
   useCompactSidebar: () => isCompactLayout,
 }));
 
+const { default: SidebarProjectItem } = await import('@/modules/sidebar/SidebarProjectItem');
 const { default: SidebarProjectSessions } = await import('@/modules/sidebar/SidebarProjectSessions');
 const { useSidebarController } = await import('@/modules/sidebar/hooks/useSidebarController');
 
@@ -155,26 +156,71 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test('the idle list offers Select and opens an empty selection with it', () => {
-  const onSetSessionSelection = vi.fn();
-  const { container } = renderSessions({ onSetSessionSelection });
+test('the idle session list does not render the selection entry point', () => {
+  const { container } = renderSessions();
 
   assert.equal(checkboxes(container).length, 0, 'no row acts as a checkbox before selecting');
   assert.equal(recordedOptionsProps.length, SESSIONS.length, 'every row still has its options menu');
-
-  const selectButton = buttonWithText(container, 'sessions.select');
-  assert.ok(selectButton, 'the idle list offers to start selecting');
-
-  fireEvent.click(selectButton);
-  const selection = onSetSessionSelection.mock.calls[0][0] as SidebarSessionSelection;
-  assert.equal(selection.projectId, PROJECT.projectId);
-  assert.deepEqual([...selection.sessionIds], [], 'selection mode opens with nothing ticked');
+  assert.equal(buttonWithText(container, 'sessions.select'), null);
 });
 
-test('a list whose every session is running has nothing to offer Select for', () => {
-  const { container } = renderSessions({ activeSessions: new Set(['s1', 's2', 's3']) });
+test('the project menu starts selection and expands a collapsed project', () => {
+  const onToggleProject = vi.fn();
+  const onSetSessionSelection = vi.fn();
+  const { container } = render(
+    React.createElement(SidebarProjectItem, {
+      project: PROJECT,
+      selectedProject: null,
+      selectedSession: null,
+      isExpanded: false,
+      isDeleting: false,
+      isStarred: false,
+      isEditing: false,
+      renameDraft: '',
+      sessions: SESSIONS,
+      initialSessionsLoaded: true,
+      isLoadingMoreSessions: false,
+      currentTime: NOW,
+      sessionRenameId: null,
+      sessionRenameDraft: '',
+      tasksEnabled: false,
+      mcpServerStatus: {} as never,
+      onRenameDraftChange: noop,
+      onToggleProject,
+      onProjectSelect: noop,
+      onToggleStarProject: noop,
+      onStartEditingProject: noop,
+      onCancelEditingProject: noop,
+      onSaveProjectName: noop,
+      onDeleteProject: noop,
+      onSessionSelect: noop,
+      onDeleteSession: noop,
+      onLoadMoreSessions: noop,
+      activeSessions: NO_IDS,
+      backgroundSessionIds: NO_IDS,
+      attentionSessionIds: NO_IDS,
+      onNewSession: noop,
+      onStartEditingSession: noop,
+      onCancelEditingSession: noop,
+      onSaveEditingSession: noop,
+      selectedSessionIds: null,
+      onSetSessionSelection,
+      onToggleSessionSelected: noop,
+      onCancelSessionSelection: noop,
+      onDeleteSelectedSessions: noop,
+      t,
+    }),
+  );
 
-  assert.equal(buttonWithText(container, 'sessions.select'), null);
+  fireEvent.click(container.querySelector('[aria-haspopup="menu"]') as HTMLButtonElement);
+  const selectItem = buttonWithText(document.body, 'sessions.select');
+  assert.ok(selectItem, 'the project menu offers Select when loaded sessions are available');
+  fireEvent.click(selectItem);
+
+  assert.deepEqual(onToggleProject.mock.calls, [[PROJECT.projectId]]);
+  const selection = onSetSessionSelection.mock.calls[0][0] as SidebarSessionSelection;
+  assert.equal(selection.projectId, PROJECT.projectId);
+  assert.deepEqual([...selection.sessionIds], []);
 });
 
 test('selection mode replaces the row options with a checkbox on every row', () => {

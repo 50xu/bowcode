@@ -201,7 +201,7 @@ function SidebarSessionItem({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div
-                  className={cn('min-w-0 flex-1 truncate text-sm font-normal', isSelected ? 'text-primary' : 'text-foreground')}
+                  className={cn('min-w-0 flex-1 truncate text-[13px] font-normal', isSelected ? 'text-primary' : 'text-foreground/80')}
                   title={sessionView.sessionName}
                 >
                   {sessionView.sessionName}
@@ -398,7 +398,7 @@ function SidebarSessionItem({
           className={cn(
             buttonVariants({ variant: 'ghost' }),
             'h-8 min-h-8 w-full justify-start rounded-lg px-2 py-0 text-left font-normal transition-colors hover:bg-accent',
-            isSelecting ? 'pr-2' : 'pr-11',
+            'pr-2',
             isSelected && 'bg-primary/10 text-primary',
              isChecked && 'bg-primary/10',
           )}
@@ -430,7 +430,7 @@ function SidebarSessionItem({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div
-                  className={cn('min-w-0 flex-1 truncate text-sm font-normal', isSelected ? 'text-primary' : 'text-foreground')}
+                  className={cn('min-w-0 flex-1 truncate text-[13px] font-normal', isSelected ? 'text-primary' : 'text-foreground/80')}
                   title={sessionView.sessionName}
                   onDoubleClick={(event) => {
                     if (isSelecting || isEditing || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
