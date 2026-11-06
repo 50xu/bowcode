@@ -11,7 +11,7 @@ import { useFileTreeOperations } from '@/modules/file-tree/hooks/useFileTreeOper
 import { useFileTreeSearch } from '@/modules/file-tree/hooks/useFileTreeSearch';
 import { useFileTreeUpload } from '@/modules/file-tree/hooks/useFileTreeUpload';
 import type { DirectoryRevealRequest, FileTreeImageSelection, FileTreeNode,Project } from '@/shared/types';
-import { formatFileSize, isImageFile } from '@/modules/file-tree/utils/fileTreeUtils';
+import { collectExpandedDirectoryPaths, formatFileSize, isImageFile } from '@/modules/file-tree/utils/fileTreeUtils';
 import { ScrollArea, Input } from '@/shared/ui';
 import FileTreeBody from '@/modules/file-tree/FileTreeBody';
 import FileTreeHeader from '@/modules/file-tree/FileTreeHeader';
@@ -223,7 +223,9 @@ export default function FileTree({ selectedProject, onFileOpen, revealDirectory 
         onNewFolder={() => operations.handleStartCreate('', 'directory')}
         onRefresh={refreshFiles}
         onCollapseAll={collapseAll}
-        canCollapseAll={expandedDirs.size > 0}
+        // Expands only folders whose contents are already loaded; it never fetches more.
+        onExpandAll={() => expandDirectories(collectExpandedDirectoryPaths(files))}
+        hasExpandedFolders={expandedDirs.size > 0}
         loading={loading}
         operationLoading={operationLoading}
         isUploading={upload.uploadProgress?.status === 'uploading'}

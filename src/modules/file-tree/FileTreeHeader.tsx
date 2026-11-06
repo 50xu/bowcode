@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { ChevronsDownUp, FileText, FolderPlus, Loader2, RefreshCw, Search, Upload, X } from 'lucide-react';
+import { ChevronsDownUp, ChevronsUpDown, FileText, FolderPlus, Loader2, RefreshCw, Search, Upload, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '@/shared/ui';
@@ -16,8 +16,9 @@ type FileTreeHeaderProps = {
   onUploadFiles?: (files: FileList) => void;
   onRefresh?: () => void;
   onCollapseAll?: () => void;
-  /** False when no folder is open, so Collapse All has nothing to do. */
-  canCollapseAll?: boolean;
+  onExpandAll?: () => void;
+  /** Some folder is open: the toggle collapses everything, otherwise it expands what is loaded. */
+  hasExpandedFolders?: boolean;
   // Loading state
   loading?: boolean;
   operationLoading?: boolean;
@@ -34,7 +35,8 @@ export default function FileTreeHeader({
   onUploadFiles,
   onRefresh,
   onCollapseAll,
-  canCollapseAll = true,
+  onExpandAll,
+  hasExpandedFolders = false,
   loading,
   operationLoading,
   isUploading,
@@ -141,17 +143,18 @@ export default function FileTreeHeader({
               <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
             </Button>
           )}
-          {onCollapseAll && (
+          {onCollapseAll && onExpandAll && (
             <Button
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0"
-              onClick={onCollapseAll}
-              disabled={!canCollapseAll}
-              title={t('fileTree.collapseAll', 'Collapse All')}
-              aria-label={t('fileTree.collapseAll', 'Collapse All')}
+              onClick={hasExpandedFolders ? onCollapseAll : onExpandAll}
+              title={hasExpandedFolders ? t('fileTree.collapseAll', 'Collapse all') : t('fileTree.expandAll', 'Expand all')}
+              aria-label={hasExpandedFolders ? t('fileTree.collapseAll', 'Collapse all') : t('fileTree.expandAll', 'Expand all')}
             >
-              <ChevronsDownUp className="h-3.5 w-3.5" />
+              {hasExpandedFolders
+                ? <ChevronsDownUp className="h-3.5 w-3.5" />
+                : <ChevronsUpDown className="h-3.5 w-3.5" />}
             </Button>
           )}
         </div>

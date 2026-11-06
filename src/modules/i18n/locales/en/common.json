@@ -119,7 +119,8 @@
     "newFile": "New File (Cmd+N)",
     "newFolder": "New Folder (Cmd+Shift+N)",
     "refresh": "Refresh",
-    "collapseAll": "Collapse All",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all",
     "context": {
       "rename": "Rename",
       "delete": "Delete",
