@@ -461,6 +461,8 @@ export function useProjectsState({
   projectsRef.current = projects;
   const sessionIdRef = useRef(sessionId);
   sessionIdRef.current = sessionId;
+  /** The session a New Session click is navigating away from, until the route catches up. */
+  const leavingSessionIdRef = useRef<string | null>(null);
   /** URL session id whose backend lookup already ran (or is in flight) — one attempt per id. */
   const sessionLookupRef = useRef<string | null>(null);
   /**
@@ -909,7 +911,10 @@ export function useProjectsState({
   }, [clearSessionAttention, selectedSession?.id, sessionId]);
 
   useEffect(() => {
-    if (!sessionId) {
+    if (sessionId !== leavingSessionIdRef.current) {
+      leavingSessionIdRef.current = null;
+    }
+    if (!sessionId || sessionId === leavingSessionIdRef.current) {
       return;
     }
 
@@ -1080,6 +1085,10 @@ export function useProjectsState({
 
   const handleNewSession = useCallback(
     (project: Project) => {
+      // The route leaves the old session in a transition, after this state
+      // update renders. Until it does, the URL-to-session sync below must not
+      // pick the old session back up.
+      leavingSessionIdRef.current = sessionIdRef.current ?? null;
       setSelectedProject(project);
       setSelectedSession(null);
       setActiveTab('chat');
