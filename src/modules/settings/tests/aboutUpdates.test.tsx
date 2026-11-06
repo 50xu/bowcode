@@ -14,6 +14,7 @@ vi.mock('@/shared/api', async (importOriginal) => {
       ...original.api,
       updates: {
         get: vi.fn(),
+        setChannel: vi.fn(),
         apply: vi.fn(),
         health: vi.fn(),
       },
@@ -22,6 +23,7 @@ vi.mock('@/shared/api', async (importOriginal) => {
 });
 
 const status = {
+  channel: 'stable' as const,
   current: '1.0.0', latest: '1.1.0', updateAvailable: true,
   installMode: 'npm', canSelfUpdate: true,
   releaseUrl: 'https://example.com/releases/1.1.0', checkedAt: new Date().toISOString(),
@@ -41,6 +43,17 @@ it('shows an available update and release notes, and checks again on demand', as
   // The mount check may use the server cache; the manual check forces a fresh lookup.
   expect(api.updates.get).toHaveBeenNthCalledWith(1, { force: false });
   expect(api.updates.get).toHaveBeenNthCalledWith(2, { force: true });
+});
+
+it('persists the selected channel and displays the fresh beta status', async () => {
+  vi.mocked(api.updates.get).mockResolvedValue(status);
+  vi.mocked(api.updates.setChannel).mockResolvedValue({ ...status, channel: 'beta', latest: '1.2.0-beta.2' });
+  render(<AboutTab />);
+  const selector = await screen.findByRole('combobox', { name: 'Release channel' });
+  fireEvent.change(selector, { target: { value: 'beta' } });
+  await waitFor(() => expect(api.updates.setChannel).toHaveBeenCalledWith('beta'));
+  expect(await screen.findByText('Beta builds get new features first and may be unstable.')).toBeTruthy();
+  expect(await screen.findByText('Version 1.2.0-beta.2 available')).toBeTruthy();
 });
 
 it('requires confirmation before applying an update', async () => {

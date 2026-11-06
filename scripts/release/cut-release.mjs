@@ -12,23 +12,25 @@ function run(command, args) {
 
 try {
   const [bump, ...extra] = process.argv.slice(2);
-  if (extra.length || !bump || !/^(?:patch|minor|major|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/.test(bump)) {
-    throw new Error('Usage: npm run release -- <patch|minor|major|x.y.z>');
+  if (extra.length || !bump || !/^(?:patch|minor|major|beta|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/.test(bump)) {
+    throw new Error('Usage: npm run release -- <patch|minor|major|x.y.z|beta>');
   }
-  if (git('branch', '--show-current') !== 'main') {
+  if (bump !== 'beta' && git('branch', '--show-current') !== 'main') {
     throw new Error('Releases must be cut from main.');
   }
   if (git('status', '--porcelain').length) {
     throw new Error('Working tree must be clean before cutting a release.');
   }
 
-  run('npm', ['version', bump, '--no-git-tag-version']);
+  run('npm', bump === 'beta'
+    ? ['version', 'prerelease', '--preid', 'beta', '--no-git-tag-version']
+    : ['version', bump, '--no-git-tag-version']);
   const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
   const tag = `v${version}`;
   run('git', ['add', '--', 'package.json', 'package-lock.json']);
   run('git', ['commit', '-m', `chore(release): ${tag}`]);
   run('git', ['tag', '-a', tag, '-m', `Bowcode ${tag}`]);
-  run('git', ['push', 'origin', 'main']);
+  run('git', ['push', 'origin', bump === 'beta' ? 'HEAD' : 'main']);
   run('git', ['push', 'origin', tag]);
   console.log(`Release workflow: https://github.com/50xu/bowcode/actions/workflows/release.yml`);
   console.log(`Tag: ${tag}`);

@@ -1664,17 +1664,49 @@ export function findApplicationRoot(startDirectory: string): string {
     : parentDirectory;
 }
 
-/**
- * True when release version `candidate` (x.y.z, optional leading "v") is newer
- * than `current`. Used by the update check in the CLI and the Updates API, so a
- * build that is ahead of the latest release is never told to "update" backwards.
- */
-export function isNewerVersion(candidate: string, current: string): boolean {
-  const parse = (value: string) => value.replace(/^v/, '').split(/[-+]/)[0].split('.').map((part) => Number(part) || 0);
-  const a = parse(candidate);
-  const b = parse(current);
+//----------------- RELEASE VERSION SELECTION ------------
+
+type ParsedReleaseVersion = { core: bigint[]; prerelease: string[] };
+
+function parseReleaseVersion(value: string): ParsedReleaseVersion | null {
+  const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(value);
+  if (!match) return null;
+  const prerelease = match[4]?.split('.') ?? [];
+  if (prerelease.some((part) => /^\d+$/.test(part) && part.length > 1 && part[0] === '0')) return null;
+  return { core: match.slice(1, 4).map(BigInt), prerelease };
+}
+
+function compareReleaseVersions(a: ParsedReleaseVersion, b: ParsedReleaseVersion): number {
   for (let index = 0; index < 3; index += 1) {
-    if ((a[index] ?? 0) !== (b[index] ?? 0)) return (a[index] ?? 0) > (b[index] ?? 0);
+    if (a.core[index] !== b.core[index]) return a.core[index] > b.core[index] ? 1 : -1;
   }
-  return false;
+  if (!a.prerelease.length || !b.prerelease.length) return Number(!a.prerelease.length) - Number(!b.prerelease.length);
+  for (let index = 0; index < Math.min(a.prerelease.length, b.prerelease.length); index += 1) {
+    const left = a.prerelease[index];
+    const right = b.prerelease[index];
+    if (left === right) continue;
+    const leftNumeric = /^\d+$/.test(left);
+    const rightNumeric = /^\d+$/.test(right);
+    if (leftNumeric && rightNumeric) return BigInt(left) > BigInt(right) ? 1 : -1;
+    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
+    return left > right ? 1 : -1;
+  }
+  return Math.sign(a.prerelease.length - b.prerelease.length);
+}
+
+/** Used by CLI and Updates API to compare valid SemVer tags, including prereleases; build metadata does not affect precedence. Invalid versions are never newer. */
+export function isNewerVersion(candidate: string, current: string): boolean {
+  const a = parseReleaseVersion(candidate);
+  const b = parseReleaseVersion(current);
+  return a !== null && b !== null && compareReleaseVersions(a, b) > 0;
+}
+
+/** Used by CLI and Updates API to choose the highest valid, non-draft GitHub release; accepts optional v prefixes and ignores build metadata for ordering. */
+export function selectLatestRelease<T extends { tag_name?: string; draft?: boolean }>(releases: T[]): T | null {
+  let selected: T | null = null;
+  for (const release of releases) {
+    if (release.draft || !release.tag_name || !parseReleaseVersion(release.tag_name)) continue;
+    if (!selected || isNewerVersion(release.tag_name, selected.tag_name!)) selected = release;
+  }
+  return selected;
 }

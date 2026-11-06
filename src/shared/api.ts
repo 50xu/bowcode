@@ -222,6 +222,7 @@ export const api = {
       const response = await get(options.force ? '/api/updates?force=1' : '/api/updates');
       return readApiJson<AppUpdateStatus>(response);
     },
+    setChannel: async (channel: 'stable' | 'beta') => readApiJson<AppUpdateStatus>(await put('/api/updates/channel', { channel })),
     apply: () => post('/api/updates/apply'),
     health: () => fetch('/health', { cache: 'no-store' }),
   },

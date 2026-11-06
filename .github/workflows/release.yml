@@ -84,7 +84,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.metadata.outputs.tag }}
           VERSION: ${{ steps.metadata.outputs.version }}
-        run: gh release create "$TAG" "bowcode-${VERSION}.tgz" bowcode.tgz install.sh --title "Bowcode $TAG" --generate-notes
+        run: |
+          if [[ "$VERSION" == *-* ]]; then
+            gh release create "$TAG" "bowcode-${VERSION}.tgz" bowcode.tgz install.sh --title "Bowcode $TAG" --generate-notes --prerelease --latest=false
+          else
+            gh release create "$TAG" "bowcode-${VERSION}.tgz" bowcode.tgz install.sh --title "Bowcode $TAG" --generate-notes
+          fi
 
   install-test:
     needs: release

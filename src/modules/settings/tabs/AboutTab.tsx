@@ -57,6 +57,21 @@ export default function AboutTab() {
     return () => window.clearTimeout(timer);
   }, [checkUpdates]);
 
+  async function changeChannel(channel: 'stable' | 'beta') {
+    setChecking(true);
+    try {
+      const status = await api.updates.setChannel(channel);
+      if (mounted.current) {
+        setUpdate(status);
+        setCheckError(status.error ?? null);
+      }
+    } catch (error) {
+      if (mounted.current) setCheckError(error instanceof Error ? error.message : t('about.update.checkFailed'));
+    } finally {
+      if (mounted.current) setChecking(false);
+    }
+  }
+
   async function applyUpdate() {
     if (!update?.canSelfUpdate || !update.updateAvailable || updating ||
       !window.confirm(t('about.update.confirm'))) return;
@@ -132,6 +147,20 @@ export default function AboutTab() {
           <button type="button" disabled={checking || updating} onClick={() => { setChecking(true); void checkUpdates(true); }} className="rounded-md border border-border px-3 py-1.5 text-foreground disabled:opacity-50">
             {t('about.update.checkAgain')}
           </button>
+        </div>
+        <div className="space-y-1 px-4 py-3.5 text-sm">
+          <label htmlFor="release-channel" className="block text-foreground">{t('about.update.channel')}</label>
+          <select
+            id="release-channel"
+            value={update?.channel ?? 'stable'}
+            disabled={!update || checking || updating}
+            onChange={(event) => { void changeChannel(event.target.value as 'stable' | 'beta'); }}
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-foreground disabled:opacity-50"
+          >
+            <option value="stable">{t('about.update.stable')}</option>
+            <option value="beta">{t('about.update.beta')}</option>
+          </select>
+          {update?.channel === 'beta' && <p className="text-muted-foreground">{t('about.update.betaHint')}</p>}
         </div>
         <a
           href={PROJECT_REPO_URL}

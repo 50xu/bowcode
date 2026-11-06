@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { isNewerVersion } from '@/shared/utils.js';
+import { isNewerVersion, selectLatestRelease } from '@/shared/utils.js';
 
 type UpdateDependencies = {
   root: string;
@@ -10,7 +10,7 @@ type UpdateDependencies = {
   home: string;
   exists(filePath: string): boolean;
   releaseLock?(): void;
-  fetchRelease(url: string): Promise<{ ok: boolean; status: number; json(): Promise<{ tag_name?: string }> }>;
+  fetchRelease(url: string): Promise<{ ok: boolean; status: number; json(): Promise<{ tag_name?: string; draft?: boolean } | Array<{ tag_name?: string; draft?: boolean }>> }>;
   spawn(command: string, args: string[]): Promise<number>;
   exec(command: string, args: string[]): Promise<boolean>;
   log(message: string): void;
@@ -22,6 +22,13 @@ export function createUpdateCommand(deps: UpdateDependencies) {
   const installMode = deps.exists(path.join(deps.root, '.git')) ? 'git' : 'npm';
   return async (args: string[]): Promise<number> => {
     const checkOnly = args.includes('--check');
+    const channelIndex = args.indexOf('--channel');
+    const channel = channelIndex === -1 ? 'stable' : args[channelIndex + 1];
+    if (channel !== 'stable' && channel !== 'beta') {
+      deps.error('Invalid channel (expected stable or beta)');
+      deps.releaseLock?.();
+      return 1;
+    }
     const versionIndex = args.indexOf('--version');
     const requested = versionIndex === -1 ? undefined : args[versionIndex + 1];
     if (versionIndex !== -1 && (!requested || !/^v?\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/.test(requested))) {
@@ -32,9 +39,14 @@ export function createUpdateCommand(deps: UpdateDependencies) {
     let latest: string | null = null;
     if (!requested || checkOnly) {
       try {
-        const result = await deps.fetchRelease('https://api.github.com/repos/50xu/bowcode/releases/latest');
-        if (result.ok) latest = (await result.json()).tag_name?.replace(/^v/, '') ?? null;
-        else if (result.status !== 404) throw new Error(`GitHub returned ${result.status}`);
+        const result = await deps.fetchRelease(channel === 'beta'
+          ? 'https://api.github.com/repos/50xu/bowcode/releases?per_page=30'
+          : 'https://api.github.com/repos/50xu/bowcode/releases/latest');
+        if (result.ok) {
+          const body = await result.json();
+          const release = channel === 'beta' && Array.isArray(body) ? selectLatestRelease(body) : !Array.isArray(body) ? selectLatestRelease([body]) : null;
+          latest = release?.tag_name?.replace(/^v/, '') ?? null;
+        } else if (result.status !== 404) throw new Error(`GitHub returned ${result.status}`);
       } catch (error) {
         deps.error(error instanceof Error ? error.message : String(error));
         if (!checkOnly) {

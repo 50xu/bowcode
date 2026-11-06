@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
+import { appConfigDb } from '@/modules/database/index.js';
 import { findApplicationRoot, getModuleDirectory } from '@/shared/utils.js';
 
 import { createUpdatesRouter } from './updates.routes.js';
@@ -19,9 +20,11 @@ export const updatesRoutes = createUpdatesRouter(createUpdatesService({
   platform: process.platform,
   uid: process.getuid?.() ?? 0,
   now: () => Date.now(),
+  getChannel: () => appConfigDb.getUpdateChannel(),
+  setChannel: (channel) => appConfigDb.setUpdateChannel(channel),
   fetchRelease: async (url) => {
     const response = await fetch(url, { headers: { 'User-Agent': 'bowcode-cli', Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10_000) });
-    return { status: response.status, ok: response.ok, json: () => response.json() as Promise<{ tag_name?: string; html_url?: string }> };
+    return { status: response.status, ok: response.ok, json: () => response.json() as Promise<{ tag_name?: string; html_url?: string } | Array<{ tag_name?: string; html_url?: string; draft?: boolean }>> };
   },
   exists: fs.existsSync,
   mkdir: (directory) => fs.mkdirSync(directory, { recursive: true }),

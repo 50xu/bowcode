@@ -133,6 +133,7 @@ Commands:
   help             Show this help information
   version          Show version and installation mode
   update           Check for or install a release
+                   --check, --channel stable|beta (default: stable), --version <version>
   service          Manage the background service
 
 Options:
