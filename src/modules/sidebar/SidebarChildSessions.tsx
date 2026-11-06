@@ -45,9 +45,9 @@ export default function SidebarChildSessions({
   const alignChevron = nodes.some((node) => node.children.length > 0);
   return (
     // Geometry of a row: px-2 (8px), then a 20px chevron, gap-2, the icon at 36px.
-    // The guide drops from the chevron's centre (17px + 1px border) and the 10px
-    // padding starts child rows 28px in, so a child's icon sits under its parent's.
-    <div className={nested ? 'ml-[17px] border-l border-border/60 pl-[10px]' : undefined}>
+    // The guide drops from the chevron's centre (17px + 1px border) and the 22px
+    // padding starts child rows 40px in, one step deeper than the parent's icon.
+    <div className={nested ? 'ml-[17px] border-l border-border/60 pl-[22px]' : undefined}>
       {nodes.map((node) => {
         const { session, children } = node;
         const expanded = expandedParentIds.has(session.id);

@@ -236,8 +236,10 @@ export default function SidebarProjectSessions({
     );
   };
 
+  // The guide drops from the project chevron's centre (px-1.5 + half of w-5 = 16px),
+  // and the padding starts session rows so their chevron column sits under the project icon.
   return (
-    <div className="mb-2 ml-8 mt-0.5 space-y-0.5 border-l border-border/60 pl-1.5">
+    <div className="mb-2 ml-[15px] mt-0.5 space-y-0.5 border-l border-border/60 pl-[10px]">
 
       {isSelecting && (
         <div className="px-1">
