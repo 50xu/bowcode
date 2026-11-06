@@ -68,7 +68,7 @@ type Writer = { send(message: unknown): void };
  * turn ends: `ok` completes with exit 0, `error` reports a provider error and
  * exits 1, `hang` waits until the run is aborted.
  */
-function createRuntime(behaviour: 'ok' | 'error' | 'hang' = 'ok') {
+function createRuntime(behaviour: 'ok' | 'error' | 'hang' | 'delay' = 'ok') {
   const runs: RunCall[] = [];
   const aborts: string[] = [];
   const releases = new Map<string, () => void>();
@@ -90,6 +90,9 @@ function createRuntime(behaviour: 'ok' | 'error' | 'hang' = 'ok') {
           writer.send({ kind: 'complete', exitCode: 0, provider, sessionId });
         }
         return;
+      }
+      if (behaviour === 'delay') {
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
       writer.send({ kind: 'complete', exitCode: 0, provider, sessionId: options.sessionId });
     },
@@ -311,6 +314,22 @@ test('a fire while the same schedule is still running is skipped, not overlapped
   });
 });
 
+test('a run with no time limit can complete after a delay', async () => {
+  await withIsolatedDatabase(async (fixture) => {
+    const schedule = schedulesService.create(fixture.userId, cronInput(fixture, { maxDurationMinutes: 0 }));
+    const fake = createRuntime('delay');
+
+    const status = await executeScheduleRun(
+      { schedule: schedulesDb.getById(schedule.id)!, trigger: 'manual', scheduledFor: null },
+      { runtime: fake.runtime },
+    );
+
+    assert.equal(status, 'succeeded');
+    assert.equal(scheduleRunsDb.listForSchedule(schedule.id, 10)[0].status, 'succeeded');
+    assert.deepEqual(fake.aborts, []);
+  });
+});
+
 test('a run past its time limit is aborted and recorded as timed_out', async () => {
   await withIsolatedDatabase(async (fixture) => {
     const schedule = schedulesService.create(fixture.userId, cronInput(fixture));
@@ -382,6 +401,15 @@ test('run history keeps only the newest 50 runs', async () => {
 });
 
 // ─── Validation and routes ─────────────────────────────────────────────────
+
+test('creating a schedule without a time limit stores zero', async () => {
+  await withIsolatedDatabase((fixture) => {
+    const schedule = schedulesService.create(fixture.userId, cronInput(fixture));
+
+    assert.equal(schedule.maxDurationMinutes, 0);
+    assert.equal(schedulesDb.getById(schedule.id)!.max_duration_minutes, 0);
+  });
+});
 
 test('schedule validation refuses bad cron, too-frequent cron, bad zone, plan mode, empty prompt and unknown projects', async () => {
   await withIsolatedDatabase(async (fixture) => {

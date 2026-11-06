@@ -94,7 +94,8 @@
     "timezone": "Time zone",
     "preview": "Next runs",
     "previewLoading": "Checking…",
-    "maxDuration": "Time limit (minutes)",
+    "maxDuration": "Time limit (minutes, 0 = no limit)",
+    "maxDurationUnlimitedWarning": "No time limit: a run that hangs will keep going until you stop it. Set a limit if you need one.",
     "cancel": "Cancel",
     "save": "Save",
     "create": "Create schedule"

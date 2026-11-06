@@ -109,8 +109,8 @@ export function recordSkippedRun(job: ScheduleRunJob, reason: string): void {
  * user follows it like any other conversation and the run history links to
  * it. The turn runs detached (no browser attached) with `headless: true`, so
  * runtimes refuse to wait on interactive prompts. It is raced against the
- * schedule's time limit; past it the provider run is aborted the same way
- * `chat.abort` does and the run is recorded as `timed_out`.
+ * schedule's time limit when one is configured; past it the provider run is
+ * aborted the same way `chat.abort` does and the run is recorded as `timed_out`.
  *
  * Used by this module's scheduler, which owns concurrency (one run per
  * schedule, a global cap) and calls this once a slot is free. Never throws.
@@ -143,7 +143,8 @@ export async function executeScheduleRun(job: ScheduleRunJob, dependencies: Sche
     return 'failed';
   }
 
-  const maxDurationMs = dependencies.maxDurationMs ?? schedule.max_duration_minutes * 60_000;
+  const configuredMaxDurationMs = dependencies.maxDurationMs ?? schedule.max_duration_minutes * 60_000;
+  const maxDurationMs: number | null = configuredMaxDurationMs === 0 ? null : configuredMaxDurationMs;
   const turn: Promise<{ kind: 'settled'; result: TurnResult } | { kind: 'threw'; error: string }> = runDetachedChatTurn(
     {
       sessionId,
@@ -162,16 +163,20 @@ export async function executeScheduleRun(job: ScheduleRunJob, dependencies: Sche
     (error: unknown) => ({ kind: 'threw' as const, error: error instanceof Error ? error.message : String(error) }),
   );
 
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeout = new Promise<{ kind: 'timeout' }>((resolve) => {
-    // Deliberately not unref'd: it is cleared as soon as the turn settles, and
-    // an unref'd timer as the only pending work lets Node 22 treat the event
-    // loop as idle while the turn is still being awaited.
-    timer = setTimeout(() => resolve({ kind: 'timeout' }), maxDurationMs);
-  });
-
-  const first = await Promise.race([turn, timeout]);
-  if (timer) clearTimeout(timer);
+  let first: Awaited<typeof turn> | { kind: 'timeout'; maxDurationMs: number };
+  if (maxDurationMs === null) {
+    first = await turn;
+  } else {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const timeout = new Promise<{ kind: 'timeout'; maxDurationMs: number }>((resolve) => {
+      // Deliberately not unref'd: it is cleared as soon as the turn settles, and
+      // an unref'd timer as the only pending work lets Node 22 treat the event
+      // loop as idle while the turn is still being awaited.
+      timer = setTimeout(() => resolve({ kind: 'timeout', maxDurationMs }), maxDurationMs);
+    });
+    first = await Promise.race([turn, timeout]);
+    if (timer) clearTimeout(timer);
+  }
 
   if (first.kind === 'timeout') {
     try {
@@ -187,7 +192,7 @@ export async function executeScheduleRun(job: ScheduleRunJob, dependencies: Sche
     let graceTimer: ReturnType<typeof setTimeout> | null = null;
     await Promise.race([turn, new Promise((resolve) => { graceTimer = setTimeout(resolve, ABORT_GRACE_MS); })]);
     if (graceTimer) clearTimeout(graceTimer);
-    const minutes = Math.round(maxDurationMs / 60_000);
+    const minutes = Math.round(first.maxDurationMs / 60_000);
     settleRun(
       schedule.id,
       run.id,

@@ -20,7 +20,7 @@ const INTERVAL_CHECK_FIRES = 24;
 const MAX_PROMPT_LENGTH = 100_000;
 const MAX_NAME_LENGTH = 200;
 const MAX_DURATION_MINUTES_LIMIT = 24 * 60;
-const DEFAULT_MAX_DURATION_MINUTES = 120;
+const DEFAULT_MAX_DURATION_MINUTES = 0;
 /** Runs listed with a schedule's detail view. */
 const RECENT_RUNS_LIMIT = 20;
 /** Runs kept per schedule; this module's runner prunes older history after each run. */
@@ -277,8 +277,8 @@ function resolveSchedule(input: ScheduleWriteInput, existing: ScheduleRow | null
   if (!isValidTimeZone(timezone)) throw invalid(`"${timezone}" is not a known time zone.`, 'INVALID_TIMEZONE');
 
   const maxDurationMinutes = input.maxDurationMinutes ?? existing?.max_duration_minutes ?? DEFAULT_MAX_DURATION_MINUTES;
-  if (!Number.isInteger(maxDurationMinutes) || maxDurationMinutes < 1 || maxDurationMinutes > MAX_DURATION_MINUTES_LIMIT) {
-    throw invalid(`The time limit must be between 1 and ${MAX_DURATION_MINUTES_LIMIT} minutes.`, 'INVALID_MAX_DURATION');
+  if (!Number.isInteger(maxDurationMinutes) || maxDurationMinutes < 0 || maxDurationMinutes > MAX_DURATION_MINUTES_LIMIT) {
+    throw invalid(`The time limit must be between 0 (no limit) and ${MAX_DURATION_MINUTES_LIMIT} minutes.`, 'INVALID_MAX_DURATION');
   }
 
   const enabled = input.enabled ?? (existing ? existing.enabled === 1 : true);

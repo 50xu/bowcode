@@ -111,7 +111,7 @@ function draftFromSchedule(schedule: Schedule | null, projects: Project[]): Sche
     runAtLocal: toLocalDateTimeValue(inOneHour),
     cron: '0 9 * * *',
     timezone: browserTimeZone(),
-    maxDurationMinutes: 120,
+    maxDurationMinutes: 0,
   };
   if (!schedule) return base;
 
@@ -450,8 +450,11 @@ export default function ScheduleEditorForm({ schedule, projects, onCancel, onSub
 
         <div>
           <label className={LABEL_CLASS} htmlFor="schedule-max-duration">{t('editor.maxDuration')}</label>
-          <Input id="schedule-max-duration" type="number" min={1} max={1440} className="w-32" value={draft.maxDurationMinutes}
-            onChange={(event) => update({ maxDurationMinutes: Math.max(1, Math.min(1440, Number(event.target.value) || 120)) })} />
+          <Input id="schedule-max-duration" type="number" min={0} max={1440} className="w-32" value={draft.maxDurationMinutes}
+            onChange={(event) => update({ maxDurationMinutes: Math.max(0, Math.min(1440, Number(event.target.value) || 0)) })} />
+          {draft.maxDurationMinutes === 0 && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{t('editor.maxDurationUnlimitedWarning')}</p>
+          )}
         </div>
 
         {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}

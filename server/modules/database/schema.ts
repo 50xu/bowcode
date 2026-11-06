@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS schedules (
     run_at DATETIME,
     -- IANA zone the cron expression is read in.
     timezone TEXT NOT NULL DEFAULT 'UTC',
-    max_duration_minutes INTEGER NOT NULL DEFAULT 120,
+    max_duration_minutes INTEGER NOT NULL DEFAULT 0,
     enabled INTEGER NOT NULL DEFAULT 1,
     -- UTC instant of the next fire; NULL when there is none (paused once, finished).
     next_run_at DATETIME,
