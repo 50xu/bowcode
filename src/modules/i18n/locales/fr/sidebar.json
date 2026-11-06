@@ -38,7 +38,9 @@
     "selectAllLoaded": "Sélectionner les chargées",
     "clearSelection": "Tout désélectionner",
     "deleteSelected_one": "Supprimer {{count}} session",
-    "deleteSelected_other": "Supprimer {{count}} sessions"
+    "deleteSelected_other": "Supprimer {{count}} sessions",
+    "expandChildren": "Afficher les sessions démarrées",
+    "collapseChildren": "Masquer les sessions démarrées"
   },
   "tooltips": {
     "hideSidebar": "Masquer la barre latérale",

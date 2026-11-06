@@ -16,6 +16,13 @@ type SessionRow = {
   effort: string | null;
   /** The app session this one was branched from; NULL unless it is a fork. */
   forked_from_session_id: string | null;
+  parent_provider: string | null;
+  parent_provider_session_id: string | null;
+  parent_agent_id: string | null;
+  parent_tool_use_id: string | null;
+  lineage_source: 'native' | 'prompt-match' | null;
+  lineage_score: number | null;
+  lineage_checked_at: string | null;
   isArchived: number;
   created_at: string;
   updated_at: string;
@@ -38,7 +45,7 @@ type InactiveSessionRow = {
 };
 
 const SESSION_ROW_COLUMNS =
-  'session_id, provider, provider_session_id, project_path, jsonl_path, custom_name, name_source, model, effort, forked_from_session_id, isArchived, created_at, updated_at';
+  'session_id, provider, provider_session_id, project_path, jsonl_path, custom_name, name_source, model, effort, forked_from_session_id, parent_provider, parent_provider_session_id, parent_agent_id, parent_tool_use_id, lineage_source, lineage_score, lineage_checked_at, isArchived, created_at, updated_at';
 
 const SQLITE_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
@@ -491,17 +498,17 @@ export const sessionsDb = {
    * file names), so it uses this lookup to translate disk artifacts back to
    * the app-facing session row before broadcasting sidebar updates.
    */
-  getSessionByProviderSessionId(providerSessionId: string): SessionRow | null {
+  getSessionByProviderSessionId(providerSessionId: string, provider?: string): SessionRow | null {
     const db = getConnection();
     const row = db
       .prepare(
         `SELECT ${SESSION_ROW_COLUMNS}
          FROM sessions
-         WHERE provider_session_id = ?
+         WHERE provider_session_id = ? AND (? IS NULL OR provider = ?)
          ORDER BY updated_at DESC
          LIMIT 1`
       )
-      .get(providerSessionId) as SessionRow | undefined;
+      .get(providerSessionId, provider ?? null, provider ?? null) as SessionRow | undefined;
 
     return normalizeSessionRow(row) ?? null;
   },

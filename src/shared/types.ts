@@ -96,6 +96,9 @@ export type ProjectSession = {
   updated_at?: string;
   lastActivity?: string;
   messageCount?: number;
+  parentSessionId?: string | null;
+  parentProviderSessionId?: string | null;
+  lineageSource?: 'native' | 'prompt-match' | null;
   provider?: LLMProvider;
   __provider?: LLMProvider;
   // Tags the session with the owning project's DB `projectId` so UI handlers
@@ -277,6 +280,7 @@ export type QueueItemStatus = 'completed' | 'in_progress' | 'pending';
 
 /** Server-reported installed and available versions; use canSelfUpdate to gate the in-app updater. */
 export type AppUpdateStatus = {
+  channel: 'stable' | 'beta';
   current: string;
   latest: string | null;
   updateAvailable: boolean;
@@ -1685,7 +1689,11 @@ export type ArchivedSessionListItem = {
 export type RecentConversationListItem = Pick<
   ArchivedSessionListItem,
   'sessionId' | 'provider' | 'projectId' | 'projectDisplayName' | 'sessionTitle' | 'lastActivity'
->;
+> & {
+  parentSessionId?: string | null;
+  parentProviderSessionId?: string | null;
+  lineageSource?: 'native' | 'prompt-match' | null;
+};
 
 /**
  * The rename the sidebar currently has open, if any.

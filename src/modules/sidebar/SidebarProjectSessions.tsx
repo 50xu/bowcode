@@ -1,9 +1,13 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Button } from '@/shared/ui';
 import type { LLMProvider, Project, ProjectSession, SessionWithProvider, SidebarSessionSelection } from '@/shared/types';
 import SidebarSessionItem from '@/modules/sidebar/SidebarSessionItem';
+import SidebarChildSessions from '@/modules/sidebar/SidebarChildSessions';
+import { buildSessionTree } from '@/modules/sidebar/utils/sessionTree';
+import type { SessionTreeNode } from '@/modules/sidebar/utils/sessionTree';
 
 type SidebarProjectSessionsProps = {
   project: Project;
@@ -38,6 +42,17 @@ type SidebarProjectSessionsProps = {
   onDeleteSelectedSessions: (sessionIds: string[]) => void;
   t: TFunction;
 };
+
+const EXPANDED_SESSION_PARENTS_KEY = 'sidebar-expanded-session-parents';
+
+function readExpandedParents(): ReadonlySet<string> {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(EXPANDED_SESSION_PARENTS_KEY) ?? 'null');
+    return new Set(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
 
 function SessionListSkeleton() {
   return (
@@ -89,6 +104,73 @@ export default function SidebarProjectSessions({
   onDeleteSelectedSessions,
   t,
 }: SidebarProjectSessionsProps) {
+  const tree = useMemo(() => buildSessionTree(sessions), [sessions]);
+  // Browser-local parent expansion survives remounts and is shared across project lists.
+  const [expandedParentIds, setExpandedParentIds] = useState<ReadonlySet<string>>(readExpandedParents);
+  const previouslyLoadedIds = useRef<Set<string>>(new Set());
+  const removedLoadedIds = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!initialSessionsLoaded) return;
+    const loadedIds = new Set(sessions.map((session) => session.id));
+    const removed = [...previouslyLoadedIds.current].filter((id) => !loadedIds.has(id));
+    removed.forEach((id) => removedLoadedIds.current.add(id));
+    loadedIds.forEach((id) => removedLoadedIds.current.delete(id));
+    previouslyLoadedIds.current = loadedIds;
+    if (removed.length) {
+      setExpandedParentIds((previous) => {
+        const next = new Set(previous);
+        removed.forEach((id) => next.delete(id));
+        return next.size === previous.size ? previous : next;
+      });
+    }
+  }, [initialSessionsLoaded, sessions]);
+  useEffect(() => {
+    try {
+      const saved = readExpandedParents();
+      const next = new Set([...saved, ...expandedParentIds]);
+      // The currently loaded project's known ids are authoritative for its own expansions.
+      for (const session of sessions) {
+        if (!expandedParentIds.has(session.id)) next.delete(session.id);
+      }
+      removedLoadedIds.current.forEach((id) => next.delete(id));
+      localStorage.setItem(EXPANDED_SESSION_PARENTS_KEY, JSON.stringify([...next]));
+    } catch { /* Expansion still works when storage is unavailable. */ }
+  }, [expandedParentIds, sessions]);
+  // A selected descendant opens its ancestors once per selection, not on every websocket list refresh.
+  const autoExpandedSelection = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedSession?.id) {
+      autoExpandedSelection.current = null;
+      return;
+    }
+    if (autoExpandedSelection.current === selectedSession.id) return;
+    const ancestors: string[] = [];
+    const findSelected = (nodes: SessionTreeNode[], path: string[]): boolean => {
+      for (const node of nodes) {
+        if (node.session.id === selectedSession.id) {
+          ancestors.push(...path);
+          return true;
+        }
+        if (findSelected(node.children, [...path, node.session.id])) return true;
+      }
+      return false;
+    };
+    if (findSelected(tree, [])) {
+      autoExpandedSelection.current = selectedSession.id;
+      if (ancestors.length) {
+        setExpandedParentIds((previous) => ancestors.every((id) => previous.has(id)) ? previous : new Set([...previous, ...ancestors]));
+      }
+    }
+  }, [selectedSession?.id, tree]);
+  const onToggleParent = useCallback((id: string) => {
+    setExpandedParentIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
   if (!isExpanded) {
     return null;
   }
@@ -118,8 +200,46 @@ export default function SidebarProjectSessions({
       ? t('sessions.selectAllLoaded')
       : t('sessions.selectAll');
 
+  const renderRow = (node: SessionTreeNode, isOrphanedChild: boolean, alignChevron: boolean, expanded: boolean, containsSelection: boolean, hiddenActivity: 'processing' | 'attention' | 'background' | null) => {
+    const session = node.session;
+    return (
+      <SidebarSessionItem
+        project={project}
+        session={session}
+        selectedSession={selectedSession}
+        isProcessing={isSessionRunning(session)}
+        hasBackgroundWork={backgroundSessionIds.has(session.id)}
+        needsAttention={attentionSessionIds.has(session.id)}
+        isOrphanedChild={isOrphanedChild || undefined}
+        hasChildren={node.children.length > 0}
+        alignChevron={alignChevron}
+        isChildrenExpanded={expanded}
+        containsSelection={containsSelection}
+        hiddenActivity={hiddenActivity}
+        onToggleChildren={onToggleParent}
+        currentTime={currentTime}
+        onRenameDraftChange={onRenameDraftChange}
+        isEditing={session.id === sessionRenameId}
+        renameDraft={session.id === sessionRenameId ? sessionRenameDraft : ''}
+        onStartEditingSession={onStartEditingSession}
+        onCancelEditingSession={onCancelEditingSession}
+        onSaveEditingSession={onSaveEditingSession}
+        onProjectSelect={onProjectSelect}
+        onSessionSelect={onSessionSelect}
+        onDeleteSession={onDeleteSession}
+        onForkSession={onForkSession}
+        isSelecting={isSelecting}
+        isChecked={checkedSessionIds.has(session.id)}
+        onToggleSessionSelected={onToggleSessionSelected}
+        t={t}
+      />
+    );
+  };
+
+  // The guide drops from the project chevron's centre (px-1.5 + half of w-5 = 16px),
+  // and the padding starts session rows so their chevron column sits under the project icon.
   return (
-    <div className="mb-2 ml-8 mt-0.5 space-y-0.5 border-l border-border/60 pl-1.5">
+    <div className="mb-2 ml-[15px] mt-0.5 space-y-0.5 border-l border-border/60 pl-[10px]">
 
       {isSelecting && (
         <div className="px-1">
@@ -174,32 +294,15 @@ export default function SidebarProjectSessions({
         </div>
       ) : (
         <>
-          {sessions.map((session) => (
-            <SidebarSessionItem
-              key={session.id}
-              project={project}
-              session={session}
-              selectedSession={selectedSession}
-              isProcessing={isSessionRunning(session)}
-              hasBackgroundWork={backgroundSessionIds.has(session.id)}
-              needsAttention={attentionSessionIds.has(session.id)}
-              currentTime={currentTime}
-              onRenameDraftChange={onRenameDraftChange}
-              isEditing={session.id === sessionRenameId}
-              renameDraft={session.id === sessionRenameId ? sessionRenameDraft : ''}
-              onStartEditingSession={onStartEditingSession}
-              onCancelEditingSession={onCancelEditingSession}
-              onSaveEditingSession={onSaveEditingSession}
-              onProjectSelect={onProjectSelect}
-              onSessionSelect={onSessionSelect}
-              onDeleteSession={onDeleteSession}
-              onForkSession={onForkSession}
-              isSelecting={isSelecting}
-              isChecked={checkedSessionIds.has(session.id)}
-              onToggleSessionSelected={onToggleSessionSelected}
-              t={t}
-            />
-          ))}
+          <SidebarChildSessions
+            nodes={tree}
+            renderRow={renderRow}
+            expandedParentIds={expandedParentIds}
+            selectedSessionId={selectedSession?.id}
+            activeSessions={activeSessions}
+            backgroundSessionIds={backgroundSessionIds}
+            attentionSessionIds={attentionSessionIds}
+          />
 
           {hasMoreSessions && (
             <Button

@@ -47,7 +47,6 @@ import type {
   OpenCodeClient,
   OpenCodeEvent,
   PermissionRequest as OpenCodePermissionRequest,
-  TokenUsageInfo,
 } from '@opencode/client';
 
 // eslint-disable-next-line boundaries/no-unknown -- Shared configuration helper is not classified by the legacy boundary map.
@@ -67,6 +66,7 @@ import {
   createCompleteMessage,
   createNormalizedMessage,
   readObjectRecord,
+  toOpenCodeContextTokenUsage,
 } from '@/shared/utils.js';
 import type {
   AnyRecord,
@@ -455,33 +455,9 @@ export function toFormAnswer(
 // Token usage
 // ---------------------------------------------------------------------------
 
-/**
- * Turns OpenCode's running session totals (`session.usage.updated`) into the
- * chat's token budget. Cache reads count as input, the way the history reader
- * reports them.
- */
-function toTokenBudget(tokens: TokenUsageInfo | null) {
-  if (!tokens) {
-    return null;
-  }
-
-  const inputTokens = (tokens.input || 0) + (tokens.cache?.read || 0);
-  const outputTokens = tokens.output || 0;
-  const used = (tokens.input || 0)
-    + outputTokens
-    + (tokens.reasoning || 0)
-    + (tokens.cache?.read || 0)
-    + (tokens.cache?.write || 0);
-  if (used <= 0) {
-    return null;
-  }
-
-  return {
-    used,
-    inputTokens,
-    outputTokens,
-    breakdown: { input: inputTokens, output: outputTokens },
-  };
+/** Turns one completed OpenCode model step's tokens into the chat's context budget. */
+function toTokenBudget(tokens: unknown) {
+  return toOpenCodeContextTokenUsage(tokens);
 }
 
 // ---------------------------------------------------------------------------
@@ -844,7 +820,7 @@ async function runOpenCodeTurn(
 
   const turnPromptIds = new Set<string>();
   const toolCalls = new Map<string, PendingToolCall>();
-  let latestTokens: TokenUsageInfo | null = null;
+  let latestTokens: unknown = null;
   let promptSent = false;
   let turnEnded = false;
   let turnError: string | null = null;
@@ -1163,11 +1139,19 @@ async function runOpenCodeTurn(
         return;
       }
       case 'session.step.ended': {
+        if (toTokenBudget(data.tokens)) {
+          latestTokens = data.tokens;
+        }
         forward({ type: 'opencode.v2.step_end', messageID: data.assistantMessageID });
         return;
       }
+      case 'session.step.failed': {
+        if (toTokenBudget(data.tokens)) {
+          latestTokens = data.tokens;
+        }
+        return;
+      }
       case 'session.usage.updated': {
-        latestTokens = (readObjectRecord(data.tokens) as TokenUsageInfo | null) ?? latestTokens;
         return;
       }
       case 'session.execution.succeeded':

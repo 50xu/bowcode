@@ -32,7 +32,9 @@
     "loadingSessions": "Načítání relací...",
     "unnamed": "Bez názvu",
     "loading": "Načítání...",
-    "showMore": "Zobrazit další relace"
+    "showMore": "Zobrazit další relace",
+    "expandChildren": "Zobrazit spuštěné relace",
+    "collapseChildren": "Skrýt spuštěné relace"
   },
   "tooltips": {
     "hideSidebar": "Skrýt postranní panel",

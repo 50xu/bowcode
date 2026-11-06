@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
-import type { KeyboardEvent } from 'react';
-import { Check, CheckSquare, Edit2, GitBranch, Loader2, MessageSquare, MoreHorizontal, Square, Trash2, X } from 'lucide-react';
+import type { KeyboardEvent, MouseEvent } from 'react';
+import { Bot, Check, CheckSquare, ChevronRight, Edit2, GitBranch, Loader2, MessageSquare, MoreHorizontal, Square, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Dialog, DialogContent, DialogTitle, LLMProviderLogo, Tooltip, buttonVariants } from '@/shared/ui';
@@ -20,6 +20,13 @@ type SidebarSessionItemProps = {
   /** The session's turn has ended but the agents, workflows or commands it launched still run. */
   hasBackgroundWork: boolean;
   needsAttention: boolean;
+  isOrphanedChild?: boolean;
+  hasChildren?: boolean;
+  alignChevron?: boolean;
+  isChildrenExpanded?: boolean;
+  containsSelection?: boolean;
+  hiddenActivity?: 'processing' | 'attention' | 'background' | null;
+  onToggleChildren?: (id: string) => void;
   currentTime: Date;
   /** Resolved for this row, so a keystroke elsewhere does not invalidate it. */
   isEditing: boolean;
@@ -50,6 +57,13 @@ function SidebarSessionItem({
   isProcessing,
   hasBackgroundWork,
   needsAttention,
+  isOrphanedChild,
+  hasChildren,
+  alignChevron,
+  isChildrenExpanded,
+  containsSelection,
+  hiddenActivity,
+  onToggleChildren,
   currentTime,
   isEditing,
   renameDraft,
@@ -82,6 +96,25 @@ function SidebarSessionItem({
       ? t('tooltips.backgroundWorkIndicator', { defaultValue: 'Background work running' })
       : t('tooltips.activeSessionIndicator');
   const providerLabel = PROVIDER_LABELS[session.__provider];
+  const toggleChildren = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleChildren?.(session.id);
+  };
+  const chevron = hasChildren ? (
+    <button type="button" onClick={toggleChildren} aria-expanded={Boolean(isChildrenExpanded)}
+      aria-label={t(isChildrenExpanded ? 'sessions.collapseChildren' : 'sessions.expandChildren')}
+      className={cn('flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground', containsSelection && 'text-primary')}
+    >
+      <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isChildrenExpanded && 'rotate-90')} />
+    </button>
+  ) : alignChevron ? <span data-testid="session-chevron-spacer" className="h-5 w-5 shrink-0" aria-hidden="true" /> : null;
+  const activityDisplay = hiddenActivity && !isProcessing ? (
+    <span data-testid="subagent-activity-indicator" role="status" aria-label={hiddenActivity} className="ml-auto inline-flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground">
+      {hiddenActivity === 'processing' ? <Loader2 className="h-3 w-3 animate-spin" /> :
+        <span className={cn('h-1.5 w-1.5 rounded-full', hiddenActivity === 'attention' ? 'bg-amber-500' : 'bg-purple-500 dark:bg-purple-400')} />}
+    </span>
+  ) : null;
 
   // The desktop controls live in SessionOptions, which owns the rename panel and
   // its outside-click dismissal. The mobile rename sits inside the bottom sheet,
@@ -186,12 +219,14 @@ function SidebarSessionItem({
             'flex h-9 min-w-0 items-center rounded-md px-2 transition-colors hover:bg-accent',
             isSelected && 'bg-primary/10 text-primary',
             isChecked && 'bg-primary/10',
+            containsSelection && 'bg-primary/5',
           )}
           onClick={isSelecting ? (isSelectable ? toggleSelected : undefined) : selectMobileSession}
           onKeyDown={isSelecting ? handleSelectionKeyDown : undefined}
         >
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {selectionIcon}
+            {chevron}
             <div
               className="flex h-4 w-4 shrink-0 items-center justify-center"
             >
@@ -204,6 +239,13 @@ function SidebarSessionItem({
                   className={cn('min-w-0 flex-1 truncate text-[13px] font-normal', isSelected ? 'text-primary' : 'text-foreground/80')}
                   title={sessionView.sessionName}
                 >
+                  {isOrphanedChild && (
+                    <Tooltip content={t('sessions.startedByAnotherSession')} position="top">
+                      <span data-testid="started-by-another-session-icon" className="mr-1 inline-flex align-middle">
+                        <Bot className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      </span>
+                    </Tooltip>
+                  )}
                   {sessionView.sessionName}
                 </div>
                 {isProcessing ? (
@@ -214,9 +256,9 @@ function SidebarSessionItem({
                       </span>
                     </Tooltip>
                   </span>
-                ) : compactSessionAge && (
+                ) : activityDisplay || (compactSessionAge && (
                   <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{compactSessionAge}</span>
-                )}
+                ))}
               </div>
             </div>
 
@@ -401,6 +443,7 @@ function SidebarSessionItem({
             'pr-2',
             isSelected && 'bg-primary/10 text-primary',
              isChecked && 'bg-primary/10',
+            containsSelection && 'bg-primary/5',
           )}
           // Left-click keeps in-app navigation; Ctrl/Cmd/middle-click and the
           // native right-click menu use the href to open a new tab/window.
@@ -422,6 +465,7 @@ function SidebarSessionItem({
         >
           <div className="flex w-full min-w-0 items-center gap-2">
             {selectionIcon}
+            {chevron}
             <div
               className="flex h-4 w-4 shrink-0 items-center justify-center"
             >
@@ -439,6 +483,13 @@ function SidebarSessionItem({
                     onStartEditingSession(project.projectId, session.id, sessionView.sessionName);
                   }}
                 >
+                  {isOrphanedChild && (
+                    <Tooltip content={t('sessions.startedByAnotherSession')} position="top">
+                      <span data-testid="started-by-another-session-icon" className="mr-1 inline-flex align-middle">
+                        <Bot className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      </span>
+                    </Tooltip>
+                  )}
                   {sessionView.sessionName}
                 </div>
                 {isProcessing ? (
@@ -453,6 +504,10 @@ function SidebarSessionItem({
                         <Loader2 className="h-3 w-3 animate-spin" />
                       </span>
                     </Tooltip>
+                  </span>
+                ) : activityDisplay ? (
+                  <span className={cn('ml-auto transition-opacity duration-200', isEditing ? 'opacity-0' : !isSelecting && 'group-hover:opacity-0')}>
+                    {activityDisplay}
                   </span>
                 ) : compactSessionAge && (
                   <span

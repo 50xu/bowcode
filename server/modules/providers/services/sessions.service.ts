@@ -69,7 +69,7 @@ type ArchivedSessionListItem = {
 type RecentSessionListItem = Pick<
   ArchivedSessionListItem,
   'sessionId' | 'provider' | 'projectId' | 'projectDisplayName' | 'sessionTitle' | 'lastActivity'
->;
+> & { parentSessionId: string | null; parentProviderSessionId: string | null; lineageSource: 'native' | 'prompt-match' | null };
 
 type RecentSessionsPage = {
   conversations: RecentSessionListItem[];
@@ -86,6 +86,9 @@ type SessionDetails = {
   updatedAt: string | null;
   lastActivity: string | null;
   isArchived: boolean;
+  parentSessionId: string | null;
+  parentProviderSessionId: string | null;
+  lineageSource: 'native' | 'prompt-match' | null;
   project: {
     projectId: string;
     path: string;
@@ -242,6 +245,10 @@ export const sessionsService = {
         projectDisplayName: resolveProjectDisplayName(projectPath, project?.custom_project_name),
         sessionTitle: session.custom_name?.trim() || session.session_id,
         lastActivity: session.updated_at ?? session.created_at ?? null,
+        parentSessionId: session.parent_provider_session_id
+          ? sessionsDb.getSessionByProviderSessionId(session.parent_provider_session_id, session.parent_provider ?? undefined)?.session_id ?? null : null,
+        parentProviderSessionId: session.parent_provider_session_id,
+        lineageSource: session.lineage_source,
       };
     });
 
@@ -638,6 +645,10 @@ export const sessionsService = {
       updatedAt: session.updated_at ?? null,
       lastActivity: session.updated_at ?? session.created_at ?? null,
       isArchived: Boolean(session.isArchived),
+      parentSessionId: session.parent_provider_session_id
+        ? sessionsDb.getSessionByProviderSessionId(session.parent_provider_session_id, session.parent_provider ?? undefined)?.session_id ?? null : null,
+      parentProviderSessionId: session.parent_provider_session_id,
+      lineageSource: session.lineage_source,
       project: project && projectPath
         ? {
             projectId: project.project_id,

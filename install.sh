@@ -2,21 +2,30 @@
 set -euo pipefail
 
 VERSION=''
+CHANNEL='stable'
 PORT=3001
 INSTALL_SERVICE=1
 
 usage() {
-  echo 'Usage: install.sh [--version vX.Y.Z] [--no-service] [--port N]'
+  echo 'Usage: install.sh [--version vX.Y.Z[-prerelease]] [--channel stable|beta] [--no-service] [--port N]'
 }
 
 while (($#)); do
   case "$1" in
     --version)
-      if (($# < 2)) || [[ ! "$2" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+      if (($# < 2)) || [[ ! "$2" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
         usage >&2
         exit 1
       fi
       VERSION="$2"
+      shift 2
+      ;;
+    --channel)
+      if (($# < 2)) || [[ "$2" != stable && "$2" != beta ]]; then
+        usage >&2
+        exit 1
+      fi
+      CHANNEL="$2"
       shift 2
       ;;
     --no-service)
@@ -51,6 +60,20 @@ fi
 
 BASE='https://github.com/50xu/bowcode/releases'
 if [[ -n "$VERSION" ]]; then
+  URL="$BASE/download/$VERSION/bowcode-${VERSION#v}.tgz"
+elif [[ "$CHANNEL" == beta ]]; then
+  VERSION="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H 'User-Agent: bowcode-installer' \
+    'https://api.github.com/repos/50xu/bowcode/releases?per_page=30' | node -e '
+      let body = "";
+      process.stdin.on("data", chunk => { body += chunk; });
+      process.stdin.on("end", () => {
+        try {
+          const release = JSON.parse(body).find(item => !item.draft && /^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(item.tag_name));
+          if (!release) process.exitCode = 1;
+          else process.stdout.write(release.tag_name);
+        } catch { process.exitCode = 1; }
+      });
+    ')" || { echo 'No beta release found.' >&2; exit 1; }
   URL="$BASE/download/$VERSION/bowcode-${VERSION#v}.tgz"
 else
   URL="$BASE/latest/download/bowcode.tgz"

@@ -4,6 +4,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 
 import { sessionsDb } from '@/modules/database/index.js';
+import { indexOpenCodeLineage, resolveSessionLineage } from '@/modules/providers/services/session-lineage.service.js';
 import type { IProviderSessionSynchronizer } from '@/shared/interfaces.js';
 import {
   getOpenCodeDatabasePath,
@@ -73,6 +74,7 @@ export class OpenCodeSessionSynchronizer implements IProviderSessionSynchronizer
 
     const db = new Database(dbPath, { readonly: true, fileMustExist: true });
     try {
+      indexOpenCodeLineage(db);
       if (pruneChildSessions) {
         this.pruneChildSessions(db);
         this.childSessionsReconciled = true;
@@ -105,6 +107,7 @@ export class OpenCodeSessionSynchronizer implements IProviderSessionSynchronizer
         if (!indexedSessionId) {
           continue;
         }
+        resolveSessionLineage(this.provider, row.id);
 
         if (!firstSessionId) {
           firstSessionId = indexedSessionId;

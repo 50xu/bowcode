@@ -195,6 +195,13 @@ CREATE TABLE IF NOT EXISTS sessions (
     -- normally. Informational only: a fork is a fully independent provider
     -- session, and deleting the source does not affect it.
     forked_from_session_id TEXT,
+    parent_provider TEXT,
+    parent_provider_session_id TEXT,
+    parent_agent_id TEXT,
+    parent_tool_use_id TEXT,
+    lineage_source TEXT,
+    lineage_score REAL,
+    lineage_checked_at DATETIME,
     isArchived BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -202,6 +209,38 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (project_path) REFERENCES projects(project_path)
     ON DELETE SET NULL
     ON UPDATE CASCADE
+);
+`;
+
+/** Fingerprints and incremental transcript/part cursors used by provider lineage matching. */
+export const SESSION_LINEAGE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS session_tool_calls (
+    id INTEGER PRIMARY KEY,
+    owner_provider TEXT NOT NULL,
+    owner_provider_session_id TEXT NOT NULL,
+    agent_id TEXT,
+    tool_use_id TEXT,
+    tool_name TEXT,
+    called_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_session_tool_calls_called_at ON session_tool_calls(called_at);
+CREATE TABLE IF NOT EXISTS session_tool_fingerprints (
+    fingerprint INTEGER NOT NULL,
+    call_id INTEGER NOT NULL,
+    PRIMARY KEY (fingerprint, call_id)
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS session_lineage_progress (
+    source TEXT PRIMARY KEY,
+    byte_offset INTEGER NOT NULL DEFAULT 0,
+    last_part_time INTEGER NOT NULL DEFAULT 0,
+    last_part_id TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS session_lineage_prompts (
+    provider TEXT NOT NULL,
+    provider_session_id TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (provider, provider_session_id)
 );
 `;
 

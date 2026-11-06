@@ -20,7 +20,7 @@ import {
   normalizeProviderTimestamp,
   readJsonRecord,
   readObjectRecord,
-  readOpenCodeSessionTokenUsage,
+  readOpenCodeContextTokenUsage,
   readOptionalString,
   sliceTailPage,
   truncateSubagentActivity,
@@ -627,7 +627,7 @@ export class OpenCodeSessionsProvider implements IProviderSessions {
       `).all(providerSessionId) as OpenCodeMessageRow[];
 
       const normalized = this.normalizeHistoryRows(rows, sessionId, db);
-      const tokenUsage = readOpenCodeSessionTokenUsage(providerSessionId) ?? undefined;
+      const tokenUsage = readOpenCodeContextTokenUsage(providerSessionId) ?? undefined;
 
       const normalizedOffset = Math.max(0, offset);
       const normalizedLimit = limit === null ? null : Math.max(0, limit);

@@ -9,9 +9,17 @@ export function createUpdatesRouter(service: ReturnType<typeof createUpdatesServ
     const force = request.query.force === '1' || request.query.force === 'true';
     response.json(await service.check({ force }));
   });
-  router.post('/apply', (_request, response) => {
+  router.put('/channel', async (request, response) => {
+    const channel: unknown = request.body?.channel;
+    if (channel !== 'stable' && channel !== 'beta') {
+      response.status(400).json({ error: 'Invalid release channel' });
+      return;
+    }
+    response.json(await service.setChannel(channel));
+  });
+  router.post('/apply', async (_request, response) => {
     try {
-      response.status(202).json(service.apply());
+      response.status(202).json(await service.apply());
     } catch (error) {
       response.status(409).json({ error: error instanceof Error ? error.message : String(error) });
     }

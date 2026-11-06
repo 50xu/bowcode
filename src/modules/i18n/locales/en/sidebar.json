@@ -41,7 +41,10 @@
     "selectAllLoaded": "Select all loaded",
     "clearSelection": "Clear",
     "deleteSelected_one": "Delete {{count}} session",
-    "deleteSelected_other": "Delete {{count}} sessions"
+    "deleteSelected_other": "Delete {{count}} sessions",
+    "startedByAnotherSession": "Started by another session",
+    "expandChildren": "Show sessions it started",
+    "collapseChildren": "Hide sessions it started"
   },
   "tooltips": {
     "hideSidebar": "Hide sidebar",
