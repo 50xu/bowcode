@@ -5,6 +5,7 @@ import { promises as fsPromises } from 'node:fs';
 import chokidar, { type FSWatcher } from 'chokidar';
 
 import { sessionSynchronizerService } from '@/modules/providers/services/session-synchronizer.service.js';
+import { backfillSessionLineage } from '@/modules/providers/services/session-lineage.service.js';
 import { broadcastSessionUpsertedBatch } from '@/modules/websocket/index.js';
 import type { LLMProvider } from '@/shared/types.js';
 
@@ -216,6 +217,9 @@ async function onUpdate(
   if (provider === 'claude') {
     const parentSessionId = claudeSubagentParentSessionId(filePath);
     if (parentSessionId) {
+      if (filePath.endsWith('.jsonl')) {
+        await sessionSynchronizerService.synchronizeProviderFile(provider, filePath);
+      }
       queuePendingWatcherUpdate(eventType, provider, parentSessionId);
       return;
     }
@@ -298,6 +302,9 @@ export async function initializeSessionsWatcher(): Promise<void> {
       });
     }
   }
+  void backfillSessionLineage().catch((error: unknown) => {
+    console.warn('Session lineage backfill failed:', error);
+  });
 }
 
 /**

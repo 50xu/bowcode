@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Check, CheckSquare, Edit2, GitBranch, Loader2, MessageSquare, MoreHorizontal, Square, Trash2, X } from 'lucide-react';
+import { Bot, Check, CheckSquare, Edit2, GitBranch, Loader2, MessageSquare, MoreHorizontal, Square, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Dialog, DialogContent, DialogTitle, LLMProviderLogo, Tooltip, buttonVariants } from '@/shared/ui';
@@ -20,6 +20,7 @@ type SidebarSessionItemProps = {
   /** The session's turn has ended but the agents, workflows or commands it launched still run. */
   hasBackgroundWork: boolean;
   needsAttention: boolean;
+  isOrphanedChild?: boolean;
   currentTime: Date;
   /** Resolved for this row, so a keystroke elsewhere does not invalidate it. */
   isEditing: boolean;
@@ -50,6 +51,7 @@ function SidebarSessionItem({
   isProcessing,
   hasBackgroundWork,
   needsAttention,
+  isOrphanedChild,
   currentTime,
   isEditing,
   renameDraft,
@@ -204,6 +206,13 @@ function SidebarSessionItem({
                   className={cn('min-w-0 flex-1 truncate text-[13px] font-normal', isSelected ? 'text-primary' : 'text-foreground/80')}
                   title={sessionView.sessionName}
                 >
+                  {isOrphanedChild && (
+                    <Tooltip content={t('sessions.startedByAnotherSession')} position="top">
+                      <span data-testid="started-by-another-session-icon" className="mr-1 inline-flex align-middle">
+                        <Bot className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      </span>
+                    </Tooltip>
+                  )}
                   {sessionView.sessionName}
                 </div>
                 {isProcessing ? (
@@ -439,6 +448,13 @@ function SidebarSessionItem({
                     onStartEditingSession(project.projectId, session.id, sessionView.sessionName);
                   }}
                 >
+                  {isOrphanedChild && (
+                    <Tooltip content={t('sessions.startedByAnotherSession')} position="top">
+                      <span data-testid="started-by-another-session-icon" className="mr-1 inline-flex align-middle">
+                        <Bot className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      </span>
+                    </Tooltip>
+                  )}
                   {sessionView.sessionName}
                 </div>
                 {isProcessing ? (

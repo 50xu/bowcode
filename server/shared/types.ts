@@ -289,6 +289,9 @@ export type SessionUpsertedEvent = {
     summary: string;
     messageCount: number;
     lastActivity: string;
+    parentSessionId?: string | null;
+    parentProviderSessionId?: string | null;
+    lineageSource?: 'native' | 'prompt-match' | null;
   };
   project: SessionUpsertedProject | null;
   timestamp: string;
@@ -700,15 +703,6 @@ export type FetchHistoryResult = {
 };
 
 /**
- * Cumulative token usage of one OpenCode v2 session, read from the counters
- * OpenCode keeps on its `session_v2` row.
- *
- * `inputTokens` (and `breakdown.input`) count fresh input plus cache reads,
- * the prompt the model actually saw; `used` adds every counter (input,
- * output, reasoning, cache read and cache write). Produced by
- * `readOpenCodeSessionTokenUsage` for the OpenCode history reader and runtime.
- */
-/**
  * One active credential from OpenCode v2's `credential` table, without its
  * secret value. Produced by `readOpenCodeCredentials` for the OpenCode auth and
  * models facets.
@@ -720,6 +714,14 @@ export type OpenCodeCredential = {
   label: string;
 };
 
+/**
+ * Context token usage of one OpenCode v2 model step.
+ *
+ * `inputTokens` (and `breakdown.input`) count fresh input plus cache reads and
+ * cache writes; `outputTokens` is the step output, and `used` is their sum.
+ * Reasoning tokens are excluded. Produced by `toOpenCodeContextTokenUsage` for
+ * the OpenCode history reader and runtime.
+ */
 export type OpenCodeSessionTokenUsage = {
   used: number;
   inputTokens: number;

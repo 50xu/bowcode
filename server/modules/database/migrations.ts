@@ -13,6 +13,7 @@ import {
   SCHEDULE_RUNS_TABLE_SCHEMA_SQL,
   SCHEDULES_TABLE_SCHEMA_SQL,
   SESSIONS_TABLE_SCHEMA_SQL,
+  SESSION_LINEAGE_SCHEMA_SQL,
   USER_PREFERENCES_TABLE_SCHEMA_SQL,
   USER_NOTIFICATION_PREFERENCES_TABLE_SCHEMA_SQL,
   VAPID_KEYS_TABLE_SCHEMA_SQL,
@@ -536,6 +537,21 @@ export const runMigrations = (db: Database) => {
     addSessionEffortColumn(db);
     addColumnToTableIfNotExists(db, 'sessions', getTableInfo(db, 'sessions').map((column) => column.name), 'name_source', 'TEXT');
     addForkedFromSessionIdColumn(db);
+    for (const [name, type] of Object.entries({
+      parent_provider: 'TEXT', parent_provider_session_id: 'TEXT', parent_agent_id: 'TEXT',
+      parent_tool_use_id: 'TEXT', lineage_source: 'TEXT', lineage_score: 'REAL',
+      lineage_checked_at: 'DATETIME',
+    })) {
+      addColumnToTableIfNotExists(db, 'sessions', getTableInfo(db, 'sessions').map((column) => column.name), name, type);
+    }
+    // The pre-release fingerprint table stored one full call per gram. Discard it once.
+    if (tableExists(db, 'session_tool_fingerprints') &&
+      getTableInfo(db, 'session_tool_fingerprints').some((column) => column.name === 'owner_provider')) {
+      db.exec(`DROP TABLE session_tool_fingerprints;
+        DROP INDEX IF EXISTS idx_session_tool_fingerprints_fingerprint;
+        DROP INDEX IF EXISTS idx_session_tool_fingerprints_called_at;`);
+    }
+    db.exec(SESSION_LINEAGE_SCHEMA_SQL);
     ensureProjectsForSessionPaths(db);
     db.exec(SCHEDULED_MESSAGES_TABLE_SCHEMA_SQL);
     db.exec(SCHEDULES_TABLE_SCHEMA_SQL);

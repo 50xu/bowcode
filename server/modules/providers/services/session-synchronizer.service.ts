@@ -3,6 +3,7 @@ import { access } from 'node:fs/promises';
 
 import { scanStateDb, sessionsDb } from '@/modules/database/index.js';
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
+import { retryUnresolvedLineage } from '@/modules/providers/services/session-lineage.service.js';
 import type { LLMProvider } from '@/shared/types.js';
 
 type SessionSynchronizeResult = {
@@ -115,6 +116,7 @@ async function runSessionSynchronization(): Promise<SessionSynchronizeResult> {
     );
   }
 
+  retryUnresolvedLineage();
   return {
     processedByProvider,
     prunedOrphans,
@@ -151,6 +153,7 @@ export const sessionSynchronizerService = {
   ): Promise<{ provider: LLMProvider; indexed: boolean; sessionId: string | null }> {
     const resolvedProvider = providerRegistry.resolveProvider(provider);
     const sessionId = await resolvedProvider.sessionSynchronizer.synchronizeFile(filePath);
+    retryUnresolvedLineage();
     return {
       provider,
       indexed: Boolean(sessionId),

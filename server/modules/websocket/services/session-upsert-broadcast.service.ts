@@ -49,6 +49,10 @@ async function buildSessionUpsertedEvent(
       summary: row.custom_name || '',
       messageCount: 0,
       lastActivity: row.updated_at ?? row.created_at ?? new Date().toISOString(),
+      parentSessionId: row.parent_provider_session_id
+        ? sessionsDb.getSessionByProviderSessionId(row.parent_provider_session_id, row.parent_provider ?? undefined)?.session_id ?? null : null,
+      parentProviderSessionId: row.parent_provider_session_id,
+      lineageSource: row.lineage_source,
     },
     project: project
       ? {
