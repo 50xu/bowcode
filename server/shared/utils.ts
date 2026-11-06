@@ -1045,20 +1045,52 @@ export function getOpenCodeDatabasePath(): string {
 }
 
 /**
- * Reads the cumulative token usage OpenCode v2 stores on a session's
- * `session_v2` row (`tokens_input`, `tokens_output`, `tokens_reasoning`,
- * `tokens_cache_read`, `tokens_cache_write`).
+ * Converts one OpenCode model step's token counters into the context usage the
+ * chat meter displays. Fresh input and both cache directions count as model
+ * input; output is reported separately, while reasoning is excluded.
  *
- * Consumed by the OpenCode history reader (usage returned with each history
- * page) and the OpenCode runtime (usage pushed after a turn). `sessionId` is the
- * OpenCode-native session id, not the app session id. `databasePath` defaults to
- * the shared `opencode.db`; it is opened read-only and closed before returning.
- *
- * Returns null when the database or the row does not exist, when every counter
- * is zero (nothing to show yet), or when the database cannot be read, so
- * callers can simply skip reporting usage.
+ * Consumed by the OpenCode history reader and runtime so persisted and live
+ * steps use the same context definition. Invalid, missing, or all-zero token
+ * data returns null.
  */
-export function readOpenCodeSessionTokenUsage(
+export function toOpenCodeContextTokenUsage(tokens: unknown): OpenCodeSessionTokenUsage | null {
+  const record = readObjectRecord(tokens);
+  if (!record) {
+    return null;
+  }
+
+  const cache = readObjectRecord(record.cache);
+  const count = (value: unknown): number => {
+    const numeric = Number(value ?? 0);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+  };
+  const inputTokens = count(record.input) + count(cache?.read) + count(cache?.write);
+  const outputTokens = count(record.output);
+  const used = inputTokens + outputTokens;
+  if (used <= 0) {
+    return null;
+  }
+
+  return {
+    used,
+    inputTokens,
+    outputTokens,
+    breakdown: { input: inputTokens, output: outputTokens },
+  };
+}
+
+/**
+ * Reads the latest non-empty assistant step's context token usage from OpenCode
+ * v2's `session_message` rows, scanning backward past missing or all-zero data.
+ *
+ * Consumed by the OpenCode history reader. `sessionId` is the OpenCode-native
+ * session id, not the app session id. `databasePath` defaults to the shared
+ * `opencode.db`; it is opened read-only and closed before returning.
+ *
+ * Returns null when the database or a usable assistant step does not exist, or
+ * when the database cannot be read, so callers can skip reporting usage.
+ */
+export function readOpenCodeContextTokenUsage(
   sessionId: string,
   databasePath: string = getOpenCodeDatabasePath(),
 ): OpenCodeSessionTokenUsage | null {
@@ -1069,37 +1101,20 @@ export function readOpenCodeSessionTokenUsage(
   let database: Database.Database | null = null;
   try {
     database = new Database(databasePath, { readonly: true, fileMustExist: true });
-    const row = database.prepare(`
-      SELECT
-        tokens_input AS input,
-        tokens_output AS output,
-        tokens_reasoning AS reasoning,
-        tokens_cache_read AS cacheRead,
-        tokens_cache_write AS cacheWrite
-      FROM session_v2
-      WHERE id = ?
-    `).get(sessionId) as Record<'input' | 'output' | 'reasoning' | 'cacheRead' | 'cacheWrite', unknown> | undefined;
-    if (!row) {
-      return null;
-    }
+    const rows = database.prepare(`
+      SELECT data
+      FROM session_message
+      WHERE session_id = ? AND type = 'assistant'
+      ORDER BY seq DESC
+    `).all(sessionId) as Array<{ data: unknown }>;
 
-    const count = (value: unknown): number => {
-      const numeric = Number(value ?? 0);
-      return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
-    };
-    const inputTokens = count(row.input) + count(row.cacheRead);
-    const outputTokens = count(row.output);
-    const used = inputTokens + outputTokens + count(row.reasoning) + count(row.cacheWrite);
-    if (used <= 0) {
-      return null;
+    for (const row of rows) {
+      const usage = toOpenCodeContextTokenUsage(readJsonRecord(row.data)?.tokens);
+      if (usage) {
+        return usage;
+      }
     }
-
-    return {
-      used,
-      inputTokens,
-      outputTokens,
-      breakdown: { input: inputTokens, output: outputTokens },
-    };
+    return null;
   } catch {
     return null;
   } finally {
@@ -1664,17 +1679,49 @@ export function findApplicationRoot(startDirectory: string): string {
     : parentDirectory;
 }
 
-/**
- * True when release version `candidate` (x.y.z, optional leading "v") is newer
- * than `current`. Used by the update check in the CLI and the Updates API, so a
- * build that is ahead of the latest release is never told to "update" backwards.
- */
-export function isNewerVersion(candidate: string, current: string): boolean {
-  const parse = (value: string) => value.replace(/^v/, '').split(/[-+]/)[0].split('.').map((part) => Number(part) || 0);
-  const a = parse(candidate);
-  const b = parse(current);
+//----------------- RELEASE VERSION SELECTION ------------
+
+type ParsedReleaseVersion = { core: bigint[]; prerelease: string[] };
+
+function parseReleaseVersion(value: string): ParsedReleaseVersion | null {
+  const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(value);
+  if (!match) return null;
+  const prerelease = match[4]?.split('.') ?? [];
+  if (prerelease.some((part) => /^\d+$/.test(part) && part.length > 1 && part[0] === '0')) return null;
+  return { core: match.slice(1, 4).map(BigInt), prerelease };
+}
+
+function compareReleaseVersions(a: ParsedReleaseVersion, b: ParsedReleaseVersion): number {
   for (let index = 0; index < 3; index += 1) {
-    if ((a[index] ?? 0) !== (b[index] ?? 0)) return (a[index] ?? 0) > (b[index] ?? 0);
+    if (a.core[index] !== b.core[index]) return a.core[index] > b.core[index] ? 1 : -1;
   }
-  return false;
+  if (!a.prerelease.length || !b.prerelease.length) return Number(!a.prerelease.length) - Number(!b.prerelease.length);
+  for (let index = 0; index < Math.min(a.prerelease.length, b.prerelease.length); index += 1) {
+    const left = a.prerelease[index];
+    const right = b.prerelease[index];
+    if (left === right) continue;
+    const leftNumeric = /^\d+$/.test(left);
+    const rightNumeric = /^\d+$/.test(right);
+    if (leftNumeric && rightNumeric) return BigInt(left) > BigInt(right) ? 1 : -1;
+    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
+    return left > right ? 1 : -1;
+  }
+  return Math.sign(a.prerelease.length - b.prerelease.length);
+}
+
+/** Used by CLI and Updates API to compare valid SemVer tags, including prereleases; build metadata does not affect precedence. Invalid versions are never newer. */
+export function isNewerVersion(candidate: string, current: string): boolean {
+  const a = parseReleaseVersion(candidate);
+  const b = parseReleaseVersion(current);
+  return a !== null && b !== null && compareReleaseVersions(a, b) > 0;
+}
+
+/** Used by CLI and Updates API to choose the highest valid, non-draft GitHub release; accepts optional v prefixes and ignores build metadata for ordering. */
+export function selectLatestRelease<T extends { tag_name?: string; draft?: boolean }>(releases: T[]): T | null {
+  let selected: T | null = null;
+  for (const release of releases) {
+    if (release.draft || !release.tag_name || !parseReleaseVersion(release.tag_name)) continue;
+    if (!selected || isNewerVersion(release.tag_name, selected.tag_name!)) selected = release;
+  }
+  return selected;
 }

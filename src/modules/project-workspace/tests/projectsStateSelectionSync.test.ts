@@ -88,6 +88,35 @@ afterEach(() => {
   vi.resetModules();
 });
 
+test('new session does not reselect the old URL session before route transition completes', async () => {
+  respondWith([buildProject({ sessions: [{ id: 'old-session', summary: 'Old' }] })]);
+  const [{ useProjectsState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/project-workspace/hooks/useProjectsState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
+  const navigate = vi.fn();
+  const { result, rerender } = renderHook(({ sessionId }) => useProjectsState({
+    sessionId,
+    navigate,
+    subscribe: (listener: ServerEventListener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    isMobile: false,
+    isSessionProcessing: () => false,
+  }), { initialProps: { sessionId: 'old-session' as string | undefined }, wrapper: SessionProtectionProvider });
+
+  await waitFor(() => assert.equal(result.current.selectedSession?.id, 'old-session'));
+  act(() => result.current.handleNewSession(result.current.projects[0]));
+  assert.equal(result.current.selectedSession, null);
+  assert.equal(navigate.mock.lastCall?.[0], '/');
+  // The router still exposes the old URL on the render before its transition commits.
+  rerender({ sessionId: 'old-session' });
+  assert.equal(result.current.selectedSession, null);
+  rerender({ sessionId: undefined });
+  assert.equal(result.current.selectedSession, null);
+});
+
 test('a refresh that renames the selected project updates the selected copy', async () => {
   respondWith([buildProject()]);
   const { result } = await renderProjectsState();

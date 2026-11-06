@@ -164,6 +164,7 @@ async function runTurn(sessionID: string): Promise<void> {
   });
   const assistantMessageID = 'msg_assistant';
   let ordinal = 0;
+  let stepTokens = { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } };
   emit('session.execution.started', { sessionID });
   emit('session.step.started', { sessionID, assistantMessageID, agent: sessions.get(sessionID)?.agent ?? 'build' });
 
@@ -189,10 +190,11 @@ async function runTurn(sessionID: string): Promise<void> {
     }
 
     if (step.type === 'usage') {
+      stepTokens = { input: step.input, output: step.output, reasoning: 0, cache: { read: 0, write: 0 } };
       emit('session.usage.updated', {
         sessionID,
         cost: 0,
-        tokens: { input: step.input, output: step.output, reasoning: 0, cache: { read: 0, write: 0 } },
+        tokens: { input: 900_000_000, output: 100_000_000, reasoning: 0, cache: { read: 0, write: 0 } },
       });
       continue;
     }
@@ -310,7 +312,7 @@ async function runTurn(sessionID: string): Promise<void> {
     assistantMessageID,
     finish: 'stop',
     cost: 0,
-    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+    tokens: stepTokens,
   });
   emit('session.execution.succeeded', { sessionID });
 }

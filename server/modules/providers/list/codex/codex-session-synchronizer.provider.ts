@@ -3,6 +3,7 @@ import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 
 import { sessionsDb } from '@/modules/database/index.js';
+import { indexLineageJsonl, resolveSessionLineage, setNativeSessionLineage } from '@/modules/providers/services/session-lineage.service.js';
 import {
   buildLookupMap,
   extractFirstValidJsonlData,
@@ -16,6 +17,7 @@ type ParsedSession = {
   sessionId: string;
   projectPath: string;
   sessionName?: string;
+  parentId?: string;
 };
 
 /**
@@ -38,6 +40,7 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
 
     let processed = 0;
     for (const filePath of files) {
+      await indexLineageJsonl(this.provider, filePath);
       const parsed = await this.processSessionFile(filePath, nameMap);
       if (!parsed) {
         continue;
@@ -62,6 +65,8 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
         timestamps.updatedAt,
         filePath
       );
+      if (parsed.parentId) setNativeSessionLineage(this.provider, parsed.sessionId, parsed.parentId);
+      resolveSessionLineage(this.provider, parsed.sessionId);
       processed += 1;
     }
 
@@ -76,6 +81,7 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
       return null;
     }
 
+    await indexLineageJsonl(this.provider, filePath);
     const nameMap = await buildLookupMap(path.join(this.codexHome, 'session_index.jsonl'), 'id', 'thread_name');
     const parsed = await this.processSessionFile(filePath, nameMap);
     if (!parsed) {
@@ -83,7 +89,7 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
     }
 
     const timestamps = await readFileTimestamps(filePath);
-    return sessionsDb.createSession(
+    const sessionId = sessionsDb.createSession(
       parsed.sessionId,
       this.provider,
       parsed.projectPath,
@@ -92,6 +98,9 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
       timestamps.updatedAt,
       filePath
     );
+    if (parsed.parentId) setNativeSessionLineage(this.provider, parsed.sessionId, parsed.parentId);
+    resolveSessionLineage(this.provider, parsed.sessionId);
+    return sessionId;
   }
 
   /**
@@ -111,14 +120,17 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
         return null;
       }
 
+      const source = payload ? payload.source as Record<string, unknown> | undefined : undefined;
+      const subagent = source?.subagent as Record<string, unknown> | undefined;
       return {
         sessionId,
         projectPath,
-        isSubagent: payload ? this.isSubagentSessionMeta(payload) : false,
+        parentId: typeof subagent?.parent_thread_id === 'string' ? subagent.parent_thread_id : undefined,
+        isSubagent: payload?.thread_source === 'subagent' || Boolean(subagent),
       };
     });
 
-    if (!parsed || parsed.isSubagent) {
+    if (!parsed || (parsed.isSubagent && !parsed.parentId)) {
       return null;
     }
 
@@ -152,25 +164,6 @@ export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
       ...parsed,
       sessionName: normalizeSessionName(sessionName, 'Untitled Codex Session'),
     };
-  }
-
-  /**
-   * Returns true when a session_meta payload belongs to a Codex sub-agent
-   * thread (Codex >=0.144 collaboration spawn_agent, review, compact, etc.).
-   * Sub-agent rollouts live in the same sessions tree as user sessions, so
-   * they must be skipped here to stay out of the sidebar — the Codex
-   * equivalent of the Claude synchronizer's subagent transcript skip.
-   * Top-level sessions carry thread_source "user" and a string source
-   * ("exec"/"cli"); sub-agents carry thread_source "subagent" and an object
-   * source keyed by "subagent".
-   */
-  private isSubagentSessionMeta(payload: Record<string, unknown>): boolean {
-    if (payload.thread_source === 'subagent') {
-      return true;
-    }
-
-    const source = payload.source;
-    return typeof source === 'object' && source !== null && 'subagent' in source;
   }
 
   private async extractLastAgentMessageFromEnd(filePath: string): Promise<string | undefined> {

@@ -31,6 +31,41 @@ test('CLI update installs release with explicit npm args and restarts active ser
   assert.match(commands.at(-1) || '', /restart bowcode.service/);
 });
 
+test('CLI beta check and update choose the highest valid non-draft release', async () => {
+  const urls: string[] = [];
+  const commands: string[] = [];
+  const logs: string[] = [];
+  const command = createUpdateCommand({
+    root: '/prefix/lib/node_modules/bowcode', current: '1.39.0', platform: 'linux', uid: 1, home: '/fake',
+    exists: () => false,
+    fetchRelease: async (url) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => [
+        { tag_name: 'v1.40.0-beta.2' }, { tag_name: 'v1.40.0-beta.10' },
+        { tag_name: 'v1.50.0', draft: true }, { tag_name: 'invalid' },
+      ] };
+    },
+    spawn: async (_exe, args) => { commands.push(args.join(' ')); return 0; },
+    exec: async () => false, log: (message) => { logs.push(message); }, error: () => undefined,
+  });
+  assert.equal(await command(['--check', '--channel', 'beta']), 0);
+  assert.match(logs[0], /latest: 1.40.0-beta.10/);
+  assert.equal(await command(['--channel', 'beta']), 0);
+  assert.match(urls[0], /releases\?per_page=30$/);
+  assert.match(commands[0], /bowcode-1.40.0-beta.10.tgz/);
+});
+
+test('CLI rejects an invalid channel before fetching', async () => {
+  const errors: string[] = [];
+  const command = createUpdateCommand({
+    root: '/prefix/lib/node_modules/bowcode', current: '1.0.0', platform: 'linux', uid: 1, home: '/fake',
+    exists: () => false, fetchRelease: async () => { throw new Error('unexpected fetch'); },
+    spawn: async () => 0, exec: async () => false, log: () => undefined, error: (message) => { errors.push(message); },
+  });
+  assert.equal(await command(['--channel', 'nightly']), 1);
+  assert.match(errors[0], /Invalid channel/);
+});
+
 test('service install writes managed systemd unit and runs only injected commands', async () => {
   const commands: string[] = [];
   let unit = '';

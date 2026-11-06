@@ -821,6 +821,10 @@
     "basedOn": "A modified fork of",
     "update": {
       "title": "Application updates",
+      "channel": "Release channel",
+      "stable": "Stable",
+      "beta": "Beta",
+      "betaHint": "Beta builds get new features first and may be unstable.",
       "checking": "Checking for updates…",
       "upToDate": "Up to date",
       "available": "Version {{version}} available",

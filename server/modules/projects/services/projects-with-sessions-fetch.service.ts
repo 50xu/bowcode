@@ -13,6 +13,9 @@ type SessionSummary = {
   summary: string;
   messageCount: number;
   lastActivity: string;
+  parentSessionId: string | null;
+  parentProviderSessionId: string | null;
+  lineageSource: 'native' | 'prompt-match' | null;
 };
 
 type SessionRepositoryRow = {
@@ -21,6 +24,9 @@ type SessionRepositoryRow = {
   custom_name?: string | null;
   updated_at?: string | null;
   created_at?: string | null;
+  parent_provider?: string | null;
+  parent_provider_session_id?: string | null;
+  lineage_source?: 'native' | 'prompt-match' | null;
 };
 
 export type ProjectListItem = {
@@ -124,6 +130,10 @@ function mapSessionRowToSummary(row: SessionRepositoryRow): SessionSummary {
     summary: row.custom_name || '',
     messageCount: 0,
     lastActivity: row.updated_at ?? row.created_at ?? new Date().toISOString(),
+    parentSessionId: row.parent_provider_session_id
+      ? sessionsDb.getSessionByProviderSessionId(row.parent_provider_session_id, row.parent_provider ?? undefined)?.session_id ?? null : null,
+    parentProviderSessionId: row.parent_provider_session_id ?? null,
+    lineageSource: row.lineage_source ?? null,
   };
 }
 

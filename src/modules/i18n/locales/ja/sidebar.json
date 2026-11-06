@@ -37,7 +37,9 @@
     "selectAll": "すべて選択",
     "selectAllLoaded": "読み込み済みをすべて選択",
     "clearSelection": "選択を解除",
-    "deleteSelected": "{{count}}件のセッションを削除"
+    "deleteSelected": "{{count}}件のセッションを削除",
+    "expandChildren": "開始したセッションを表示",
+    "collapseChildren": "開始したセッションを非表示"
   },
   "tooltips": {
     "hideSidebar": "サイドバーを隠す",

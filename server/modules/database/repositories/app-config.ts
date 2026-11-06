@@ -29,6 +29,16 @@ export const appConfigDb = {
     }
   },
 
+  /** Reads the update channel for the Updates API; missing or invalid values default to stable. */
+  getUpdateChannel(): 'stable' | 'beta' {
+    return appConfigDb.get('update_channel') === 'beta' ? 'beta' : 'stable';
+  },
+
+  /** Persists a validated update channel for the Updates API. */
+  setUpdateChannel(channel: 'stable' | 'beta'): void {
+    appConfigDb.set('update_channel', channel);
+  },
+
   /** Inserts or updates a config key (upsert). */
   set(key: string, value: string): void {
     const db = getConnection();

@@ -39,7 +39,9 @@
     "clearSelection": "Quitar selección",
     "deleteSelected_one": "Eliminar {{count}} sesión",
     "deleteSelected_other": "Eliminar {{count}} sesiones",
-    "deleteSelected_many": "Eliminar {{count}} sesiones"
+    "deleteSelected_many": "Eliminar {{count}} sesiones",
+    "expandChildren": "Mostrar las sesiones que inició",
+    "collapseChildren": "Ocultar las sesiones que inició"
   },
   "tooltips": {
     "hideSidebar": "Ocultar barra lateral",

@@ -38,7 +38,9 @@
     "selectAllLoaded": "Pilih semua yang dimuat",
     "clearSelection": "Hapus pilihan",
     "deleteSelected_one": "Hapus {{count}} sesi",
-    "deleteSelected_other": "Hapus {{count}} sesi"
+    "deleteSelected_other": "Hapus {{count}} sesi",
+    "expandChildren": "Tampilkan sesi yang dimulai",
+    "collapseChildren": "Sembunyikan sesi yang dimulai"
   },
   "tooltips": {
     "hideSidebar": "Sembunyikan sidebar",

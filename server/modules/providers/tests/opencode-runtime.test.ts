@@ -444,7 +444,7 @@ test('a resumed session switches to the chat\'s model only when it differs', asy
   assert.equal(findRequest(same.requests, 'POST', /\/model$/), undefined);
 });
 
-test('the turn reports OpenCode\'s session token totals', async () => {
+test('the turn reports the latest step tokens instead of session usage totals', async () => {
   const turn = await runTurn({ scenario: { steps: [{ type: 'usage', input: 1200, output: 34 }, { type: 'text', text: 'ok' }] } });
 
   const budget = turn.frames.find((frame) => frame.kind === 'status' && frame.text === 'token_budget');
