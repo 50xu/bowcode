@@ -78,6 +78,24 @@ export function ActionMenu({
     onOpenChange?.(open);
   }, [onOpenChange]);
 
+  /** Fixed position under (or above) the trigger; null once the trigger is gone. */
+  const computePortalPosition = React.useCallback((): { top: number; left: number } | null => {
+    const trigger = triggerRef.current;
+    if (!trigger || !trigger.isConnected) {
+      return null;
+    }
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = 260;
+    const estimatedHeight = (header ? 52 : 0)
+      + items.reduce((height, item) => height + (item.description ? 58 : 40) + (item.showDividerBefore ? 9 : 0), 12);
+    return {
+      top: rect.bottom + 6 + estimatedHeight <= window.innerHeight - 8
+        ? rect.bottom + 6
+        : Math.max(8, rect.top - estimatedHeight - 6),
+      left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
+    };
+  }, [header, items]);
+
   React.useEffect(() => {
     if (!isOpen) {
       return;
@@ -114,14 +132,32 @@ export function ActionMenu({
       return;
     }
 
-    const closeOnViewportChange = () => setMenuOpen(false);
-    window.addEventListener('resize', closeOnViewportChange);
-    window.addEventListener('scroll', closeOnViewportChange, true);
-    return () => {
-      window.removeEventListener('resize', closeOnViewportChange);
-      window.removeEventListener('scroll', closeOnViewportChange, true);
+    // Follow the trigger instead of closing on every scroll: a streaming chat
+    // transcript scrolls itself constantly, and mobile browsers fire resize
+    // as their toolbars move, which closed the menu the moment it opened.
+    // Only a scroll that moves the trigger matters, and it repositions.
+    const followTrigger = (event: Event) => {
+      const target = event.target;
+      const movesTrigger = event.type === 'resize'
+        || target === document
+        || (target instanceof Node && Boolean(triggerRef.current && target.contains(triggerRef.current)));
+      if (!movesTrigger) {
+        return;
+      }
+      const position = computePortalPosition();
+      if (position) {
+        setPortalPosition(position);
+      } else {
+        setMenuOpen(false);
+      }
     };
-  }, [isOpen, portal, setMenuOpen]);
+    window.addEventListener('resize', followTrigger);
+    window.addEventListener('scroll', followTrigger, true);
+    return () => {
+      window.removeEventListener('resize', followTrigger);
+      window.removeEventListener('scroll', followTrigger, true);
+    };
+  }, [isOpen, portal, setMenuOpen, computePortalPosition]);
 
   // Move focus into the menu on open and back to the trigger on a keyboard or
   // selection close, so keyboard and screen-reader navigation match the menu role.
@@ -163,17 +199,8 @@ export function ActionMenu({
       return;
     }
 
-    if (portal && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const menuWidth = 260;
-      const estimatedHeight = (header ? 52 : 0)
-        + items.reduce((height, item) => height + (item.description ? 58 : 40) + (item.showDividerBefore ? 9 : 0), 12);
-      setPortalPosition({
-        top: rect.bottom + 6 + estimatedHeight <= window.innerHeight - 8
-          ? rect.bottom + 6
-          : Math.max(8, rect.top - estimatedHeight - 6),
-        left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
-      });
+    if (portal) {
+      setPortalPosition(computePortalPosition());
     }
     setMenuOpen(true);
   };

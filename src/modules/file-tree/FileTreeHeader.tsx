@@ -1,16 +1,13 @@
 import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { ChevronDown, Eye, FileText, FolderPlus, List, Loader2, RefreshCw, Search, TableProperties, Upload, X } from 'lucide-react';
+import { ChevronsDownUp, ChevronsUpDown, FileText, FolderPlus, Loader2, RefreshCw, Search, Upload, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { MAX_FILE_UPLOAD_SIZE_LABEL } from '@/shared/constants';
-import type { FileTreeViewMode } from '@/shared/types';
 
 type FileTreeHeaderProps = {
-  viewMode: FileTreeViewMode;
-  onViewModeChange: (mode: FileTreeViewMode) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   // Toolbar actions
@@ -19,6 +16,9 @@ type FileTreeHeaderProps = {
   onUploadFiles?: (files: FileList) => void;
   onRefresh?: () => void;
   onCollapseAll?: () => void;
+  onExpandAll?: () => void;
+  /** Some folder is open: the toggle collapses everything, otherwise it expands what is loaded. */
+  hasExpandedFolders?: boolean;
   // Loading state
   loading?: boolean;
   operationLoading?: boolean;
@@ -26,10 +26,8 @@ type FileTreeHeaderProps = {
   uploadProgress?: number | null;
 };
 
-/** Rendered by FileTree to host the search box, view-mode switch and the create/upload/refresh/collapse actions. */
+/** Rendered by FileTree to host the search box and the create/upload/refresh/collapse actions. */
 export default function FileTreeHeader({
-  viewMode,
-  onViewModeChange,
   searchQuery,
   onSearchQueryChange,
   onNewFile,
@@ -37,6 +35,8 @@ export default function FileTreeHeader({
   onUploadFiles,
   onRefresh,
   onCollapseAll,
+  onExpandAll,
+  hasExpandedFolders = false,
   loading,
   operationLoading,
   isUploading,
@@ -143,51 +143,20 @@ export default function FileTreeHeader({
               <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
             </Button>
           )}
-          {onCollapseAll && (
+          {onCollapseAll && onExpandAll && (
             <Button
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0"
-              onClick={onCollapseAll}
-              title={t('fileTree.collapseAll', 'Collapse All')}
-              aria-label={t('fileTree.collapseAll', 'Collapse All')}
+              onClick={hasExpandedFolders ? onCollapseAll : onExpandAll}
+              title={hasExpandedFolders ? t('fileTree.collapseAll', 'Collapse all') : t('fileTree.expandAll', 'Expand all')}
+              aria-label={hasExpandedFolders ? t('fileTree.collapseAll', 'Collapse all') : t('fileTree.expandAll', 'Expand all')}
             >
-              <ChevronDown className="h-3.5 w-3.5" />
+              {hasExpandedFolders
+                ? <ChevronsDownUp className="h-3.5 w-3.5" />
+                : <ChevronsUpDown className="h-3.5 w-3.5" />}
             </Button>
           )}
-          {/* Divider */}
-          <div className="mx-0.5 h-4 w-px bg-border" />
-          {/* View mode buttons */}
-          <Button
-            variant={viewMode === 'simple' ? 'default' : 'ghost'}
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => onViewModeChange('simple')}
-            title={t('fileTree.simpleView')}
-            aria-label={t('fileTree.simpleView')}
-          >
-            <List className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant={viewMode === 'compact' ? 'default' : 'ghost'}
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => onViewModeChange('compact')}
-            title={t('fileTree.compactView')}
-            aria-label={t('fileTree.compactView')}
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant={viewMode === 'detailed' ? 'default' : 'ghost'}
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => onViewModeChange('detailed')}
-            title={t('fileTree.detailedView')}
-            aria-label={t('fileTree.detailedView')}
-          >
-            <TableProperties className="h-3.5 w-3.5" />
-          </Button>
         </div>
       </div>
 

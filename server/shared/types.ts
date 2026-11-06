@@ -1399,6 +1399,8 @@ export type FileTreeNode = {
   permissionsRwx: string;
   isSymlink?: boolean;
   children?: FileTreeNode[];
+  hasChildren?: boolean;
+  truncated?: number;
 };
 
 /**
@@ -1540,10 +1542,9 @@ export type FileTreeServices = {
     path: string;
     message: string;
   }>;
-  listProjectFiles(
-    projectId: string,
-    options?: { respectGitignore: boolean },
-  ): Promise<FileTreeNode[]>;
+  listProjectFiles(projectId: string, options?: { path?: string; depth?: number }): Promise<FileTreeNode[] | { children: FileTreeNode[]; truncated: number }>;
+  searchProjectFiles(projectId: string, query: string, limit: number, type: 'file' | 'directory' | 'any'): Promise<{ results: Array<{ name: string; path: string; relativePath: string; type: 'file' | 'directory' }>; truncated: boolean }>;
+  statProjectFile(projectId: string, filePath: string): Promise<{ exists: boolean; type: 'file' | 'directory' | null; path: string }>;
   createEntry(input: {
     projectId: string;
     parentPath: string;

@@ -5,13 +5,6 @@ import { api } from '@/shared/api';
 import { escapeRegExp } from '@/modules/chat/utils/chatFormatting';
 import type { Project } from '@/shared/types';
 
-type ProjectFileNode = {
-  name: string;
-  type: 'file' | 'directory';
-  path?: string;
-  children?: ProjectFileNode[];
-};
-
 export type MentionableFile = {
   name: string;
   path: string;
@@ -25,38 +18,8 @@ type UseFileMentionsOptions = {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
 };
 
-const flattenFileTree = (files: ProjectFileNode[], basePath = ''): MentionableFile[] => {
-  let flattened: MentionableFile[] = [];
-
-  files.forEach((file) => {
-    const fullPath = basePath ? `${basePath}/${file.name}` : file.name;
-    if (file.type === 'directory' && file.children) {
-      flattened = flattened.concat(flattenFileTree(file.children, fullPath));
-      return;
-    }
-
-    if (file.type === 'file') {
-      flattened.push({
-        name: file.name,
-        path: fullPath,
-        relativePath: file.path,
-      });
-    }
-  });
-
-  return flattened;
-};
-
-// True when both flattened lists hold the same files in the same order.
-const haveSameFiles = (left: MentionableFile[], right: MentionableFile[]) =>
-  left.length === right.length &&
-  left.every(
-    (file, index) => file.path === right[index].path && file.relativePath === right[index].relativePath,
-  );
-
 export function useFileMentions({ selectedProject, input, setInput, textareaRef }: UseFileMentionsOptions) {
   const projectId = selectedProject?.projectId;
-  const [fileList, setFileList] = useState<MentionableFile[]>([]);
   const [fileMentions, setFileMentions] = useState<string[]>([]);
   const [filteredFiles, setFilteredFiles] = useState<MentionableFile[]>([]);
   const [showFileDropdown, setShowFileDropdown] = useState(false);
@@ -67,105 +30,28 @@ export function useFileMentions({ selectedProject, input, setInput, textareaRef 
   // older response can never overwrite a newer list.
   const fileListRequestRef = useRef<AbortController | null>(null);
 
-  const loadProjectFiles = useCallback(async (targetProjectId: string) => {
-    fileListRequestRef.current?.abort();
-    const abortController = new AbortController();
-    fileListRequestRef.current = abortController;
-
-    try {
-      // File list is keyed by DB projectId now; the backend resolves it to
-      // the project's path before reading.
-      const response = await api.getFiles(targetProjectId, {
-        signal: abortController.signal,
-      });
-      if (!response.ok) {
-        return;
-      }
-
-      const files = (await response.json()) as ProjectFileNode[];
-      if (abortController.signal.aborted) {
-        return;
-      }
-      const nextFileList = flattenFileTree(files);
-      // Keeping the same array when nothing changed stops the filter effect
-      // below from re-running and resetting the highlighted row.
-      setFileList((previousFileList) =>
-        haveSameFiles(previousFileList, nextFileList) ? previousFileList : nextFileList,
-      );
-    } catch (error) {
-      // Ignore aborts from newer requests and rapid project switches; we only care about the latest request.
-      if ((error as { name?: string })?.name === 'AbortError') {
-        return;
-      }
-      console.error('Error fetching files:', error);
-    }
-  }, []);
-
   useEffect(() => {
-    const fetchProjectFiles = async () => {
-      setFileList([]);
-      setFilteredFiles([]);
-      if (!projectId) {
-        return;
-      }
-
-      await loadProjectFiles(projectId);
-    };
-
-    fetchProjectFiles();
-    return () => {
-      fileListRequestRef.current?.abort();
-    };
-  }, [projectId, loadProjectFiles]);
-
-  // Files keep appearing after the list above was loaded (uploads, agent edits,
-  // the terminal, git checkouts) and nothing tells the composer about them, so
-  // the list is refetched each time the `@` dropdown opens. The dropdown stays
-  // open while the query is typed, so this is one request per `@`, not one per
-  // keystroke, and the previous list stays visible until the response lands.
-  useEffect(() => {
-    const refreshProjectFiles = async () => {
-      if (!showFileDropdown || !projectId) {
-        return;
-      }
-
-      await loadProjectFiles(projectId);
-    };
-
-    refreshProjectFiles();
-  }, [showFileDropdown, projectId, loadProjectFiles]);
-
-  useEffect(() => {
-    const textBeforeCursor = input.slice(0, cursorPosition);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-
-    if (lastAtIndex === -1) {
-      setShowFileDropdown(false);
-      setAtSymbolPosition(-1);
-      return;
-    }
-
-    const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
-    if (textAfterAt.includes(' ')) {
-      setShowFileDropdown(false);
-      setAtSymbolPosition(-1);
-      return;
-    }
-
-    setAtSymbolPosition(lastAtIndex);
-    setShowFileDropdown(true);
+    const before = input.slice(0, cursorPosition);
+    const at = before.lastIndexOf('@');
+    const query = at >= 0 ? before.slice(at + 1) : '';
+    const active = at >= 0 && !query.includes(' ');
+    setShowFileDropdown(active);
+    setAtSymbolPosition(active ? at : -1);
     setSelectedFileIndex(-1);
-
-    const matchingFiles = fileList
-      .filter(
-        (file) =>
-          file.name.toLowerCase().includes(textAfterAt.toLowerCase()) ||
-          file.path.toLowerCase().includes(textAfterAt.toLowerCase()),
-      )
-      .slice(0, 10);
-
-    setFilteredFiles(matchingFiles);
-  }, [input, cursorPosition, fileList]);
+    if (!active || !projectId) { setFilteredFiles([]); return; }
+    const controller = new AbortController();
+    fileListRequestRef.current?.abort();
+    fileListRequestRef.current = controller;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await api.searchFiles(projectId, query, { type: 'file', limit: 10, signal: controller.signal });
+        if (!response.ok) return;
+        const data = await response.json() as { results: Array<{ name: string; relativePath: string; path: string }> };
+        if (!controller.signal.aborted) setFilteredFiles(data.results.map((file) => ({ name: file.name, path: file.relativePath, relativePath: file.path })));
+      } catch { /* Stale searches are cancelled as the caret moves. */ }
+    }, 200);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [projectId, input, cursorPosition]);
 
   const activeFileMentions = useMemo(() => {
     if (!input || fileMentions.length === 0) {

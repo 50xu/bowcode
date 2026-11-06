@@ -958,9 +958,6 @@ export type FileTreeUploadProgressState = {
   error?: string;
 };
 
-/** Which density the file tree renders its rows at (simple, compact or detailed), chosen in the file tree header and persisted in local storage. */
-export type FileTreeViewMode = 'simple' | 'compact' | 'detailed';
-
 /** One request to reveal a directory in the file tree, coming from a `path/` reference in a chat message. The workspace builds a new object per click so the tree re-reveals a folder the user collapsed again in the meantime. */
 export type DirectoryRevealRequest = {
   // As written in the message: relative to the project root, or absolute.
@@ -976,6 +973,8 @@ export type FileTreeNode = {
   modified?: string;
   permissionsRwx?: string;
   children?: FileTreeNode[];
+  hasChildren?: boolean;
+  truncated?: number;
   [key: string]: unknown;
 };
 
