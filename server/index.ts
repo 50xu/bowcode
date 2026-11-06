@@ -250,7 +250,9 @@ app.get('/{*splat}', (req, res) => {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
-        res.sendFile(indexPath);
+        // dotfiles: 'allow' — installs often live under hidden dirs (~/.local, ~/.nvm),
+        // and send() otherwise rejects any dot segment in the absolute path with a 404.
+        res.sendFile(indexPath, { dotfiles: 'allow' });
     } else {
         // In development, redirect to Vite dev server only if dist doesn't exist
         const redirectHost = getConnectableHost(req.hostname);
