@@ -1,14 +1,7 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 import { api } from '@/shared/api';
 import type { Project } from '@/shared/types';
-
-type FileNode = {
-  type: 'file' | 'directory';
-  name: string;
-  path: string;
-  children?: FileNode[];
-};
 
 type FlatFile = {
   name: string;
@@ -25,16 +18,6 @@ const normalize = (value: string): string => value.replace(/\\/g, '/');
 // `C:/…`; counting it as absolute lets a Windows server resolve it as-is and a
 // POSIX one answer an honest 404 instead of opening some other file.
 const isAbsoluteRef = (value: string): boolean => /^(\/|[A-Za-z]:\/)/.test(value);
-
-const flatten = (nodes: FileNode[], out: FlatFile[]): void => {
-  for (const node of nodes) {
-    if (node.type === 'file') {
-      out.push({ name: node.name, path: node.path });
-    } else if (node.children && node.children.length > 0) {
-      flatten(node.children, out);
-    }
-  }
-};
 
 // References inside chat messages are often bare basenames (`foo.ts`) or partial
 // paths (`utils/foo.ts`) rather than full paths, so match by path suffix and
@@ -67,59 +50,33 @@ export function useFileOpenResolver(
   onFileOpen: OnFileOpen,
 ): OnFileOpen {
   const projectId = selectedProject?.projectId;
-  const cacheRef = useRef<{ projectId?: string; files: Promise<FlatFile[]> | null }>({
-    projectId: undefined,
-    files: null,
-  });
-
-  const loadFiles = useCallback((): Promise<FlatFile[]> => {
-    if (!projectId) {
-      return Promise.resolve([]);
-    }
-    if (cacheRef.current.projectId === projectId && cacheRef.current.files) {
-      return cacheRef.current.files;
-    }
-
-    const filesPromise = (async () => {
-      try {
-        const response = await api.getFiles(projectId);
-        if (!response.ok) {
-          return [];
-        }
-        const data = await response.json();
-        const tree: FileNode[] = Array.isArray(data) ? data : [];
-        const flat: FlatFile[] = [];
-        flatten(tree, flat);
-        return flat;
-      } catch {
-        return [];
-      }
-    })();
-
-    cacheRef.current = { projectId, files: filesPromise };
-    return filesPromise;
-  }, [projectId]);
-
   return useCallback(
     (filePath: string, diffInfo?: any, line?: number | null) => {
       // Normalized once and used for every outcome: a reference picked up from
       // link text can carry surrounding whitespace, which the API would take as
       // part of the filename and answer with a 404.
       const ref = normalize(filePath).trim();
-      // An absolute path already names one exact file: matching it against the
-      // tree can only send it somewhere else — `/home/user/.config/NOTES.md`
-      // used to fall through to the filename match and silently open the
-      // project's own `NOTES.md`. A path that exists is unaffected; one that no
-      // longer does now reports that instead of opening a same-named file.
-      if (isAbsoluteRef(ref)) {
+      if (!projectId) { onFileOpen(ref, diffInfo, line); return; }
+      void (async () => {
+        try {
+          const statResponse = await api.statFile(projectId, ref);
+          if (statResponse.ok) {
+            const stat = await statResponse.json() as { exists: boolean; type: string; path: string };
+            if (stat.exists && stat.type === 'file') { onFileOpen(stat.path, diffInfo, line); return; }
+          }
+          if (!isAbsoluteRef(ref)) {
+            const basename = ref.split('/').pop() ?? ref;
+            const searchResponse = await api.searchFiles(projectId, basename, { type: 'file', limit: 200 });
+            if (searchResponse.ok) {
+              const data = await searchResponse.json() as { results: FlatFile[] };
+              onFileOpen(findBestMatch(data.results, ref) ?? ref, diffInfo, line);
+              return;
+            }
+          }
+        } catch { /* Keep the original path on API failure. */ }
         onFileOpen(ref, diffInfo, line);
-        return;
-      }
-      void loadFiles().then((files) => {
-        const match = findBestMatch(files, ref);
-        onFileOpen(match ?? ref, diffInfo, line);
-      });
+      })();
     },
-    [loadFiles, onFileOpen],
+    [projectId, onFileOpen],
   );
 }

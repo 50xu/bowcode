@@ -25,7 +25,7 @@ const tree = [
 
 vi.mock('@/shared/api', () => ({
   api: {
-    getFiles: async () => ({ ok: true, json: async () => tree }),
+    getFiles: async () => ({ ok: true, json: async () => ({ children: tree, truncated: 0 }) }),
   },
 }));
 

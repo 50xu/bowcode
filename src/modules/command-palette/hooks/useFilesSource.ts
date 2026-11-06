@@ -1,41 +1,25 @@
+import { useEffect, useState } from 'react';
+
 import { api } from '@/shared/api';
-import { useApiSource } from '@/modules/command-palette/hooks/useApiSource';
 
-export type FileResult = {
-  path: string;
-  name: string;
-};
+export type FileResult = { path: string; name: string };
 
-type FileNode = {
-  type: 'file' | 'directory';
-  name: string;
-  path: string;
-  children?: FileNode[];
-};
-
-const MAX_FILES = 500;
-
-function flatten(nodes: FileNode[], out: FileResult[]): void {
-  for (const node of nodes) {
-    if (out.length >= MAX_FILES) return;
-    if (node.type === 'file') {
-      out.push({ path: node.path, name: node.name });
-    } else if (node.children && node.children.length > 0) {
-      flatten(node.children, out);
-    }
-  }
-}
-
-export function useFilesSource(projectId: string | undefined, enabled: boolean) {
-  return useApiSource<FileResult, unknown>({
-    enabled: enabled && !!projectId,
-    deps: [projectId],
-    fetcher: (signal) => api.getFiles(projectId!, { signal }),
-    parse: (data) => {
-      const tree: FileNode[] = Array.isArray(data) ? (data as FileNode[]) : [];
-      const flat: FileResult[] = [];
-      flatten(tree, flat);
-      return flat;
-    },
-  });
+/** Provides server-side file matches for the command palette. */
+export function useFilesSource(projectId: string | undefined, enabled: boolean, query = '') {
+  // The server limits results so the palette never retains the whole tree.
+  const [items, setItems] = useState<FileResult[]>([]);
+  useEffect(() => {
+    if (!enabled || !projectId) { setItems([]); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await api.searchFiles(projectId, query, { type: 'file', limit: 200, signal: controller.signal });
+        if (!response.ok) return;
+        const data = await response.json() as { results: FileResult[] };
+        if (!controller.signal.aborted) setItems(data.results.map(({ name, path }) => ({ name, path })));
+      } catch { /* Ignore superseded queries. */ }
+    }, 200);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [projectId, enabled, query]);
+  return items;
 }

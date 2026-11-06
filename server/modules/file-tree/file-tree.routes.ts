@@ -161,9 +161,34 @@ export function createFileTreeRouter(
     response.json(await services.saveTextFile(readProjectId(request), filePath, body.content));
   }, logger));
 
+  router.get('/projects/:projectId/files/search', createRouteHandler(async (request, response) => {
+    const q = readOptionalString(request.query.q) ?? '';
+    const rawLimit = request.query.limit;
+    const limit = rawLimit === undefined ? 50 : Number(rawLimit);
+    const type = request.query.type ?? 'any';
+    if (!Number.isInteger(limit) || limit < 1 || limit > 200 || !['file', 'directory', 'any'].includes(String(type))) {
+      throw new AppError('Invalid search options', { statusCode: 400, code: 'INVALID_FILE_TREE_REQUEST' });
+    }
+    response.json(await services.searchProjectFiles(readProjectId(request), q, limit, type as 'file' | 'directory' | 'any'));
+  }, logger));
+
+  router.get('/projects/:projectId/files/stat', createRouteHandler(async (request, response) => {
+    response.json(await services.statProjectFile(readProjectId(request), readRequiredString(request.query.path, 'path')));
+  }, logger));
+
   router.get('/projects/:projectId/files', createRouteHandler(async (request, response) => {
+    const rawDepth = request.query.depth;
+    const depth = rawDepth === undefined ? undefined : Number(rawDepth);
+    if (depth !== undefined && (!Number.isInteger(depth) || depth < 1 || depth > 3)) {
+      throw new AppError('Invalid depth', { statusCode: 400, code: 'INVALID_FILE_TREE_REQUEST' });
+    }
+    const requestedPath = request.query.path;
+    if (requestedPath !== undefined && typeof requestedPath !== 'string') {
+      throw new AppError('Invalid path', { statusCode: 400, code: 'INVALID_FILE_TREE_REQUEST' });
+    }
     response.json(await services.listProjectFiles(readProjectId(request), {
-      respectGitignore: request.query.respectGitignore === 'true',
+      ...(requestedPath !== undefined ? { path: requestedPath } : {}),
+      ...(depth !== undefined ? { depth } : {}),
     }));
   }, logger));
 

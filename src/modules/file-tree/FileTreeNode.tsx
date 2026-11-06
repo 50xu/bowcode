@@ -3,19 +3,18 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, Folder, FolderOpen, Upload } from 'lucide-react';
 
 import { cn } from '@/shared/utils';
-import type { FileTreeNode as FileTreeNodeType, FileTreeViewMode } from '@/shared/types';
+import type { FileTreeNode as FileTreeNodeType } from '@/shared/types';
 import { Input } from '@/shared/ui';
 import FileContextMenu from '@/modules/file-tree/FileContextMenu';
 
 type FileTreeNodeProps = {
   item: FileTreeNodeType;
   level: number;
-  viewMode: FileTreeViewMode;
   expandedDirs: Set<string>;
+  loadingDirs: Set<string>;
   onItemClick: (item: FileTreeNodeType) => void;
   renderFileIcon: (filename: string) => ReactNode;
   formatFileSize: (bytes?: number) => string;
-  formatRelativeTime: (date?: string) => string;
   onRename?: (item: FileTreeNodeType) => void;
   onDelete?: (item: FileTreeNodeType) => void;
   onNewFile?: (path: string) => void;
@@ -76,12 +75,11 @@ function TreeItemIcon({ item, isOpen, renderFileIcon }: TreeItemIconProps) {
 export default function FileTreeNode({
   item,
   level,
-  viewMode,
   expandedDirs,
+  loadingDirs,
   onItemClick,
   renderFileIcon,
   formatFileSize,
-  formatRelativeTime,
   onRename,
   onDelete,
   onNewFile,
@@ -103,7 +101,7 @@ export default function FileTreeNode({
   const { t } = useTranslation();
   const isDirectory = item.type === 'directory';
   const isOpen = isDirectory && expandedDirs.has(item.path);
-  const hasChildren = Boolean(isDirectory && item.children && item.children.length > 0);
+  const hasChildren = Boolean(isDirectory && (item.hasChildren || item.children?.length || item.truncated));
   const isRenaming = renamingItem?.path === item.path;
   const dragTargetPath = isDirectory ? item.path : getParentDirectoryPath(item.path);
   const isDropTarget = isDirectory && dropTarget === item.path;
@@ -113,13 +111,8 @@ export default function FileTreeNode({
     isDirectory ? 'font-medium text-foreground' : 'text-foreground/90',
   );
 
-  // View mode only changes the row layout; selection, expansion, and recursion stay shared.
   const rowClassName = cn(
-    viewMode === 'detailed'
-      ? 'group grid grid-cols-12 gap-2 py-[3px] pr-2 hover:bg-accent/60 cursor-pointer items-center rounded-sm transition-colors duration-100'
-      : viewMode === 'compact'
-      ? 'group flex items-center justify-between py-[3px] pr-2 hover:bg-accent/60 cursor-pointer rounded-sm transition-colors duration-100'
-      : 'group flex items-center gap-1.5 py-[3px] pr-2 cursor-pointer rounded-sm hover:bg-accent/60 transition-colors duration-100',
+    'group flex items-center justify-between py-[3px] pr-2 hover:bg-accent/60 cursor-pointer rounded-sm transition-colors duration-100',
     isDirectory && isOpen && 'border-l-2 border-primary/30',
     (isDirectory && !isOpen) || !isDirectory ? 'border-l-2 border-transparent' : '',
     'relative',
@@ -183,39 +176,18 @@ export default function FileTreeNode({
       onClick={() => onItemClick(item)}
       onDragOver={onItemDragOver ? (event) => onItemDragOver(event, dragTargetPath) : undefined}
     >
-      {viewMode === 'detailed' ? (
-        <>
-          <div className="col-span-5 flex min-w-0 items-center gap-1.5">
-            <TreeItemIcon item={item} isOpen={isOpen} renderFileIcon={renderFileIcon} />
-            <span className={nameClassName}>{item.name}</span>
-          </div>
-          <div className="col-span-2 text-sm tabular-nums text-muted-foreground">
-            {item.type === 'file' ? formatFileSize(item.size) : ''}
-          </div>
-          <div className="col-span-3 text-sm text-muted-foreground">{formatRelativeTime(item.modified)}</div>
-          <div className="col-span-2 font-mono text-sm text-muted-foreground">{item.permissionsRwx || ''}</div>
-        </>
-      ) : viewMode === 'compact' ? (
-        <>
-          <div className="flex min-w-0 items-center gap-1.5">
-            <TreeItemIcon item={item} isOpen={isOpen} renderFileIcon={renderFileIcon} />
-            <span className={nameClassName}>{item.name}</span>
-          </div>
-          <div className="ml-2 flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
-            {item.type === 'file' && (
-              <>
-                <span className="tabular-nums">{formatFileSize(item.size)}</span>
-                <span className="font-mono">{item.permissionsRwx}</span>
-              </>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <TreeItemIcon item={item} isOpen={isOpen} renderFileIcon={renderFileIcon} />
-          <span className={nameClassName}>{item.name}</span>
-        </>
-      )}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <TreeItemIcon item={item} isOpen={isOpen} renderFileIcon={renderFileIcon} />
+        <span className={nameClassName}>{item.name}</span>
+      </div>
+      <div className="ml-2 flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
+        {item.type === 'file' && (
+          <>
+            <span className="tabular-nums">{formatFileSize(item.size)}</span>
+            <span className="font-mono">{item.permissionsRwx}</span>
+          </>
+        )}
+      </div>
       {uploadHoverButton}
     </div>
   );
@@ -250,17 +222,17 @@ export default function FileTreeNode({
             style={{ left: `${level * 16 + 14}px` }}
             aria-hidden="true"
           />
+          {loadingDirs.has(item.path) && <div className="py-1 text-xs text-muted-foreground" style={{ paddingLeft: `${(level + 1) * 16}px` }}>{t('fileTree.loading', 'Loading...')}</div>}
           {item.children?.map((child) => (
             <FileTreeNode
               key={child.path}
               item={child}
               level={level + 1}
-              viewMode={viewMode}
               expandedDirs={expandedDirs}
+              loadingDirs={loadingDirs}
               onItemClick={onItemClick}
               renderFileIcon={renderFileIcon}
               formatFileSize={formatFileSize}
-              formatRelativeTime={formatRelativeTime}
               onRename={onRename}
               onDelete={onDelete}
               onNewFile={onNewFile}
@@ -280,6 +252,7 @@ export default function FileTreeNode({
               operationLoading={operationLoading}
             />
           ))}
+          {!!item.truncated && <div className="py-1 text-xs text-muted-foreground" style={{ paddingLeft: `${(level + 1) * 16}px` }}>{t('fileTree.moreItems', '... {{count}} more items', { count: item.truncated })}</div>}
         </div>
       )}
     </div>

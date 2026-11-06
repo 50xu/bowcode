@@ -103,7 +103,6 @@ export const SETTINGS_SYNC_LOCAL_STORAGE_KEYS = [
   'permissionMode-last-codex',
   'permissionMode-last-opencode',
   'sidebar-width',
-  'file-tree-view-mode',
   'model-groups-collapsed',
   'quickSettingsPanel',
   'quickSettingsHandlePosition',

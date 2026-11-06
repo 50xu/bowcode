@@ -15,10 +15,11 @@ import type { Project } from '@/shared/types';
  * from the right one.
  */
 
-const getFiles = vi.fn();
+const statFile = vi.fn();
+const searchFiles = vi.fn();
 
 vi.mock('@/shared/api', () => ({
-  api: { getFiles: (...args: unknown[]) => getFiles(...args) },
+  api: { statFile: (...args: unknown[]) => statFile(...args), searchFiles: (...args: unknown[]) => searchFiles(...args) },
 }));
 
 const { useFileOpenResolver } = await import('@/modules/project-workspace/hooks/useFileOpenResolver');
@@ -37,8 +38,10 @@ const tree = [
 ];
 
 const setup = () => {
-  getFiles.mockReset();
-  getFiles.mockResolvedValue({ ok: true, json: async () => tree });
+  statFile.mockReset();
+  searchFiles.mockReset();
+  statFile.mockImplementation(async (_project: string, ref: string) => ({ ok: true, json: async () => ({ exists: ref === `${ROOT}/src/foo.ts`, type: 'file', path: ref }) }));
+  searchFiles.mockResolvedValue({ ok: true, json: async () => ({ results: [{ name: 'foo.ts', path: `${ROOT}/src/foo.ts` }] }) });
   const onFileOpen = vi.fn();
   const { result } = renderHook(() => useFileOpenResolver(project, onFileOpen));
   return { resolve: result.current, onFileOpen };
@@ -50,7 +53,7 @@ test('an absolute path outside the project is passed through untouched', async (
   await waitFor(() => assert.equal(onFileOpen.mock.calls.length, 1));
   assert.equal(onFileOpen.mock.calls[0][0], '/home/odoo/.claude/CLAUDE.md');
   // It does not even need the tree, so no request goes out.
-  assert.equal(getFiles.mock.calls.length, 0);
+  assert.equal(searchFiles.mock.calls.length, 0);
 });
 
 test('an absolute path inside the project resolves to itself, as before', async () => {
@@ -67,6 +70,31 @@ test('partial references still match against the tree', async () => {
   assert.equal(onFileOpen.mock.calls[0][0], `${ROOT}/src/foo.ts`);
 
   const second = setup();
+  second.resolve('src/foo.ts');
+  await waitFor(() => assert.equal(second.onFileOpen.mock.calls.length, 1));
+  assert.equal(second.onFileOpen.mock.calls[0][0], `${ROOT}/src/foo.ts`);
+});
+
+test('stat resolves an exact relative path before basename search', async () => {
+  const { resolve, onFileOpen } = setup();
+  resolve('src/foo.ts');
+  await waitFor(() => assert.equal(onFileOpen.mock.calls.length, 1));
+  assert.deepEqual(statFile.mock.calls[0].slice(0, 2), ['p1', 'src/foo.ts']);
+  assert.equal(searchFiles.mock.calls.length, 1);
+  assert.equal(searchFiles.mock.calls[0][1], 'foo.ts');
+});
+
+test('a successful stat bypasses search, and a partial reference chooses the best suffix', async () => {
+  const { resolve, onFileOpen } = setup();
+  resolve(`${ROOT}/src/foo.ts`);
+  await waitFor(() => assert.equal(onFileOpen.mock.calls.length, 1));
+  assert.equal(searchFiles.mock.calls.length, 0);
+
+  const second = setup();
+  searchFiles.mockResolvedValue({ ok: true, json: async () => ({ results: [
+    { name: 'foo.ts', path: `${ROOT}/other/foo.ts` },
+    { name: 'foo.ts', path: `${ROOT}/src/foo.ts` },
+  ] }) });
   second.resolve('src/foo.ts');
   await waitFor(() => assert.equal(second.onFileOpen.mock.calls.length, 1));
   assert.equal(second.onFileOpen.mock.calls[0][0], `${ROOT}/src/foo.ts`);
