@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { appendFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -12,7 +13,7 @@ import { backfillSessionLineage, indexLineageJsonl, indexOpenCodeLineage, lineag
 const PROMPT = 'Implement the session lineage matcher across provider stores, including the incremental transcript index and timestamp safeguards for child sessions.';
 
 async function fixture(run: (directory: string) => Promise<void>): Promise<void> {
-  const directory = await mkdtemp('/tmp/opencode/session-lineage-');
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'session-lineage-'));
   const original = process.env.DATABASE_PATH;
   closeConnection();
   process.env.DATABASE_PATH = path.join(directory, 'auth.db');
