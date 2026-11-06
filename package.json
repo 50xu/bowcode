@@ -1,6 +1,6 @@
 {
   "name": "bowcode",
-  "version": "1.39.4",
+  "version": "1.39.5",
   "productName": "Bowcode",
   "description": "Self-hosted remote web UI for Claude Code, Codex and OpenCode",
   "type": "module",
