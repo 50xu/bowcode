@@ -61,9 +61,10 @@ Claude Code reads its OAuth login from `~/.claude/.credentials.json` (or
 `CLAUDE_CODE_OAUTH_TOKEN`) and requests Anthropic's OAuth usage endpoint. API
 keys do not expose subscription quota; expired credentials are not refreshed by
 this endpoint. Codex reads account/rate-limit snapshots through its app-server
-client (subscription accounts only). OpenCode reads active credentials from its
-SQLite `credential` table and supports Claude OAuth and OpenAI OAuth usage;
-other integrations report unsupported. HTTP usage fetches time out after 10s.
+client (subscription accounts only). OpenCode always reports `unsupported`: it
+has no quota of its own and only bills whichever account it is signed in with,
+so Settings does not show a quota panel for it. HTTP usage fetches time out
+after 10s.
 Tests inject the clock, credential readers, fetcher, and Codex reader so no
 user credentials or live network are needed.
 

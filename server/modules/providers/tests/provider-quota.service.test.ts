@@ -7,7 +7,7 @@ import express, { type NextFunction, type Request, type Response as ExpressRespo
 
 import providerRouter from '@/modules/providers/provider.routes.js';
 import {
-  createProviderQuotaService, parseClaudeQuota, parseCodexQuota, parseOpenAIQuota, providerQuotaService,
+  createProviderQuotaService, parseClaudeQuota, parseCodexQuota, providerQuotaService,
 } from '@/modules/providers/services/provider-quota.service.js';
 import { AppError } from '@/shared/utils.js';
 
@@ -30,7 +30,7 @@ test('Claude limits array wins over fallback, including empty limits, and preser
 
 test('Claude legacy fallback skips absent buckets and maps 5h/7d model windows', () => {
   const parsed = parseClaudeQuota({ five_hour: { utilization: 12, resets_at: '2026-01-02T00:00:00Z' },
-    seven_day_sonnet: { utilization: 70 }, seven_day_opus: null }, 'opencode:anthropic');
+    seven_day_sonnet: { utilization: 70 }, seven_day_opus: null }, 'claude');
   assert.deepEqual(parsed.windows.map((row) => [row.id, row.kind, row.label, row.windowMinutes]), [
     ['five_hour', 'session', null, 300], ['seven_day_sonnet', 'weekly', 'Sonnet', 10080],
   ]);
@@ -51,14 +51,6 @@ test('Codex maps main and distinct named buckets with second-based reset times',
   ]);
   assert.equal(parseCodexQuota({ account: { account: { type: 'apiKey' } } }).status, 'unsupported');
   assert.equal(parseCodexQuota({ account: { account: null } }).status, 'unauthenticated');
-});
-
-test('OpenAI quota parser rejects missing or malformed windows', () => {
-  assert.equal(parseOpenAIQuota({ rate_limit: {} }, 'opencode:openai').status, 'error');
-  assert.equal(parseOpenAIQuota({ rate_limit: { primary_window: { used_percent: '5' } } }, 'opencode:openai').status, 'error');
-  assert.equal(parseOpenAIQuota({ rate_limit: { primary_window: {
-    used_percent: 5, limit_window_seconds: 18000, reset_at: 1767225600,
-  } } }, 'opencode:openai').windows[0]?.windowMinutes, 300);
 });
 
 test('quota service caches for 60 seconds, deduplicates in-flight reads and refreshes', async () => {
@@ -104,27 +96,11 @@ test('Claude expired OAuth never fetches; API key alone is unsupported', async (
   assert.equal(calls, 0);
 });
 
-test('OpenCode selects OAuth integration and supplies account header without exposing secrets', async () => {
-  let header: Headers | undefined;
-  const service = createProviderQuotaService({ now: () => 1_767_225_600_000,
-    readOpenCodeCredentials: () => [{ integrationId: 'openai', value: JSON.stringify({ type: 'oauth', access: 'secret', accountId: 'account' }) }],
-    fetch: ((_url, init) => { header = new Headers(init?.headers); return Promise.resolve(fakeResponse({ rate_limit: {
-      primary_window: { used_percent: 20, limit_window_seconds: 18000, reset_at: 1767225600 },
-    } })); }) as typeof fetch,
-  });
-  const result = await service.getQuota('opencode');
-  assert.equal(header?.get('ChatGPT-Account-Id'), 'account');
-  assert.equal(result.source, 'opencode:openai');
-  assert.equal(JSON.stringify(result).includes('secret'), false);
-});
-
-test('Claude 401 and OpenCode unsupported integrations return normal statuses', async () => {
+test('Claude 401 and OpenCode return normal statuses', async () => {
   const claude = createProviderQuotaService({ readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'secret' } }),
     fetch: (async () => fakeResponse({}, 401)) as typeof fetch });
   assert.equal((await claude.getQuota('claude')).status, 'unauthenticated');
-  const other = createProviderQuotaService({ readOpenCodeCredentials: () => [{ integrationId: 'google', value: '{}' }] });
-  assert.equal((await other.getQuota('opencode')).message, 'OpenCode provider does not expose quota');
-  assert.equal((await createProviderQuotaService({ readOpenCodeCredentials: () => [] }).getQuota('opencode')).status, 'unsupported');
+  assert.equal((await createProviderQuotaService().getQuota('opencode')).status, 'unsupported');
 });
 
 test('quota route validates provider and refresh query and wraps the service result', async () => {
@@ -153,27 +129,6 @@ test('quota route validates provider and refresh query and wraps the service res
     providerQuotaService.getQuota = original;
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
-});
-
-test('OpenCode claude-code credential falls back to the Claude CLI login when its stored token is stale', async () => {
-  const seen: string[] = [];
-  const service = createProviderQuotaService({
-    now: () => 1_000,
-    readOpenCodeCredentials: () => [{ integrationId: 'claude-code', value: JSON.stringify({ type: 'oauth', access: 'stale', expires: 0 }) }],
-    readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'fresh', expiresAt: 999_999, subscriptionType: 'team' } }),
-    fetch: (async (_url: string, init?: RequestInit) => {
-      const auth = String((init?.headers as Record<string, string>).Authorization);
-      seen.push(auth);
-      return auth === 'Bearer fresh'
-        ? fakeResponse({ limits: [{ kind: 'session', group: 'session', percent: 5 }] })
-        : fakeResponse({}, 401);
-    }) as typeof fetch,
-  });
-  const quota = await service.getQuota('opencode');
-  assert.deepEqual(seen, ['Bearer stale', 'Bearer fresh']);
-  assert.equal(quota.status, 'ok');
-  assert.equal(quota.source, 'opencode:claude-code');
-  assert.equal(quota.planType, 'team');
 });
 
 test('a transient error keeps the last good snapshot', async () => {

@@ -107,7 +107,8 @@ export default function AccountContent({ agent, authStatus, onLogin }: AccountCo
         </div>
       </div>
 
-      {authStatus.authenticated && <ProviderQuotaPanel provider={agent} />}
+      {/* OpenCode has no quota of its own; it bills whichever account it is signed in with. */}
+      {authStatus.authenticated && agent !== 'opencode' && <ProviderQuotaPanel provider={agent} />}
 
       <div className={`${config.bgClass} border ${config.borderClass} rounded-lg p-4`}>
         <div className="space-y-4">
