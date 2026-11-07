@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Batas penggunaan",
+    "refresh": "Segarkan",
+    "currentSession": "Sesi saat ini ({{hours}} jam)",
+    "weekly": "Mingguan",
+    "percentUsed": "{{percent}}% digunakan",
+    "resetsInHours": "Direset dalam {{hours}} jam {{minutes}} menit",
+    "resetsInMinutes": "Direset dalam {{minutes}} menit",
+    "resetsOn": "Direset pada {{date}}",
+    "unknown": "Tidak tersedia",
+    "unsupported": "Batas penggunaan tidak tersedia untuk penyedia ini.",
+    "unauthenticated": "Masuk untuk melihat batas penggunaan.",
+    "error": "Gagal memuat batas penggunaan."
+  },
   "title": "Pengaturan",
   "tabs": {
     "account": "Akun",

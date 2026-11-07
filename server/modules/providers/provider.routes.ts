@@ -6,6 +6,7 @@ import { providerCapabilitiesService } from '@/modules/providers/services/provid
 import { providerCliService } from '@/modules/providers/services/provider-cli.service.js';
 import { providerMcpService } from '@/modules/providers/services/mcp.service.js';
 import { providerModelsService } from '@/modules/providers/services/provider-models.service.js';
+import { providerQuotaService } from '@/modules/providers/services/provider-quota.service.js';
 import { providerTokenUsageService } from '@/modules/providers/services/provider-token-usage.service.js';
 import { providerSkillsService } from '@/modules/providers/services/skills.service.js';
 import { sessionConversationsSearchService } from '@/modules/providers/services/session-conversations-search.service.js';
@@ -647,6 +648,18 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const provider = parseProvider(req.params.provider);
     res.json(createApiSuccessResponse(await providerCliService.updateCli(provider)));
+  }),
+);
+
+router.get(
+  '/:provider/quota',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    const refresh = req.query.refresh;
+    if (refresh !== undefined && refresh !== '1') {
+      throw new AppError('refresh must be "1".', { code: 'INVALID_QUERY_PARAMETER', statusCode: 400 });
+    }
+    res.json(createApiSuccessResponse(await providerQuotaService.getQuota(provider, { refresh: refresh === '1' })));
   }),
 );
 

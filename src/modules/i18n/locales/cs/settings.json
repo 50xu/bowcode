@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Limity využití",
+    "refresh": "Obnovit",
+    "currentSession": "Aktuální relace ({{hours}} h)",
+    "weekly": "Týdenní",
+    "percentUsed": "Využito {{percent}} %",
+    "resetsInHours": "Obnovení za {{hours}} h {{minutes}} min",
+    "resetsInMinutes": "Obnovení za {{minutes}} min",
+    "resetsOn": "Obnovení {{date}}",
+    "unknown": "Nedostupné",
+    "unsupported": "Limity využití nejsou pro tohoto poskytovatele dostupné.",
+    "unauthenticated": "Přihlaste se pro zobrazení limitů.",
+    "error": "Limity využití se nepodařilo načíst."
+  },
   "title": "Nastavení",
   "tabs": {
     "account": "Účet",

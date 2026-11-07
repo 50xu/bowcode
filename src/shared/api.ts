@@ -4,7 +4,7 @@ import {
   storeAuthToken,
 } from '@/shared/authToken';
 import { readVoiceConfig, voiceConfigHeaders } from '@/shared/voiceConfig';
-import type { AppUpdateStatus, ScheduleInput, SessionRetentionSettings } from '@/shared/types';
+import type { AppUpdateStatus, LLMProvider, ProviderQuota, ScheduleInput, SessionRetentionSettings } from '@/shared/types';
 
 // Headers are a plain record rather than the full `HeadersInit` union so the
 // defaults below can be merged with a caller's headers by spreading.
@@ -455,6 +455,8 @@ export const api = {
   // Provider (coding agent) endpoints — models, capabilities, sessions, MCP, skills.
   providers: {
     capabilities: () => get('/api/providers/capabilities'),
+    quota: async (provider: LLMProvider, refresh = false, signal?: AbortSignal) =>
+      (await readApiJson<{ data: ProviderQuota }>(await get(`/api/providers/${encodeURIComponent(provider)}/quota${query({ refresh: refresh ? 1 : undefined })}`, { signal }))).data,
     authStatus: (provider: string) =>
       get(`/api/providers/${encodeURIComponent(provider)}/auth/status`),
     cliStatus: (provider: string) =>

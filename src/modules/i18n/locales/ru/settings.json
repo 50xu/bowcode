@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Лимиты использования",
+    "refresh": "Обновить",
+    "currentSession": "Текущий сеанс ({{hours}} ч)",
+    "weekly": "Недельный",
+    "percentUsed": "Использовано {{percent}} %",
+    "resetsInHours": "Сброс через {{hours}} ч {{minutes}} мин",
+    "resetsInMinutes": "Сброс через {{minutes}} мин",
+    "resetsOn": "Сброс {{date}}",
+    "unknown": "Недоступно",
+    "unsupported": "Лимиты использования для этого провайдера недоступны.",
+    "unauthenticated": "Войдите, чтобы увидеть лимиты использования.",
+    "error": "Не удалось загрузить лимиты использования."
+  },
   "title": "Настройки",
   "tabs": {
     "account": "Аккаунт",

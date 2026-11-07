@@ -68,6 +68,38 @@ export type AuthenticatedWebSocketRequest = IncomingMessage & {
  */
 export type LLMProvider = 'claude' | 'codex' | 'opencode';
 
+// ---------------------------
+//----------------- PROVIDER QUOTA TYPES ------------
+/**
+ * One provider-reported quota window. Null metrics mean the upstream source did
+ * not supply them; `id` remains stable within the source for UI reconciliation.
+ * Used by the Providers quota service and its HTTP clients.
+ */
+export type ProviderQuotaWindow = {
+  id: string;
+  kind: string;
+  label: string | null;
+  usedPercent: number | null;
+  resetsAt: string | null;
+  windowMinutes: number | null;
+};
+
+/**
+ * Provider-neutral quota snapshot returned by the Providers quota endpoint.
+ * A non-ok status is a normal result, never a transport exception; `source`
+ * identifies the credential integration without exposing its secret. `fetchedAt`
+ * is the snapshot timestamp, retained when a cached result is returned.
+ */
+export type ProviderQuota = {
+  provider: LLMProvider;
+  status: 'ok' | 'unsupported' | 'unauthenticated' | 'error';
+  source: string | null;
+  planType: string | null;
+  windows: ProviderQuotaWindow[];
+  fetchedAt: string;
+  message?: string;
+};
+
 /**
  * One selectable model row in a provider model catalog.
  */

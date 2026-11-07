@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Limites d’utilisation",
+    "refresh": "Actualiser",
+    "currentSession": "Session en cours ({{hours}} h)",
+    "weekly": "Hebdomadaire",
+    "percentUsed": "{{percent}} % utilisé",
+    "resetsInHours": "Réinitialisation dans {{hours}} h {{minutes}} min",
+    "resetsInMinutes": "Réinitialisation dans {{minutes}} min",
+    "resetsOn": "Réinitialisation le {{date}}",
+    "unknown": "Indisponible",
+    "unsupported": "Les limites d’utilisation ne sont pas disponibles pour ce fournisseur.",
+    "unauthenticated": "Connectez-vous pour voir les limites d’utilisation.",
+    "error": "Impossible de charger les limites d’utilisation."
+  },
   "title": "Paramètres",
   "tabs": {
     "account": "Compte",

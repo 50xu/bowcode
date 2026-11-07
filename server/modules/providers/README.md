@@ -48,6 +48,25 @@ Current provider ids in this repo are:
 Those ids are mirrored in backend unions and frontend provider constants. If
 adding a new provider, update every place that hardcodes this list.
 
+## Subscription quota
+
+`GET /api/providers/:provider/quota` returns a `ProviderQuota` in the standard
+`{ success: true, data }` envelope. `?refresh=1` bypasses the 60-second
+per-provider snapshot cache; concurrent reads share one in-flight request.
+The service returns `ok`, `unsupported`, `unauthenticated`, or `error` as data,
+with `fetchedAt`, `source`, `planType`, and normalized windows. Credential values
+and tokens are never returned.
+
+Claude Code reads its OAuth login from `~/.claude/.credentials.json` (or
+`CLAUDE_CODE_OAUTH_TOKEN`) and requests Anthropic's OAuth usage endpoint. API
+keys do not expose subscription quota; expired credentials are not refreshed by
+this endpoint. Codex reads account/rate-limit snapshots through its app-server
+client (subscription accounts only). OpenCode reads active credentials from its
+SQLite `credential` table and supports Claude OAuth and OpenAI OAuth usage;
+other integrations report unsupported. HTTP usage fetches time out after 10s.
+Tests inject the clock, credential readers, fetcher, and Codex reader so no
+user credentials or live network are needed.
+
 ## Current File Layout
 
 Each provider lives under its own folder in `server/modules/providers/list/`:

@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Kullanım sınırları",
+    "refresh": "Yenile",
+    "currentSession": "Geçerli oturum ({{hours}} sa)",
+    "weekly": "Haftalık",
+    "percentUsed": "%{{percent}} kullanıldı",
+    "resetsInHours": "{{hours}} sa {{minutes}} dk sonra sıfırlanır",
+    "resetsInMinutes": "{{minutes}} dk sonra sıfırlanır",
+    "resetsOn": "{{date}} tarihinde sıfırlanır",
+    "unknown": "Kullanılamıyor",
+    "unsupported": "Bu sağlayıcı için kullanım sınırları mevcut değil.",
+    "unauthenticated": "Kullanım sınırlarını görmek için oturum açın.",
+    "error": "Kullanım sınırları yüklenemedi."
+  },
   "title": "Ayarlar",
   "tabs": {
     "account": "Hesap",
