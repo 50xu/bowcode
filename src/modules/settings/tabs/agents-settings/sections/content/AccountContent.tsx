@@ -2,6 +2,7 @@ import { AlertTriangle, LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import ProviderCliVersion from '@/modules/settings/tabs/agents-settings/sections/content/ProviderCliVersion';
+import { ProviderQuotaPanel } from '@/modules/settings/tabs/agents-settings/sections/content/ProviderQuotaPanel';
 import { Badge, Button, LLMProviderLogo } from '@/shared/ui';
 import type { AgentProvider, ProviderAuthStatus, ProviderAuthSubscriptionOverride } from '@/shared/types';
 
@@ -105,6 +106,8 @@ export default function AccountContent({ agent, authStatus, onLogin }: AccountCo
           </p>
         </div>
       </div>
+
+      {authStatus.authenticated && <ProviderQuotaPanel provider={agent} />}
 
       <div className={`${config.bgClass} border ${config.borderClass} rounded-lg p-4`}>
         <div className="space-y-4">

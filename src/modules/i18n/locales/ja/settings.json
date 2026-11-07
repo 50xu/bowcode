@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "使用量の上限",
+    "refresh": "更新",
+    "currentSession": "現在のセッション（{{hours}}時間）",
+    "weekly": "週間",
+    "percentUsed": "{{percent}}% 使用済み",
+    "resetsInHours": "{{hours}}時間{{minutes}}分後にリセット",
+    "resetsInMinutes": "{{minutes}}分後にリセット",
+    "resetsOn": "{{date}}にリセット",
+    "unknown": "利用不可",
+    "unsupported": "このプロバイダーの使用量上限は利用できません。",
+    "unauthenticated": "使用量上限を確認するにはログインしてください。",
+    "error": "使用量上限を読み込めませんでした。"
+  },
   "title": "設定",
   "tabs": {
     "account": "アカウント",

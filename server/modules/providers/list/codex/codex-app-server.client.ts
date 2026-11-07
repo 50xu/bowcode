@@ -191,7 +191,19 @@ async function withAppServer<T>(
   }
 }
 
+// Providers quota service uses this app-server client rather than a separate CLI transport.
 export const codexAppServer = {
+  /** Reads account type and rate-limit snapshots from one initialized app-server process. */
+  async readCodexRateLimits(): Promise<{ account: unknown; rateLimits: unknown }> {
+    return withAppServer(async (call) => {
+      const account = await call('account/read', { refreshToken: false });
+      const accountType = (account as { account?: { type?: unknown } } | null)?.account?.type;
+      // API-key and signed-out accounts have no subscription limits to read.
+      if (accountType !== 'chatgpt') return { account, rateLimits: null };
+      const rateLimits = await call('account/rateLimits/read', {});
+      return { account, rateLimits };
+    });
+  },
   /**
    * Copies a thread into a new one that ends at `lastTurnId`, or copies the
    * whole thread when it is omitted.

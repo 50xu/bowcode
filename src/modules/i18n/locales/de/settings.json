@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Nutzungslimits",
+    "refresh": "Aktualisieren",
+    "currentSession": "Aktuelle Sitzung ({{hours}} Std.)",
+    "weekly": "Wöchentlich",
+    "percentUsed": "{{percent}} % genutzt",
+    "resetsInHours": "Zurücksetzung in {{hours}} Std. {{minutes}} Min.",
+    "resetsInMinutes": "Zurücksetzung in {{minutes}} Min.",
+    "resetsOn": "Zurücksetzung am {{date}}",
+    "unknown": "Nicht verfügbar",
+    "unsupported": "Für diesen Anbieter sind keine Nutzungslimits verfügbar.",
+    "unauthenticated": "Anmelden, um Nutzungslimits zu sehen.",
+    "error": "Nutzungslimits konnten nicht geladen werden."
+  },
   "title": "Einstellungen",
   "tabs": {
     "account": "Konto",

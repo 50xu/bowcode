@@ -7,6 +7,27 @@ import type { NavigateFunction } from 'react-router';
 /** Identifies which coding-agent CLI backs a session, project selection or model list. */
 export type LLMProvider = 'claude' | 'codex' | 'opencode';
 
+/** One provider usage window returned by the quota API; null fields mean the provider did not report them. */
+export type ProviderQuotaWindow = {
+  id: string;
+  kind: string;
+  label: string | null;
+  usedPercent: number | null;
+  resetsAt: string | null;
+  windowMinutes: number | null;
+};
+
+/** Provider quota snapshot used by Settings and the chat composer; status describes availability. */
+export type ProviderQuota = {
+  provider: LLMProvider;
+  status: 'ok' | 'unsupported' | 'unauthenticated' | 'error';
+  source: string | null;
+  planType: string | null;
+  windows: ProviderQuotaWindow[];
+  fetchedAt: string;
+  message?: string;
+};
+
 /** One selectable model in a provider's model menu, including its optional reasoning-effort choices. */
 export type ProviderModelOption = {
   value: string;

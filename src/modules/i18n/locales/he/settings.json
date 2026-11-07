@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "מגבלות שימוש",
+    "refresh": "רענון",
+    "currentSession": "הפעלה נוכחית ({{hours}} שעות)",
+    "weekly": "שבועי",
+    "percentUsed": "{{percent}}% נוצלו",
+    "resetsInHours": "איפוס בעוד {{hours}} שעות ו־{{minutes}} דקות",
+    "resetsInMinutes": "איפוס בעוד {{minutes}} דקות",
+    "resetsOn": "איפוס בתאריך {{date}}",
+    "unknown": "לא זמין",
+    "unsupported": "מגבלות שימוש אינן זמינות עבור ספק זה.",
+    "unauthenticated": "יש להתחבר כדי לראות מגבלות שימוש.",
+    "error": "לא ניתן לטעון את מגבלות השימוש."
+  },
   "title": "הגדרות",
   "tabs": {
     "account": "חשבון",

@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Limiti di utilizzo",
+    "refresh": "Aggiorna",
+    "currentSession": "Sessione attuale ({{hours}} h)",
+    "weekly": "Settimanale",
+    "percentUsed": "{{percent}}% utilizzato",
+    "resetsInHours": "Si azzera tra {{hours}} h {{minutes}} min",
+    "resetsInMinutes": "Si azzera tra {{minutes}} min",
+    "resetsOn": "Si azzera il {{date}}",
+    "unknown": "Non disponibile",
+    "unsupported": "I limiti di utilizzo non sono disponibili per questo provider.",
+    "unauthenticated": "Accedi per vedere i limiti di utilizzo.",
+    "error": "Impossibile caricare i limiti di utilizzo."
+  },
   "title": "Impostazioni",
   "tabs": {
     "account": "Account",

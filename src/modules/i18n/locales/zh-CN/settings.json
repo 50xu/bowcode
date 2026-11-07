@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "使用限额",
+    "refresh": "刷新",
+    "currentSession": "当前会话（{{hours}} 小时）",
+    "weekly": "每周",
+    "percentUsed": "已使用 {{percent}}%",
+    "resetsInHours": "{{hours}} 小时 {{minutes}} 分钟后重置",
+    "resetsInMinutes": "{{minutes}} 分钟后重置",
+    "resetsOn": "重置时间：{{date}}",
+    "unknown": "不可用",
+    "unsupported": "此提供商暂不支持使用限额。",
+    "unauthenticated": "请登录以查看使用限额。",
+    "error": "无法加载使用限额。"
+  },
   "title": "设置",
   "tabs": {
     "account": "账户",

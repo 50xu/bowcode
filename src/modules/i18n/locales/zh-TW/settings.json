@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "使用限額",
+    "refresh": "重新整理",
+    "currentSession": "目前工作階段（{{hours}} 小時）",
+    "weekly": "每週",
+    "percentUsed": "已使用 {{percent}}%",
+    "resetsInHours": "{{hours}} 小時 {{minutes}} 分鐘後重設",
+    "resetsInMinutes": "{{minutes}} 分鐘後重設",
+    "resetsOn": "重設時間：{{date}}",
+    "unknown": "無法使用",
+    "unsupported": "此供應商不提供使用限額。",
+    "unauthenticated": "請登入以查看使用限額。",
+    "error": "無法載入使用限額。"
+  },
   "title": "設定",
   "tabs": {
     "account": "帳戶",

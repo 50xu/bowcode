@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Usage limits",
+    "refresh": "Refresh",
+    "currentSession": "Current session ({{hours}}h)",
+    "weekly": "Weekly",
+    "percentUsed": "{{percent}}% used",
+    "resetsInHours": "Resets in {{hours}}h {{minutes}}m",
+    "resetsInMinutes": "Resets in {{minutes}}m",
+    "resetsOn": "Resets on {{date}}",
+    "unknown": "Unavailable",
+    "unsupported": "Usage limits are not available for this provider.",
+    "unauthenticated": "Sign in to view usage limits.",
+    "error": "Could not load usage limits."
+  },
   "title": "Settings",
   "tabs": {
     "account": "Account",

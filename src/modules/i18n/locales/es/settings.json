@@ -1,4 +1,18 @@
 {
+  "quota": {
+    "title": "Límites de uso",
+    "refresh": "Actualizar",
+    "currentSession": "Sesión actual ({{hours}} h)",
+    "weekly": "Semanal",
+    "percentUsed": "{{percent}} % utilizado",
+    "resetsInHours": "Se restablece en {{hours}} h {{minutes}} min",
+    "resetsInMinutes": "Se restablece en {{minutes}} min",
+    "resetsOn": "Se restablece el {{date}}",
+    "unknown": "No disponible",
+    "unsupported": "Los límites de uso no están disponibles para este proveedor.",
+    "unauthenticated": "Inicia sesión para ver los límites de uso.",
+    "error": "No se pudieron cargar los límites de uso."
+  },
   "title": "Ajustes",
   "tabs": {
     "account": "Cuenta",
