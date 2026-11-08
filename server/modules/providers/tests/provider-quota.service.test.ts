@@ -14,6 +14,7 @@ import { AppError } from '@/shared/utils.js';
 const fakeResponse = (body: unknown, status = 200): Response => ({
   status, ok: status >= 200 && status < 300, json: async () => body,
 }) as Response;
+const noRefresh = async (): Promise<void> => {};
 
 test('Claude limits array wins over fallback, including empty limits, and preserves scopes', () => {
   const parsed = parseClaudeQuota({ subscriptionType: 'max', limits: [
@@ -57,14 +58,14 @@ test('quota service caches for 60 seconds, deduplicates in-flight reads and refr
   let clock = 1_767_225_600_000;
   let calls = 0;
   let finish!: (value: Response) => void;
-  const service = createProviderQuotaService({ now: () => clock,
+  const service = createProviderQuotaService({ now: () => clock, refreshClaudeLogin: noRefresh,
     readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'secret' } }),
     fetch: (() => { calls++; return new Promise<Response>((resolve) => { finish = resolve; }); }) as typeof fetch,
   });
   const first = service.getQuota('claude');
   const second = service.getQuota('claude', { refresh: true });
   assert.equal(calls, 0); // Credential read runs in a microtask.
-  await Promise.resolve();
+  await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(calls, 1);
   finish(fakeResponse({ limits: [] }));
   assert.deepEqual(await first, await second);
@@ -73,34 +74,112 @@ test('quota service caches for 60 seconds, deduplicates in-flight reads and refr
   assert.equal(cached.fetchedAt, '2026-01-01T00:00:00.000Z');
   clock += 60_001;
   const expired = service.getQuota('claude');
-  await Promise.resolve();
+  await new Promise<void>((resolve) => setImmediate(resolve));
   finish(fakeResponse({ limits: [] }));
   await expired;
   assert.equal(calls, 2);
   const refresh = service.getQuota('claude', { refresh: true });
-  await Promise.resolve();
+  await new Promise<void>((resolve) => setImmediate(resolve));
   finish(fakeResponse({ limits: [] }));
   await refresh;
   assert.equal(calls, 3);
 });
 
-test('Claude expired OAuth never fetches; API key alone is unsupported', async () => {
-  let calls = 0;
-  const base = { now: () => 2_000, fetch: (() => { calls++; return Promise.reject(new Error('unexpected')); }) as typeof fetch };
-  const expired = createProviderQuotaService({ ...base,
-    readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'secret', expiresAt: 1_000 } }),
+test('Claude expired OAuth refreshes through the CLI before fetching; API key alone is unsupported', async () => {
+  let credentials = { claudeAiOauth: { accessToken: 'old', expiresAt: 1_000 } };
+  let refreshCalls = 0;
+  let authorization: string | undefined;
+  const refreshed = createProviderQuotaService({
+    now: () => 2_000,
+    readClaudeCredentials: async () => credentials,
+    refreshClaudeLogin: async () => {
+      refreshCalls++;
+      credentials = { claudeAiOauth: { accessToken: 'new', expiresAt: 100_000 } };
+    },
+    fetch: (async (_input, init) => {
+      authorization = new Headers(init?.headers).get('Authorization') ?? undefined;
+      return fakeResponse({ limits: [] });
+    }) as typeof fetch,
   });
-  assert.equal((await expired.getQuota('claude')).status, 'unauthenticated');
-  const key = createProviderQuotaService({ ...base, env: { ANTHROPIC_API_KEY: 'secret' }, readClaudeCredentials: async () => null });
+  assert.equal((await refreshed.getQuota('claude')).status, 'ok');
+  assert.equal(refreshCalls, 1);
+  assert.equal(authorization, 'Bearer new');
+
+  let fetchCalls = 0;
+  const unchanged = createProviderQuotaService({
+    now: () => 2_000,
+    readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'old', expiresAt: 1_000 } }),
+    refreshClaudeLogin: noRefresh,
+    fetch: (() => { fetchCalls++; return Promise.reject(new Error('unexpected')); }) as typeof fetch,
+  });
+  assert.equal((await unchanged.getQuota('claude')).status, 'unauthenticated');
+  assert.equal(fetchCalls, 0);
+
+  const failed = createProviderQuotaService({
+    now: () => 2_000,
+    readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'old', expiresAt: 1_000 } }),
+    refreshClaudeLogin: async () => { throw new Error('refresh failed'); },
+    fetch: (() => { fetchCalls++; return Promise.reject(new Error('unexpected')); }) as typeof fetch,
+  });
+  assert.equal((await failed.getQuota('claude')).status, 'unauthenticated');
+  assert.equal(fetchCalls, 0);
+
+  const key = createProviderQuotaService({
+    now: () => 2_000,
+    env: { ANTHROPIC_API_KEY: 'secret' },
+    readClaudeCredentials: async () => null,
+    refreshClaudeLogin: noRefresh,
+    fetch: (() => { fetchCalls++; return Promise.reject(new Error('unexpected')); }) as typeof fetch,
+  });
   assert.equal((await key.getQuota('claude')).message, 'Quota only applies to Claude subscription logins');
-  assert.equal(calls, 0);
+  assert.equal(fetchCalls, 0);
 });
 
-test('Claude 401 and OpenCode return normal statuses', async () => {
-  const claude = createProviderQuotaService({ readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'secret' } }),
-    fetch: (async () => fakeResponse({}, 401)) as typeof fetch });
-  assert.equal((await claude.getQuota('claude')).status, 'unauthenticated');
-  assert.equal((await createProviderQuotaService().getQuota('opencode')).status, 'unsupported');
+test('Claude 401 refreshes once and retries only when the file token changes', async () => {
+  let credentials = { claudeAiOauth: { accessToken: 'old' } };
+  const authorizations: string[] = [];
+  let refreshCalls = 0;
+  const refreshed = createProviderQuotaService({
+    readClaudeCredentials: async () => credentials,
+    refreshClaudeLogin: async () => {
+      refreshCalls++;
+      credentials = { claudeAiOauth: { accessToken: 'new' } };
+    },
+    fetch: (async (_input, init) => {
+      authorizations.push(new Headers(init?.headers).get('Authorization') ?? '');
+      return authorizations.length === 1 ? fakeResponse({}, 401) : fakeResponse({ limits: [] });
+    }) as typeof fetch,
+  });
+  assert.equal((await refreshed.getQuota('claude')).status, 'ok');
+  assert.equal(refreshCalls, 1);
+  assert.deepEqual(authorizations, ['Bearer old', 'Bearer new']);
+
+  let unchangedFetchCalls = 0;
+  const unchanged = createProviderQuotaService({
+    readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'same' } }),
+    refreshClaudeLogin: noRefresh,
+    fetch: (async () => { unchangedFetchCalls++; return fakeResponse({}, 401); }) as typeof fetch,
+  });
+  assert.equal((await unchanged.getQuota('claude')).status, 'unauthenticated');
+  assert.equal(unchangedFetchCalls, 1);
+});
+
+test('Claude environment OAuth token never triggers login refresh', async () => {
+  let refreshCalls = 0;
+  let authorization: string | undefined;
+  const service = createProviderQuotaService({
+    env: { CLAUDE_CODE_OAUTH_TOKEN: 'environment-token' },
+    readClaudeCredentials: async () => null,
+    refreshClaudeLogin: async () => { refreshCalls++; },
+    fetch: (async (_input, init) => {
+      authorization = new Headers(init?.headers).get('Authorization') ?? undefined;
+      return fakeResponse({}, 401);
+    }) as typeof fetch,
+  });
+  assert.equal((await service.getQuota('claude')).status, 'unauthenticated');
+  assert.equal(refreshCalls, 0);
+  assert.equal(authorization, 'Bearer environment-token');
+  assert.equal((await createProviderQuotaService({ refreshClaudeLogin: noRefresh }).getQuota('opencode')).status, 'unsupported');
 });
 
 test('quota route validates provider and refresh query and wraps the service result', async () => {
@@ -135,6 +214,7 @@ test('a transient error keeps the last good snapshot', async () => {
   let status = 200;
   const service = createProviderQuotaService({
     now: () => 1_000,
+    refreshClaudeLogin: noRefresh,
     readClaudeCredentials: async () => ({ claudeAiOauth: { accessToken: 'tok', expiresAt: 999_999 } }),
     fetch: (async () => status === 200
       ? fakeResponse({ limits: [{ kind: 'session', group: 'session', percent: 40 }] })
