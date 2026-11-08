@@ -1,8 +1,11 @@
+import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 
 import { codexAppServer } from '@/modules/providers/list/codex/codex-app-server.client.js';
+import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import type { LLMProvider, ProviderQuota, ProviderQuotaWindow } from '@/shared/types.js';
 import { readObjectRecord, readOptionalString } from '@/shared/utils.js';
 
@@ -12,10 +15,12 @@ type QuotaDependencies = {
   now?: () => number;
   fetch?: typeof fetch;
   readClaudeCredentials?: () => Promise<unknown>;
+  refreshClaudeLogin?: () => Promise<void>;
   readCodexRateLimits?: () => Promise<{ account: unknown; rateLimits: unknown }>;
   env?: NodeJS.ProcessEnv;
 };
 
+const execFileAsync = promisify(execFile);
 const record = (value: unknown): RecordValue | null => readObjectRecord(value) as RecordValue | null;
 const number = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const iso = (value: unknown, seconds = false): string | null => {
@@ -110,26 +115,52 @@ export function createProviderQuotaService(deps: QuotaDependencies = {}) {
     try { return JSON.parse(await readFile(path.join(os.homedir(), '.claude', '.credentials.json'), 'utf8')) as unknown; }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
   });
+  const refreshClaudeLogin = deps.refreshClaudeLogin ?? (async () => {
+    const executable = resolveClaudeCodeExecutablePath();
+    if (!executable) throw new Error('Claude Code CLI executable could not be resolved');
+    await execFileAsync(executable, ['auth', 'status', '--json'], { timeout: 15_000, windowsHide: true });
+  });
   const readCodex = deps.readCodexRateLimits ?? (() => codexAppServer.readCodexRateLimits());
   const cache = new Map<LLMProvider, { data: ProviderQuota; expires: number }>();
   const pending = new Map<LLMProvider, Promise<ProviderQuota>>();
 
   /** Reads Claude Code's own OAuth login from its credentials file or env. */
   const loadClaude = async (source: string, signal: AbortSignal): Promise<QuotaData> => {
-    const oauth = record(record(await readClaudeCredentials())?.claudeAiOauth);
-    const fileToken = readOptionalString(oauth?.accessToken);
-    const token = fileToken ?? readOptionalString(env.CLAUDE_CODE_OAUTH_TOKEN);
+    const readLogin = async () => {
+      const oauth = record(record(await readClaudeCredentials())?.claudeAiOauth);
+      return {
+        oauth,
+        fileToken: readOptionalString(oauth?.accessToken),
+        expiresAt: typeof oauth?.expiresAt === 'number' ? oauth.expiresAt : Date.parse(String(oauth?.expiresAt ?? '')),
+      };
+    };
+    let login = await readLogin();
+    let refreshAttempted = false;
+    if (login.fileToken && Number.isFinite(login.expiresAt) && login.expiresAt <= now() + 60_000) {
+      refreshAttempted = true;
+      try { await refreshClaudeLogin(); } catch { /* Best-effort: the existing status explains an expired login. */ }
+      login = await readLogin();
+    }
+    const token = login.fileToken ?? readOptionalString(env.CLAUDE_CODE_OAUTH_TOKEN);
     if (!token) return env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN
       ? status('unsupported', source, 'Quota only applies to Claude subscription logins')
       : status('unauthenticated', source, 'Sign in to Claude to view quota');
-    const expiresAt = typeof oauth?.expiresAt === 'number' ? oauth.expiresAt : Date.parse(String(oauth?.expiresAt ?? ''));
-    if (fileToken && Number.isFinite(expiresAt) && expiresAt <= now()) {
-      return status('unauthenticated', source, 'Claude token expired; token refreshes on the next Claude run');
+    if (login.fileToken && Number.isFinite(login.expiresAt) && login.expiresAt <= now()) {
+      return status('unauthenticated', source, 'Claude login expired and could not be refreshed; re-login to Claude');
     }
-    const result = await fetchClaudeQuota(token, source, fetcher, signal);
+    let result = await fetchClaudeQuota(token, source, fetcher, signal);
+    if (result.status === 'unauthenticated' && login.fileToken && !refreshAttempted) {
+      refreshAttempted = true;
+      try { await refreshClaudeLogin(); } catch { /* A failed refresh leaves the endpoint result unchanged. */ }
+      const refreshedLogin = await readLogin();
+      if (refreshedLogin.fileToken && refreshedLogin.fileToken !== login.fileToken) {
+        login = refreshedLogin;
+        result = await fetchClaudeQuota(refreshedLogin.fileToken, source, fetcher, signal);
+      }
+    }
     // The usage endpoint does not report the plan; the credentials file does.
-    return result.status === 'ok' && fileToken
-      ? { ...result, planType: readOptionalString(oauth?.subscriptionType) ?? result.planType }
+    return result.status === 'ok' && login.fileToken
+      ? { ...result, planType: readOptionalString(login.oauth?.subscriptionType) ?? result.planType }
       : result;
   };
 
@@ -149,7 +180,7 @@ export function createProviderQuotaService(deps: QuotaDependencies = {}) {
       const cached = cache.get(provider);
       if (!options.refresh && cached && cached.expires > now()) return Promise.resolve(cached.data);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10_000);
+      const timer = setTimeout(() => controller.abort(), 30_000);
       const request = (async () => {
         let result: QuotaData;
         try { result = await load(provider, controller.signal); }
