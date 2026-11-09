@@ -6,6 +6,10 @@ import { Badge, Button, Dialog, DialogContent, DialogTitle, Input, Select } from
 import type { AgentProvider, ProviderAgentCreatePayload, ProviderAgentDefinition } from '@/shared/types';
 import { useProviderAgents } from '@/modules/provider-agents/hooks/useProviderAgents';
 import { SettingsCard, SettingsRow, SettingsSection } from '@/modules/settings';
+import { cn } from '@/shared/utils';
+
+// Matches the shared Input so text areas sit beside inputs without a different background or border.
+const TEXTAREA_CLASS_NAME = 'w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring';
 
 type Props = { provider: AgentProvider; workspaces: Array<{ name: string; path: string }> };
 type AgentRowProps = {
@@ -54,32 +58,46 @@ function AgentRow({ agent, onEdit, onDelete }: AgentRowProps) {
 function CreateEditor({ form, workspacePath, onChange }: CreateEditorProps) {
   const { t } = useTranslation('settings');
   return (
-    <div className="space-y-3">
-      <label className="block space-y-1 text-sm">
-        {t('providerAgents.scope')}
-        <Select
-          className="w-full"
-          value={form.scope}
-          onChange={(event) => onChange({ ...form, scope: event.target.value as 'user' | 'project' })}
-        >
-          <option value="user">{t('providerAgents.user')}</option>
-          {workspacePath && <option value="project">{t('providerAgents.project')}</option>}
-        </Select>
-      </label>
-      {(['name', 'description', 'model'] as const).map((field) => (
-        <label key={field} className="block text-sm">
-          {t(`providerAgents.fields.${field}`)}
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-foreground">{t('providerAgents.fields.name')}</span>
           <Input
-            className="mt-1"
-            value={form[field]}
-            onChange={(event) => onChange({ ...form, [field]: event.target.value })}
+            value={form.name}
+            placeholder="code-reviewer"
+            onChange={(event) => onChange({ ...form, name: event.target.value })}
           />
         </label>
-      ))}
-      <label className="block text-sm">
-        {t('providerAgents.fields.instructions')}
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-foreground">{t('providerAgents.scope')}</span>
+          <Select
+            className="w-full"
+            value={form.scope}
+            onChange={(event) => onChange({ ...form, scope: event.target.value as 'user' | 'project' })}
+          >
+            <option value="user">{t('providerAgents.user')}</option>
+            {workspacePath && <option value="project">{t('providerAgents.project')}</option>}
+          </Select>
+        </label>
+      </div>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium text-foreground">{t('providerAgents.fields.description')}</span>
+        <Input
+          value={form.description}
+          onChange={(event) => onChange({ ...form, description: event.target.value })}
+        />
+      </label>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium text-foreground">{t('providerAgents.fields.model')}</span>
+        <Input
+          value={form.model}
+          onChange={(event) => onChange({ ...form, model: event.target.value })}
+        />
+      </label>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium text-foreground">{t('providerAgents.fields.instructions')}</span>
         <textarea
-          className="mt-1 min-h-40 w-full rounded-md border bg-background p-3 text-sm"
+          className={cn('min-h-40 resize-y', TEXTAREA_CLASS_NAME)}
           value={form.instructions}
           onChange={(event) => onChange({ ...form, instructions: event.target.value })}
         />
@@ -93,7 +111,7 @@ function RawEditor({ content, onChange }: RawEditorProps) {
   return (
     <textarea
       aria-label={t('providerAgents.content')}
-      className="min-h-80 w-full rounded-md border bg-background p-3 font-mono text-sm"
+      className={cn('min-h-80 resize-y font-mono', TEXTAREA_CLASS_NAME)}
       value={content}
       onChange={(event) => onChange(event.target.value)}
     />
@@ -225,16 +243,31 @@ export function ProviderAgents({ provider, workspaces }: Props) {
         <DialogContent
           // Settings is itself a z-[9999] modal; the default z-50 would open this behind it.
           wrapperClassName="z-[10000]"
-          className="max-h-[85vh] max-w-2xl overflow-y-auto"
+          className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl flex-col overflow-hidden p-0"
         >
           <DialogTitle>{t(editing ? 'providerAgents.editTitle' : 'providerAgents.new')}</DialogTitle>
-          {editing
-            ? <RawEditor content={content} onChange={setContent} />
-            : <CreateEditor form={form} workspacePath={workspacePath} onChange={setForm} />}
-          {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>{t('common:cancel')}</Button>
-            <Button disabled={busy} onClick={() => void save()}>{t('providerAgents.save')}</Button>
+          {/* DialogTitle is screen-reader only, so the visible header is drawn here (same layout as the Skills dialog). */}
+          <div className="shrink-0 border-b border-border/60 px-5 py-4">
+            <div className="text-base font-medium text-foreground">
+              {t(editing ? 'providerAgents.editTitle' : 'providerAgents.new')}
+            </div>
+            <div className="mt-1 truncate text-sm text-muted-foreground" title={editing?.filePath}>
+              {editing ? editing.filePath : t('providerAgents.subtitle', { provider })}
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            {editing
+              ? <RawEditor content={content} onChange={setContent} />
+              : <CreateEditor form={form} workspacePath={workspacePath} onChange={setForm} />}
+            {actionError && <p role="alert" className="mt-3 text-sm text-destructive">{actionError}</p>}
+          </div>
+          <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 px-5 py-3">
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => setOpen(false)}>
+              {t('common:cancel')}
+            </Button>
+            <Button size="sm" disabled={busy} onClick={() => void save()}>
+              {t('providerAgents.save')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
