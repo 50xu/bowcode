@@ -1,3 +1,7 @@
+import { existsSync, realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
+import path from 'node:path';
+
 import spawn from 'cross-spawn';
 
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
@@ -31,14 +35,125 @@ const PERMISSION_DENIED_PATTERN = /\bEACCES\b|\bEPERM\b|permission denied|insuff
 const FAILURE_PATTERN = /\bfailed\b/i;
 const RELEASE_VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
 
-type CliUpdater = {
-  /** The CLI chats run, or undefined when they run a binary that ships inside Bowcode's dependencies. */
-  resolveCommand: () => string | undefined;
-  /** Arguments that make the CLI update itself. */
+type CliUpdateInvocation = {
+  command: string;
   args: string[];
+  env?: NodeJS.ProcessEnv;
+};
+
+type CliUpdater = {
+  /** Resolves the executable, arguments, and any install-specific environment needed to update it. */
+  resolveInvocation: () => CliUpdateInvocation | null;
   /** The npm package whose `latest` dist-tag is the newest release, or null when the CLI is not on npm. */
   npmPackage: string | null;
 };
+
+type OpenCodeUpgradeDependencies = {
+  path: string | undefined;
+  pathExt: string | undefined;
+  platform: NodeJS.Platform;
+  homedir: string;
+  exists(candidate: string): boolean;
+  realpath(candidate: string): string;
+};
+
+function findExecutableOnPath(
+  command: string,
+  dependencies: Pick<OpenCodeUpgradeDependencies, 'path' | 'pathExt' | 'platform' | 'exists'>,
+): string | null {
+  const delimiter = dependencies.platform === 'win32' ? ';' : ':';
+  const extensions = dependencies.platform === 'win32'
+    ? (dependencies.pathExt || '.COM;.EXE;.BAT;.CMD').split(';').filter(Boolean)
+    : [''];
+  for (const directory of dependencies.path?.split(delimiter).filter(Boolean) ?? []) {
+    for (const extension of extensions) {
+      const candidate = path.join(directory, dependencies.platform === 'win32' ? `${command}${extension.toLowerCase()}` : command);
+      if (dependencies.exists(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
+function pathEnvKey(platform: NodeJS.Platform): string {
+  return platform === 'win32' ? Object.keys(process.env).find((key) => key.toUpperCase() === 'PATH') ?? 'Path' : 'PATH';
+}
+
+/**
+ * Used by the OpenCode updater and its provider tests to select the updater
+ * matching the real installation rather than an unrelated package manager
+ * that happens to appear first on PATH.
+ */
+export function resolveOpenCodeUpgradeInvocation(
+  dependencyOverrides: Partial<OpenCodeUpgradeDependencies> = {},
+): CliUpdateInvocation {
+  const dependencies: OpenCodeUpgradeDependencies = {
+    path: process.env.PATH,
+    pathExt: process.env.PATHEXT,
+    platform: process.platform,
+    homedir: homedir(),
+    exists: existsSync,
+    realpath: realpathSync,
+    ...dependencyOverrides,
+  };
+  const executable = findExecutableOnPath('opencode', dependencies);
+  if (!executable) {
+    return { command: 'opencode', args: ['upgrade'] };
+  }
+
+  // Run the shim PATH resolves to; only the install location (its real path)
+  // says which package manager owns it.
+  const command = executable;
+  const normalizedCommand = dependencies.realpath(executable).replaceAll('\\', '/');
+  const normalizedHome = dependencies.homedir.replaceAll('\\', '/').replace(/\/$/, '');
+  const isNodePackage = normalizedCommand.includes('/node_modules/@opencode/cli/')
+    || normalizedCommand.includes('/node_modules/opencode-ai/');
+  let method: string | null = null;
+  let updaterPath: string | undefined;
+
+  if (isNodePackage) {
+    if (normalizedCommand.includes('pnpm')) {
+      method = 'pnpm';
+    } else if (normalizedCommand.includes('/.bun/')) {
+      method = 'bun';
+    } else if (
+      normalizedCommand.includes('/yarn/')
+      || normalizedCommand.includes('/.yarn/')
+      || normalizedCommand.includes('/.config/yarn/')
+    ) {
+      method = 'yarn';
+    } else {
+      method = 'npm';
+      const marker = dependencies.platform === 'win32' ? '/node_modules/' : '/lib/node_modules/';
+      const markerIndex = normalizedCommand.indexOf(marker);
+      if (markerIndex >= 0) {
+        const prefix = normalizedCommand.slice(0, markerIndex);
+        const npmDirectory = dependencies.platform === 'win32' ? prefix : `${prefix}/bin`;
+        const npmExecutable = dependencies.platform === 'win32' ? `${npmDirectory}/npm.cmd` : `${npmDirectory}/npm`;
+        if (dependencies.exists(npmExecutable)) {
+          const delimiter = dependencies.platform === 'win32' ? ';' : ':';
+          updaterPath = dependencies.path ? `${npmDirectory}${delimiter}${dependencies.path}` : npmDirectory;
+        }
+      }
+    }
+  } else if (
+    normalizedCommand.includes('/Cellar/')
+    || normalizedCommand.includes('/homebrew/')
+    || normalizedCommand.includes('/linuxbrew/')
+  ) {
+    method = 'brew';
+  } else if (normalizedCommand.startsWith(`${normalizedHome}/.opencode/`)) {
+    method = 'curl';
+  }
+
+  return {
+    command,
+    args: method ? ['upgrade', '--method', method] : ['upgrade'],
+    // Windows spells the variable `Path`; a second `PATH` key would be ambiguous.
+    ...(updaterPath ? { env: { [pathEnvKey(dependencies.platform)]: updaterPath } } : {}),
+  };
+}
 
 // Each CLI updates itself with its own updater. That updater knows how it was
 // installed (npm, a native installer, Homebrew, ...), which a blanket
@@ -48,13 +163,14 @@ type CliUpdater = {
 const CLI_UPDATERS: Partial<Record<LLMProvider, CliUpdater>> = {
   claude: {
     // undefined only on Windows when no CLI resolves: the SDK then runs its bundled binary.
-    resolveCommand: () => resolveClaudeCodeExecutablePath(process.env.CLAUDE_CLI_PATH),
-    args: ['update'],
+    resolveInvocation: () => {
+      const command = resolveClaudeCodeExecutablePath(process.env.CLAUDE_CLI_PATH);
+      return command ? { command, args: ['update'] } : null;
+    },
     npmPackage: '@anthropic-ai/claude-code',
   },
   opencode: {
-    resolveCommand: () => 'opencode',
-    args: ['upgrade'],
+    resolveInvocation: resolveOpenCodeUpgradeInvocation,
     // OpenCode 2 ships as @opencode/cli; the old `opencode-ai` package stays on 1.x.
     npmPackage: '@opencode/cli',
   },
@@ -207,7 +323,7 @@ function toPlainOutput(raw: string): string {
  * are fixed per provider. On POSIX the updater gets its own process group so
  * a timeout also stops the npm or download child it started.
  */
-function runUpdater(command: string, args: string[], options: RunUpdaterOptions): Promise<UpdaterRun> {
+function runUpdater(command: string, args: string[], env: NodeJS.ProcessEnv | undefined, options: RunUpdaterOptions): Promise<UpdaterRun> {
   return new Promise((resolve) => {
     let output = '';
     let timedOut = false;
@@ -230,7 +346,7 @@ function runUpdater(command: string, args: string[], options: RunUpdaterOptions)
     };
 
     const child = spawn(command, args, {
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { ...process.env, NO_COLOR: '1', ...env },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: process.platform !== 'win32',
       windowsHide: true,
@@ -360,18 +476,15 @@ export function createProviderCliService(dependencyOverrides: Partial<ProviderCl
     return lookup;
   };
 
-  const resolveUpdateCommand = (provider: LLMProvider): { command: string; args: string[] } | null => {
-    const updater = CLI_UPDATERS[provider];
-    const command = updater?.resolveCommand();
-    return updater && command ? { command, args: updater.args } : null;
-  };
+  const resolveUpdateCommand = (provider: LLMProvider): CliUpdateInvocation | null =>
+    CLI_UPDATERS[provider]?.resolveInvocation() ?? null;
 
   const runUpdate = async (
     provider: IProvider,
-    update: { command: string; args: string[] },
+    update: CliUpdateInvocation,
     before: CliVersionProbe,
   ): Promise<ProviderCliUpdateResult> => {
-    const run = await runUpdater(update.command, update.args, {
+    const run = await runUpdater(update.command, update.args, update.env, {
       timeoutMs: dependencies.updateTimeoutMs,
       killGraceMs: dependencies.updateKillGraceMs,
     });
