@@ -15,6 +15,7 @@ import { OpenCodeProviderAuth } from '@/modules/providers/list/opencode/opencode
 import {
   createProviderCliService,
   listProcessingProviders,
+  resolveOpenCodeUpgradeInvocation,
 } from '@/modules/providers/services/provider-cli.service.js';
 import type { LLMProvider } from '@/shared/types.js';
 import { AppError } from '@/shared/utils.js';
@@ -334,7 +335,7 @@ test('getCliStatus never fails on an unreachable registry and does not retry it 
     assert.equal(offline.installedVersion, '1.18.20');
     assert.equal(offline.latestVersion, null);
     assert.equal(offline.updateAvailable, false);
-    assert.equal(offline.updateCommand, 'opencode upgrade');
+    assert.equal(offline.updateCommand, `${path.join(binDir, 'opencode')} upgrade`);
 
     await service.getCliStatus('opencode');
     assert.equal(registry.calls.length, 1, 'a failure is remembered for a while');
@@ -434,6 +435,118 @@ test('Codex ships with Bowcode and offers no separate update', async () => {
 
 // ----------------- the update action ------------
 
+type OpenCodeDetectionCase = {
+  name: string;
+  path: string;
+  realPath?: string;
+  platform?: NodeJS.Platform;
+  homedir?: string;
+  existingPaths?: string[];
+  expectedCommand?: string;
+  expectedMethod?: string;
+  expectedPath?: string;
+};
+
+const openCodeDetectionCases: OpenCodeDetectionCase[] = [
+  {
+    name: 'uses the npm beside a mise-managed OpenCode install instead of the first npm on PATH',
+    path: '/home/louis/.local/bin:/home/louis/.local/share/mise/installs/node/26.9.0/bin',
+    realPath: '/home/louis/.local/share/mise/installs/node/26.9.0/lib/node_modules/@opencode/cli/bin/opencode.exe',
+    existingPaths: [
+      '/home/louis/.local/bin/opencode',
+      '/home/louis/.local/share/mise/installs/node/26.9.0/bin/npm',
+    ],
+    expectedMethod: 'npm',
+    expectedPath: '/home/louis/.local/share/mise/installs/node/26.9.0/bin:/home/louis/.local/bin:/home/louis/.local/share/mise/installs/node/26.9.0/bin',
+  },
+  {
+    name: 'keeps PATH unchanged when an npm install prefix has no npm executable',
+    path: '/usr/local/bin:/usr/bin',
+    realPath: '/opt/node/lib/node_modules/@opencode/cli/bin/opencode',
+    existingPaths: ['/usr/local/bin/opencode'],
+    expectedMethod: 'npm',
+  },
+  {
+    name: 'detects pnpm installs',
+    path: '/tools/bin',
+    realPath: '/home/x/.local/share/pnpm/global/5/node_modules/@opencode/cli/bin/opencode',
+    existingPaths: ['/tools/bin/opencode'],
+    expectedMethod: 'pnpm',
+  },
+  {
+    name: 'detects bun installs',
+    path: '/tools/bin',
+    realPath: '/home/x/.bun/install/global/node_modules/@opencode/cli/bin/opencode',
+    existingPaths: ['/tools/bin/opencode'],
+    expectedMethod: 'bun',
+  },
+  {
+    name: 'detects Homebrew installs',
+    path: '/opt/homebrew/bin',
+    realPath: '/opt/homebrew/Cellar/opencode/2.2.5/bin/opencode',
+    existingPaths: ['/opt/homebrew/bin/opencode'],
+    expectedMethod: 'brew',
+  },
+  {
+    name: 'detects curl installs under the OpenCode home directory',
+    path: '/home/x/.opencode/bin',
+    realPath: '/home/x/.opencode/bin/opencode',
+    homedir: '/home/x',
+    existingPaths: ['/home/x/.opencode/bin/opencode'],
+    expectedMethod: 'curl',
+  },
+  {
+    name: 'uses the Windows npm prefix that owns the OpenCode install',
+    path: 'C:/Windows/System32;C:/Users/x/AppData/Roaming/npm',
+    realPath: 'C:/Users/x/AppData/Roaming/npm/node_modules/@opencode/cli/bin/opencode.exe',
+    platform: 'win32',
+    homedir: 'C:/Users/x',
+    existingPaths: [
+      'C:/Users/x/AppData/Roaming/npm/opencode.cmd',
+      'C:/Users/x/AppData/Roaming/npm/npm.cmd',
+    ],
+    expectedMethod: 'npm',
+    expectedPath: 'C:/Users/x/AppData/Roaming/npm;C:/Windows/System32;C:/Users/x/AppData/Roaming/npm',
+  },
+  {
+    name: 'leaves an unknown install method unspecified',
+    path: '/usr/local/bin',
+    realPath: '/srv/opencode/bin/opencode',
+    existingPaths: ['/usr/local/bin/opencode'],
+  },
+  {
+    name: 'keeps the bare command when OpenCode is not found',
+    path: '/usr/local/bin',
+    existingPaths: [],
+    expectedCommand: 'opencode',
+  },
+];
+
+for (const detectionCase of openCodeDetectionCases) {
+  test(`OpenCode updater ${detectionCase.name}`, () => {
+    const existingPaths = new Set(detectionCase.existingPaths ?? []);
+    const invocation = resolveOpenCodeUpgradeInvocation({
+      path: detectionCase.path,
+      pathExt: detectionCase.platform === 'win32' ? '.COM;.EXE;.BAT;.CMD' : undefined,
+      platform: detectionCase.platform ?? 'linux',
+      homedir: detectionCase.homedir ?? '/home/x',
+      exists: (candidate) => existingPaths.has(candidate.replaceAll('\\', '/')),
+      realpath: () => detectionCase.realPath ?? '',
+    });
+
+    if (detectionCase.expectedCommand) {
+      assert.equal(invocation.command, detectionCase.expectedCommand);
+    } else {
+      // The updater runs the executable found on PATH, not its resolved real path.
+      assert.ok(existingPaths.has(invocation.command.replaceAll('\\', '/')));
+    }
+    assert.deepEqual(invocation.args, detectionCase.expectedMethod
+      ? ['upgrade', '--method', detectionCase.expectedMethod]
+      : ['upgrade']);
+    assert.equal(invocation.env?.PATH, detectionCase.expectedPath);
+  });
+}
+
 test('listProcessingProviders ignores idle external holders and deduplicates active providers', () => {
   assert.deepEqual(listProcessingProviders([
     { provider: 'claude', processing: false },
@@ -466,7 +579,7 @@ test('updateCli runs the CLI\'s own updater and reports the version before and a
     await opencode.set('version', '1.18.20\n');
     await opencode.set('update-new-version', '1.19.0\n');
     const openCodeResult = await createService().updateCli('opencode');
-    assert.equal(openCodeResult.command, 'opencode upgrade');
+    assert.equal(openCodeResult.command, `${path.join(binDir, 'opencode')} upgrade`);
     assert.equal(openCodeResult.installedVersion, '1.19.0');
     assert.equal(await opencode.read('update-count'), '1');
   });
