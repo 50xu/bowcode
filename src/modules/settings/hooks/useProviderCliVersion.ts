@@ -143,6 +143,11 @@ export function useProviderCliVersion(provider: AgentProvider) {
         }
         loaded = true;
         setStatus(initial);
+        // A CLI that stopped starting after an update would otherwise hide the
+        // whole row on reload; keep showing the run that broke it.
+        if (!initial.installed && initial.lastUpdate) {
+          setUpdateResult(initial.lastUpdate);
+        }
         if (!initial.updateInProgress) {
           return;
         }
