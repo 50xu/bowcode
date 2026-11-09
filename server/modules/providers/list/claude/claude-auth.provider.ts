@@ -1,11 +1,22 @@
+import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import type { IProviderAuth } from '@/shared/interfaces.js';
-import type { CliVersionProbe, ProviderAuthStatus, ProviderAuthSubscriptionOverride } from '@/shared/types.js';
-import { probeCliVersion, readObjectRecord, readOptionalString } from '@/shared/utils.js';
+import type {
+  ClaudeCredentialsSourceDeps,
+  CliVersionProbe,
+  ProviderAuthStatus,
+  ProviderAuthSubscriptionOverride,
+} from '@/shared/types.js';
+import {
+  probeCliVersion,
+  readClaudeOAuthCredentials,
+  readObjectRecord,
+  readOptionalString,
+} from '@/shared/utils.js';
 
 type ClaudeCredentialsStatus = {
   authenticated: boolean;
@@ -14,6 +25,19 @@ type ClaudeCredentialsStatus = {
   error?: string;
   subscriptionOverride?: ProviderAuthSubscriptionOverride;
 };
+
+type ClaudeAuthStatus = {
+  loggedIn: boolean;
+  authMethod: string;
+  apiProvider?: string;
+  email?: string;
+};
+
+type ClaudeProviderAuthOptions = {
+  runAuthStatus?: () => Promise<unknown | null>;
+};
+
+const MISSING_CREDENTIALS_ERROR = 'Claude CLI is not authenticated. Run claude /login or configure ANTHROPIC_API_KEY.';
 
 /**
  * An API-key style credential found in the env or settings.json, plus the
@@ -29,6 +53,15 @@ const hasErrorCode = (error: unknown, code: string): boolean => (
 );
 
 export class ClaudeProviderAuth implements IProviderAuth {
+  private readonly runAuthStatus: () => Promise<unknown | null>;
+
+  constructor(
+    private readonly credentialsSourceDeps?: ClaudeCredentialsSourceDeps,
+    options: ClaudeProviderAuthOptions = {},
+  ) {
+    this.runAuthStatus = options.runAuthStatus ?? (() => this.runCliAuthStatus());
+  }
+
   /**
    * Checks whether the Claude Code CLI that chats run is available on this
    * host, and which version it is.
@@ -44,7 +77,9 @@ export class ClaudeProviderAuth implements IProviderAuth {
   }
 
   /**
-   * Returns Claude installation and credential status using Claude Code's auth priority.
+   * Returns Claude installation and credential status. The CLI's JSON auth
+   * status is authoritative; local credential discovery is a fallback when the
+   * CLI cannot provide parseable status.
    */
   async getStatus(): Promise<ProviderAuthStatus> {
     const { installed, version: installedVersion } = this.checkInstalled();
@@ -61,7 +96,10 @@ export class ClaudeProviderAuth implements IProviderAuth {
       };
     }
 
-    const credentials = await this.checkCredentials();
+    const cliAuthStatus = this.parseAuthStatus(await this.runAuthStatus());
+    const credentials = cliAuthStatus
+      ? await this.mapCliAuthStatus(cliAuthStatus)
+      : await this.checkCredentials();
 
     return {
       installed,
@@ -72,6 +110,92 @@ export class ClaudeProviderAuth implements IProviderAuth {
       method: credentials.method,
       error: credentials.authenticated ? undefined : credentials.error || 'Not authenticated',
       ...(credentials.subscriptionOverride ? { subscriptionOverride: credentials.subscriptionOverride } : {}),
+    };
+  }
+
+  /** Runs `claude auth status --json`, including JSON emitted with a non-zero exit. */
+  private async runCliAuthStatus(): Promise<unknown | null> {
+    const cliPath = resolveClaudeCodeExecutablePath(process.env.CLAUDE_CLI_PATH);
+    if (!cliPath) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      execFile(cliPath, ['auth', 'status', '--json'], {
+        encoding: 'utf8',
+        timeout: 10_000,
+        windowsHide: true,
+      }, (error, stdout) => {
+        if (error && 'killed' in error && error.killed) {
+          resolve(null);
+          return;
+        }
+        const output = stdout || (error && 'stdout' in error && typeof error.stdout === 'string' ? error.stdout : '');
+        try {
+          const parsed: unknown = JSON.parse(output);
+          resolve(readObjectRecord(parsed));
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+  }
+
+  private parseAuthStatus(value: unknown): ClaudeAuthStatus | null {
+    const status = readObjectRecord(value);
+    if (typeof status?.loggedIn !== 'boolean' || typeof status.authMethod !== 'string') {
+      return null;
+    }
+    return {
+      loggedIn: status.loggedIn,
+      authMethod: status.authMethod,
+      ...(typeof status.apiProvider === 'string' ? { apiProvider: status.apiProvider } : {}),
+      ...(typeof status.email === 'string' ? { email: status.email } : {}),
+    };
+  }
+
+  private async mapCliAuthStatus(status: ClaudeAuthStatus): Promise<ClaudeCredentialsStatus> {
+    if (!status.loggedIn) {
+      return { authenticated: false, email: null, method: null, error: MISSING_CREDENTIALS_ERROR };
+    }
+    if (status.authMethod === 'claude.ai') {
+      return { authenticated: true, email: status.email ?? null, method: 'credentials_file' };
+    }
+
+    const settingsEnv = await this.loadSettingsEnv();
+    if (status.authMethod === 'api_key' || status.authMethod === 'oauth_token') {
+      const apiKey = this.findApiKeyCredential(settingsEnv);
+      if (apiKey) {
+        const credentials: ClaudeCredentialsStatus = {
+          authenticated: true,
+          email: apiKey.label,
+          method: 'api_key',
+        };
+        const subscription = await this.readCredentialsFile();
+        if (subscription.authenticated) {
+          credentials.subscriptionOverride = {
+            variable: apiKey.variable,
+            source: apiKey.source,
+            subscriptionEmail: subscription.email,
+          };
+        }
+        return credentials;
+      }
+
+      const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN?.trim()
+        || readOptionalString(settingsEnv.CLAUDE_CODE_OAUTH_TOKEN);
+      if (oauthToken) {
+        return { authenticated: true, email: 'OAuth Token (long-lived)', method: 'environment' };
+      }
+      return status.authMethod === 'api_key'
+        ? { authenticated: true, email: 'API Key Auth', method: 'api_key' }
+        : { authenticated: true, email: 'OAuth Token', method: 'environment' };
+    }
+
+    return {
+      authenticated: true,
+      email: status.authMethod || status.apiProvider || 'API Key Auth',
+      method: 'api_key',
     };
   }
 
@@ -152,17 +276,25 @@ export class ClaudeProviderAuth implements IProviderAuth {
   }
 
   /**
-   * Reads the `claude /login` OAuth session from ~/.claude/.credentials.json and
-   * reports whether it is still usable. Shared by the fallback path (when no
-   * env credential exists) and by the API-key path (to detect a bypassed login).
+   * Reads the `claude /login` OAuth session from the macOS Keychain or
+   * ~/.claude/.credentials.json and reports whether it is still usable. Shared
+   * by the fallback path (when no env credential exists) and by the API-key
+   * path (to detect a bypassed login).
    */
   private async readCredentialsFile(): Promise<ClaudeCredentialsStatus> {
-    const missingCredentialsError = 'Claude CLI is not authenticated. Run claude /login or configure ANTHROPIC_API_KEY.';
+    const missingCredentialsError = MISSING_CREDENTIALS_ERROR;
 
     try {
-      const credPath = path.join(os.homedir(), '.claude', '.credentials.json');
-      const content = await readFile(credPath, 'utf8');
-      const creds = readObjectRecord(JSON.parse(content)) ?? {};
+      const storedCredentials = await readClaudeOAuthCredentials(this.credentialsSourceDeps);
+      if (storedCredentials === null) {
+        return {
+          authenticated: false,
+          email: null,
+          method: null,
+          error: missingCredentialsError,
+        };
+      }
+      const creds = readObjectRecord(storedCredentials) ?? {};
       const oauth = readObjectRecord(creds.claudeAiOauth);
       const accessToken = readOptionalString(oauth?.accessToken);
 

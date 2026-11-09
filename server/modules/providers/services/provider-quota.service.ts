@@ -1,13 +1,10 @@
 import { execFile } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { codexAppServer } from '@/modules/providers/list/codex/codex-app-server.client.js';
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import type { LLMProvider, ProviderQuota, ProviderQuotaWindow } from '@/shared/types.js';
-import { readObjectRecord, readOptionalString } from '@/shared/utils.js';
+import { readClaudeOAuthCredentials, readObjectRecord, readOptionalString } from '@/shared/utils.js';
 
 type RecordValue = Record<string, unknown>;
 type QuotaData = Pick<ProviderQuota, 'status' | 'source' | 'planType' | 'windows' | 'message'>;
@@ -111,10 +108,7 @@ export function createProviderQuotaService(deps: QuotaDependencies = {}) {
   const now = deps.now ?? Date.now;
   const fetcher = deps.fetch ?? fetch;
   const env = deps.env ?? process.env;
-  const readClaudeCredentials = deps.readClaudeCredentials ?? (async () => {
-    try { return JSON.parse(await readFile(path.join(os.homedir(), '.claude', '.credentials.json'), 'utf8')) as unknown; }
-    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
-  });
+  const readClaudeCredentials = deps.readClaudeCredentials ?? (() => readClaudeOAuthCredentials());
   const refreshClaudeLogin = deps.refreshClaudeLogin ?? (async () => {
     const executable = resolveClaudeCodeExecutablePath();
     if (!executable) throw new Error('Claude Code CLI executable could not be resolved');
@@ -124,7 +118,7 @@ export function createProviderQuotaService(deps: QuotaDependencies = {}) {
   const cache = new Map<LLMProvider, { data: ProviderQuota; expires: number }>();
   const pending = new Map<LLMProvider, Promise<ProviderQuota>>();
 
-  /** Reads Claude Code's own OAuth login from its credentials file or env. */
+  /** Reads Claude Code's own OAuth login from its platform credential store or env. */
   const loadClaude = async (source: string, signal: AbortSignal): Promise<QuotaData> => {
     const readLogin = async () => {
       const oauth = record(record(await readClaudeCredentials())?.claudeAiOauth);

@@ -948,8 +948,28 @@ export type UpsertProviderMcpServerInput = {
 // ---------------------------
 //----------------- PROVIDER AUTH TYPES ------------
 /**
+ * Injectable source dependencies for reading Claude Code's OAuth login.
+ *
+ * The Claude auth provider supplies these in tests to select a platform and
+ * isolated home directory without touching the host account. The shared Claude
+ * credential utility also accepts a keychain reader so macOS source priority
+ * can be tested without invoking the system `security` binary. Production
+ * callers should omit every field to use the current platform, OS home, and
+ * macOS Keychain command.
+ *
+ * Consumed by the Claude auth provider and the shared Claude OAuth credential
+ * utility to keep dependency injection typed consistently.
+ */
+export type ClaudeCredentialsSourceDeps = {
+  platform?: NodeJS.Platform;
+  homeDir?: string;
+  readKeychain?: () => Promise<string | null>;
+};
+
+/**
  * Records that an API-key style credential is taking precedence over a
- * still-valid subscription login in `~/.claude/.credentials.json`.
+ * still-valid subscription login in the macOS Keychain or
+ * `~/.claude/.credentials.json`.
  *
  * Claude Code always prefers `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` over
  * the OAuth login written by `claude /login`, so when both exist every request
@@ -958,8 +978,8 @@ export type UpsertProviderMcpServerInput = {
  * settings UI can say which variable won and where it was found; the fix
  * differs per source (unset the variable and restart the server for
  * `process_env`, edit the `env` block of `~/.claude/settings.json` for
- * `settings_file`). It is never set when the login in the credentials file is
- * missing or expired, because then nothing is being bypassed.
+ * `settings_file`). It is never set when the stored login is missing or
+ * expired, because then nothing is being bypassed.
  */
 export type ProviderAuthSubscriptionOverride = {
   /** The environment variable Claude Code is using instead of the login. */
