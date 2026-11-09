@@ -111,6 +111,10 @@ export function resolveOpenCodeUpgradeInvocation(
     || normalizedCommand.includes('/node_modules/opencode-ai/');
   let method: string | null = null;
   let updaterPath: string | undefined;
+  // npm 11 blocks install scripts unless allowScripts lists the package, and
+  // OpenCode's postinstall is what puts its native binary in place: without it
+  // the "upgraded" CLI cannot even print its version.
+  let allowScripts: string | undefined;
 
   if (isNodePackage) {
     if (normalizedCommand.includes('pnpm')) {
@@ -125,6 +129,7 @@ export function resolveOpenCodeUpgradeInvocation(
       method = 'yarn';
     } else {
       method = 'npm';
+      allowScripts = normalizedCommand.includes('/node_modules/opencode-ai/') ? 'opencode-ai' : '@opencode/cli';
       const marker = dependencies.platform === 'win32' ? '/node_modules/' : '/lib/node_modules/';
       const markerIndex = normalizedCommand.indexOf(marker);
       if (markerIndex >= 0) {
@@ -151,7 +156,14 @@ export function resolveOpenCodeUpgradeInvocation(
     command,
     args: method ? ['upgrade', '--method', method] : ['upgrade'],
     // Windows spells the variable `Path`; a second `PATH` key would be ambiguous.
-    ...(updaterPath ? { env: { [pathEnvKey(dependencies.platform)]: updaterPath } } : {}),
+    ...(updaterPath || allowScripts
+      ? {
+        env: {
+          ...(updaterPath ? { [pathEnvKey(dependencies.platform)]: updaterPath } : {}),
+          ...(allowScripts ? { npm_config_allow_scripts: allowScripts } : {}),
+        },
+      }
+      : {}),
   };
 }
 
@@ -415,6 +427,11 @@ function classifyUpdateFailure(
   const permissionDenied = PERMISSION_DENIED_PATTERN.test(run.output);
   if (run.exitCode !== 0) {
     return permissionDenied ? 'permission_denied' : 'failed';
+  }
+  // The updater exited cleanly but the CLI no longer starts (e.g. npm skipped
+  // its postinstall): that is a broken install, not a successful update.
+  if (previousVersion !== null && installedVersion === null) {
+    return 'failed';
   }
   if (previousVersion === installedVersion) {
     if (permissionDenied) {

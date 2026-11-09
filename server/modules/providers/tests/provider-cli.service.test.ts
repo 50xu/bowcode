@@ -544,6 +544,11 @@ for (const detectionCase of openCodeDetectionCases) {
       ? ['upgrade', '--method', detectionCase.expectedMethod]
       : ['upgrade']);
     assert.equal(invocation.env?.PATH, detectionCase.expectedPath);
+    // npm 11 skips OpenCode's postinstall unless the package is allowed to run scripts.
+    assert.equal(
+      invocation.env?.npm_config_allow_scripts,
+      detectionCase.expectedMethod === 'npm' ? '@opencode/cli' : undefined,
+    );
   });
 }
 
@@ -816,6 +821,22 @@ test('getCliStatus reports the starting version of a run that began during the r
 
     const secondResult = await withDeadline(secondRun, 5000, 'the second update never finished');
     assert.equal(secondResult.installedVersion, '1.20.0');
+  });
+});
+
+test('updateCli reports a failure when the updater exits 0 but the CLI no longer starts', async () => {
+  await withIsolatedCliEnv(async (binDir) => {
+    const opencode = await createFakeCli(binDir, 'opencode');
+    await opencode.set('version', '2.2.5\n');
+    await opencode.set('update-stdout', '●  From 2.2.5 → 2.2.6\n◇  Upgrade complete\n');
+    // npm skipped the postinstall, so the new CLI prints no version at all.
+    await opencode.set('update-new-version', ' \n');
+
+    const result = await createService().updateCli('opencode');
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.previousVersion, '2.2.5');
+    assert.equal(result.installedVersion, null);
+    assert.equal(result.failure, 'failed');
   });
 });
 
