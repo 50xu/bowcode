@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ProviderCliVersion from '@/modules/settings/tabs/agents-settings/sections/content/ProviderCliVersion';
 import { ProviderQuotaPanel } from '@/modules/settings/tabs/agents-settings/sections/content/ProviderQuotaPanel';
 import { Badge, Button, LLMProviderLogo } from '@/shared/ui';
+import SettingsCard from '@/modules/settings/SettingsCard';
 import type { AgentProvider, ProviderAuthStatus, ProviderAuthSubscriptionOverride } from '@/shared/types';
 
 type AccountContentProps = {
@@ -110,7 +111,7 @@ export default function AccountContent({ agent, authStatus, onLogin }: AccountCo
       {/* OpenCode has no quota of its own; it bills whichever account it is signed in with. */}
       {authStatus.authenticated && agent !== 'opencode' && <ProviderQuotaPanel provider={agent} />}
 
-      <div className={`${config.bgClass} border ${config.borderClass} rounded-lg p-4`}>
+      <SettingsCard className="p-4">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex-1">
@@ -190,7 +191,7 @@ export default function AccountContent({ agent, authStatus, onLogin }: AccountCo
             </div>
           )}
         </div>
-      </div>
+      </SettingsCard>
     </div>
   );
 }

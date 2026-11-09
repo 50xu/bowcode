@@ -1,5 +1,6 @@
 import type {
   IProvider,
+  IProviderAgents,
   IProviderAuth,
   IProviderMcp,
   IProviderModels,
@@ -23,6 +24,7 @@ export abstract class AbstractProvider implements IProvider {
   abstract readonly mcp: IProviderMcp;
   abstract readonly auth: IProviderAuth;
   abstract readonly skills: IProviderSkills;
+  abstract readonly agents: IProviderAgents;
   abstract readonly sessions: IProviderSessions;
   abstract readonly sessionSynchronizer: IProviderSessionSynchronizer;
 

@@ -56,8 +56,8 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
     setClaudePermissions,
     notificationPreferences,
     setNotificationPreferences,
-    codexPermissionMode,
-    setCodexPermissionMode,
+    defaultPermissionModes,
+    setDefaultPermissionMode,
     providerAuthStatus,
     openLoginForProvider,
     showLoginModal,
@@ -270,8 +270,8 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
                     onProviderLogin={openLoginForProvider}
                     claudePermissions={claudePermissions}
                     onClaudePermissionsChange={setClaudePermissions}
-                    codexPermissionMode={codexPermissionMode}
-                    onCodexPermissionModeChange={setCodexPermissionMode}
+                    defaultPermissionModes={defaultPermissionModes}
+                    onDefaultPermissionModeChange={setDefaultPermissionMode}
                     projects={projects}
                   />
                 )}

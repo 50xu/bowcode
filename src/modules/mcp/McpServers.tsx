@@ -135,16 +135,16 @@ export default function McpServers({ selectedProvider, currentProjects }: McpSer
 
       </div>
 
-      <div className="space-y-2">
-        <div className="min-h-4">
-          {saveStatus === 'success' && (
-            <span className="animate-in fade-in text-xs text-muted-foreground">{t('saveStatus.success')}</span>
-          )}
+      {(saveStatus === 'success' || isLoadingProjectScopes) && (
+        <div className="text-xs text-muted-foreground">
+          {saveStatus === 'success' && t('saveStatus.success')}
           {isLoadingProjectScopes && (
-            <span className="animate-in fade-in text-xs text-muted-foreground">{t('mcpServersAdd.refreshingScopes')}</span>
+            <span className={saveStatus === 'success' ? 'ml-2' : undefined}>
+              {t('mcpServersAdd.refreshingScopes')}
+            </span>
           )}
         </div>
-      </div>
+      )}
 
       {(loadError || deleteError) && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200">
@@ -161,10 +161,10 @@ export default function McpServers({ selectedProvider, currentProjects }: McpSer
           const managed = isManagedServer(server);
 
           return (
-            <div key={getServerKey(server)} className="rounded-lg border border-border bg-card/50 p-4">
+            <div key={getServerKey(server)} className="rounded-lg border border-border bg-card/50 px-3 py-2.5">
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
                     {!managed && getTransportIcon(server.transport)}
                     <span className="font-medium text-foreground">{server.name}</span>
                     {!managed && (

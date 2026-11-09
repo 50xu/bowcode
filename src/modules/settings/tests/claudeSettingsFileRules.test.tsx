@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import '@/modules/i18n';
 import PermissionsContent from '@/modules/settings/tabs/agents-settings/sections/content/PermissionsContent';
@@ -11,12 +11,18 @@ import type { ClaudeSettingsPermissionSource } from '@/shared/types';
 // with nothing here explaining why. The panel now lists those rules read-only.
 
 const claudeSettingsPermissions = vi.fn<() => Promise<Response>>();
+const addRule = vi.fn<(category: string, rule: string) => Promise<Response>>();
+const removeRule = vi.fn<(category: string, rule: string) => Promise<Response>>();
 
 // Only the endpoint is stubbed; `readApiJson` stays real so the panel parses
 // the same envelope the server sends.
 vi.mock('@/shared/api', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  api: { providers: { claudeSettingsPermissions: () => claudeSettingsPermissions() } },
+  api: { providers: {
+    claudeSettingsPermissions: () => claudeSettingsPermissions(),
+    addClaudeSettingsPermissionRule: (category: string, rule: string) => addRule(category, rule),
+    removeClaudeSettingsPermissionRule: (category: string, rule: string) => removeRule(category, rule),
+  } },
 }));
 
 const source = (overrides: Partial<ClaudeSettingsPermissionSource>): ClaudeSettingsPermissionSource => ({
@@ -41,7 +47,7 @@ const ruleGroup = (scope: ClaudeSettingsPermissionSource['scope'], key: 'allow' 
   const group = screen.getByTestId(`claude-settings-file-${scope}-${key}`);
   return {
     label: group.firstElementChild?.textContent,
-    rules: within(group).getAllByRole('listitem').map((item) => item.textContent),
+    rules: within(group).getAllByRole('listitem').map((item) => item.firstChild?.textContent),
   };
 };
 
@@ -60,9 +66,11 @@ const renderClaudePermissions = () => render(
 describe('Claude permissions: rules from the Claude settings files', () => {
   beforeEach(() => {
     claudeSettingsPermissions.mockReset();
+    addRule.mockReset();
+    removeRule.mockReset();
   });
 
-  it('lists the user file rules grouped by allow, ask and deny, with the file path and the read-only note', async () => {
+  it('lists compact user file rules and keeps project details collapsed', async () => {
     respondWith([
       source({ allow: ['Bash(npm run test:*)', 'WebFetch'], ask: ['Bash(git push:*)'], deny: ['Bash(rm:*)'] }),
       source({ scope: 'managed', path: '/etc/claude-code/managed-settings.json', status: 'missing' }),
@@ -74,25 +82,41 @@ describe('Claude permissions: rules from the Claude settings files', () => {
     const card = await screen.findByTestId('claude-settings-file-user');
     expect(screen.queryByText('Loading rules…')).toBeNull();
     expect(within(card).getByText('Your settings')).toBeTruthy();
-    expect(within(card).getByText('/home/me/.claude/settings.json')).toBeTruthy();
+    expect(within(card).getByText('/home/me/.claude/settings.json').getAttribute('title')).toBe('/home/me/.claude/settings.json');
     expect(ruleGroup('user', 'allow')).toEqual({ label: 'Allow', rules: ['Bash(npm run test:*)', 'WebFetch'] });
     expect(ruleGroup('user', 'ask')).toEqual({ label: 'Ask', rules: ['Bash(git push:*)'] });
     expect(ruleGroup('user', 'deny')).toEqual({ label: 'Deny', rules: ['Bash(rm:*)'] });
-    // Read-only: no remove buttons inside the file card.
-    expect(within(card).queryByRole('button')).toBeNull();
+    expect(within(card).getAllByRole('button')).toHaveLength(4);
 
     const section = screen.getByTestId('claude-settings-file-rules');
     expect(section.textContent).toContain('Rules from Claude settings files');
-    expect(section.textContent).toContain('on top of the lists above');
-    expect(section.textContent).toContain('an ask rule does not prompt for a tool that Allowed Tools already allows');
-    expect(section.textContent).toContain('edit them in the files');
-    expect(section.textContent).toContain('.claude/settings.local.json also apply to chats in that project');
-    // The CLI drops a project's shared allow rules until the folder is trusted.
-    expect(section.textContent).toContain('ignores allow rules in .claude/settings.json until the folder is trusted');
+    expect(section.textContent).toContain('Your user settings can be edited here; project files are read-only.');
+    const details = within(section).getByText('Details').closest('details');
+    expect(details?.open).toBe(false);
+    fireEvent.click(within(section).getByText('Details'));
+    expect(details?.open).toBe(true);
+    expect(details?.textContent).toContain('ignores allow rules in .claude/settings.json until the folder is trusted');
     // A managed file that does not exist is the normal case and stays hidden.
     expect(screen.queryByTestId('claude-settings-file-managed')).toBeNull();
     // The UI's own list is still there and unchanged.
     expect(screen.getByText('Bash(make:*)')).toBeTruthy();
+  });
+
+  it('adds a selected group rule and removes a user chip without editing managed rules', async () => {
+    const user = source({ allow: ['Read'] });
+    respondWith([user, source({ scope: 'managed', path: '/etc/managed.json', deny: ['Write'] })]);
+    addRule.mockResolvedValue(new Response(JSON.stringify({ success: true, data: { source: { ...user, ask: ['Bash(git push:*)'] } } })));
+    removeRule.mockResolvedValue(new Response(JSON.stringify({ success: true, data: { source: { ...user, allow: [] } } })));
+    renderClaudePermissions();
+    const card = await screen.findByTestId('claude-settings-file-user');
+    fireEvent.change(screen.getByRole('textbox', { name: 'New rule' }), { target: { value: 'Bash(git push:*)' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Rule group' }), { target: { value: 'ask' } });
+    fireEvent.click(within(screen.getByTestId('claude-settings-file-rules')).getByRole('button', { name: 'Add' }));
+    expect(await screen.findByText('Bash(git push:*)')).toBeTruthy();
+    expect(addRule).toHaveBeenCalledWith('ask', 'Bash(git push:*)');
+    fireEvent.click(within(card).getByRole('button', { name: 'Remove rule Read' }));
+    expect(removeRule).toHaveBeenCalledWith('allow', 'Read');
+    expect(within(screen.getByTestId('claude-settings-file-managed')).queryByRole('button')).toBeNull();
   });
 
   it('shows the managed settings file when one exists', async () => {

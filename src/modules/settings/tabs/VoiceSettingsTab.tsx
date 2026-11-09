@@ -1,6 +1,8 @@
 import type { InputHTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import SettingsCard from '@/modules/settings/SettingsCard';
+import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import SettingsToggle from '@/modules/settings/SettingsToggle';
 import { useUiPreferences, useSetUiPreference } from '@/shared/context/UiPreferencesContext';
@@ -29,17 +31,15 @@ export default function VoiceSettingsTab() {
   return (
     <div className="space-y-8">
       <SettingsSection title={t('voiceSettings.title')} description={t('voiceSettings.description')}>
-        <div className="flex items-center justify-between rounded-lg border border-border p-3">
-          <div className="pr-3">
-            <div className="text-sm font-medium text-foreground">{t('voiceSettings.enable')}</div>
-            <div className="text-xs text-muted-foreground">{t('voiceSettings.enableDescription')}</div>
-          </div>
-          <SettingsToggle
-            checked={voiceEnabled}
-            onChange={(v) => setPreference('voiceEnabled', v)}
-            ariaLabel={t('voiceSettings.enable')}
-          />
-        </div>
+        <SettingsCard>
+          <SettingsRow label={t('voiceSettings.enable')} description={t('voiceSettings.enableDescription')}>
+            <SettingsToggle
+              checked={voiceEnabled}
+              onChange={(v) => setPreference('voiceEnabled', v)}
+              ariaLabel={t('voiceSettings.enable')}
+            />
+          </SettingsRow>
+        </SettingsCard>
       </SettingsSection>
 
       {voiceEnabled && (

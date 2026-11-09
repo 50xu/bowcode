@@ -8,6 +8,7 @@ import SettingsCard from '@/modules/settings/SettingsCard';
 import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import SettingsToggle from '@/modules/settings/SettingsToggle';
+import { Select } from '@/shared/ui';
 
 type AppearanceSettingsTabProps = {
   projectSortOrder: ProjectSortOrder;
@@ -42,16 +43,16 @@ export default function AppearanceSettingsTab({
             label={t('appearanceSettings.theme.label')}
             description={t('appearanceSettings.theme.description')}
           >
-            <select
+            <Select
               value={themeMode}
               onChange={(event) => setThemeMode(event.target.value as ThemeMode)}
               aria-label={t('appearanceSettings.theme.label')}
-              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary max-w-[11rem] sm:w-48 sm:max-w-none"
+              className="w-48"
             >
               <option value="light">{t('appearanceSettings.theme.light')}</option>
               <option value="dark">{t('appearanceSettings.theme.dark')}</option>
               <option value="system">{t('appearanceSettings.theme.system')}</option>
-            </select>
+            </Select>
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
@@ -68,14 +69,14 @@ export default function AppearanceSettingsTab({
             label={t('appearanceSettings.projectSorting.label')}
             description={t('appearanceSettings.projectSorting.description')}
           >
-            <select
+            <Select
               value={projectSortOrder}
               onChange={(event) => onProjectSortOrderChange(event.target.value as ProjectSortOrder)}
-              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary max-w-[11rem] sm:w-48 sm:max-w-none"
+              className="w-48"
             >
               <option value="name">{t('appearanceSettings.projectSorting.alphabetical')}</option>
               <option value="date">{t('appearanceSettings.projectSorting.recentActivity')}</option>
-            </select>
+            </Select>
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
@@ -134,10 +135,10 @@ export default function AppearanceSettingsTab({
             label={t('appearanceSettings.codeEditor.fontSize.label')}
             description={t('appearanceSettings.codeEditor.fontSize.description')}
           >
-            <select
+            <Select
               value={codeEditorSettings.fontSize}
               onChange={(event) => onCodeEditorFontSizeChange(event.target.value)}
-              className="w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary sm:w-28"
+              className="w-28"
             >
               <option value="10">10px</option>
               <option value="11">11px</option>
@@ -148,7 +149,7 @@ export default function AppearanceSettingsTab({
               <option value="16">16px</option>
               <option value="18">18px</option>
               <option value="20">20px</option>
-            </select>
+            </Select>
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>

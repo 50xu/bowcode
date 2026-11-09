@@ -1,8 +1,8 @@
-import { readFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { readObjectRecord, readStringArray } from '@/shared/utils.js';
+import { AppError, readObjectRecord, readStringArray } from '@/shared/utils.js';
 
 /**
  * The permission rules one Claude settings file contributes.
@@ -114,7 +114,7 @@ async function readPermissionSource(
  * Used by provider.routes.ts for the Claude permissions panel in Settings.
  * Project-level files are left out on purpose: the panel has no project, and
  * those files only apply to chats started inside their project. Bowcode never
- * writes to any of these files.
+ * writes only to the user's own file when explicitly asked to edit rules.
  */
 export const claudeSettingsPermissionsService = {
   /** `managedPath` is only overridden by tests, which cannot write to the system path. */
@@ -123,5 +123,50 @@ export const claudeSettingsPermissionsService = {
       readPermissionSource('user', userSettingsPath()),
       readPermissionSource('managed', managedPath),
     ]);
+  },
+
+  /** Edits only a user rule list; never modifies managed settings or unrelated keys. */
+  async changeUserRule(action: 'add' | 'remove', category: 'allow' | 'deny' | 'ask', rule: string): Promise<ClaudeSettingsPermissionSource> {
+    const normalized = rule.trim();
+    if (!normalized || normalized.length > 500 || /[\r\n\0]/.test(normalized)) {
+      throw new AppError('Invalid permission rule.', { code: 'INVALID_PERMISSION_RULE', statusCode: 400 });
+    }
+
+    const filePath = userSettingsPath();
+    let settings: Record<string, unknown> = {};
+    try {
+      const bytes = await readFile(filePath);
+      if (bytes.length > MAX_SETTINGS_FILE_BYTES) {
+        throw new Error('Settings file is too large.');
+      }
+      const content = decodeSettingsFile(bytes);
+      if (content.trim()) {
+        const parsed = readObjectRecord(JSON.parse(content));
+        if (!parsed) throw new Error('Settings file must be an object.');
+        settings = parsed;
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw new AppError('Cannot edit invalid Claude settings.', { code: 'INVALID_CLAUDE_SETTINGS', statusCode: 400 });
+      }
+    }
+    if (settings.permissions !== undefined && !readObjectRecord(settings.permissions)) {
+      throw new AppError('Cannot edit invalid Claude permissions.', { code: 'INVALID_CLAUDE_SETTINGS', statusCode: 400 });
+    }
+    const permissions = readObjectRecord(settings.permissions) ?? {};
+    if (permissions[category] !== undefined && !Array.isArray(permissions[category])) {
+      throw new AppError('Cannot edit invalid Claude permission list.', { code: 'INVALID_CLAUDE_SETTINGS', statusCode: 400 });
+    }
+    const existing = readRuleList(permissions[category]);
+    if (action === 'add' && existing.includes(normalized)) {
+      throw new AppError('Permission rule already exists.', { code: 'DUPLICATE_PERMISSION_RULE', statusCode: 400 });
+    }
+    permissions[category] = action === 'add'
+      ? [...existing, normalized]
+      : existing.filter((entry) => entry !== normalized);
+    settings.permissions = permissions;
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, `${JSON.stringify(settings, null, 2)}\n`, 'utf8');
+    return readPermissionSource('user', filePath);
   },
 };

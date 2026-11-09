@@ -499,6 +499,21 @@
     "error": "Error: {{error}}"
   },
   "permissions": {
+    "defaultMode": {
+      "title": "Default mode for new chats",
+      "description": "Choose the starting mode for new chats. You can change it in the chat mode picker.",
+      "remember": {
+        "title": "Remember last used",
+        "description": "Start with the last mode used for this provider."
+      },
+      "modes": {
+        "default": { "title": "Default", "description": "Use the provider's standard approval behavior." },
+        "auto": { "title": "Auto", "description": "Let the provider handle approvals automatically." },
+        "acceptEdits": { "title": "Accept Edits", "description": "Allow edits automatically while keeping other safeguards." },
+        "bypassPermissions": { "title": "Bypass Permissions", "description": "Skip permission prompts. Use only in trusted environments." },
+        "plan": { "title": "Plan", "description": "Start in planning mode without making changes." }
+      }
+    },
     "title": "Permission Settings",
     "skipPermissions": {
       "label": "Skip permission prompts (use with caution)",
@@ -519,7 +534,7 @@
     },
     "settingsFiles": {
       "title": "Rules from Claude settings files",
-      "description": "The Claude CLI also applies these rules, on top of the lists above. A deny rule wins wherever it is set, but an ask rule does not prompt for a tool that Allowed Tools already allows. The rules are read-only here; edit them in the files.",
+      "description": "Rules the Claude CLI applies on top of the lists above. Your user settings can be edited here; project files are read-only.",
       "sources": {
         "user": "Your settings",
         "managed": "Managed settings (administrator)"
@@ -534,6 +549,7 @@
       "empty": "No permission rules in this file.",
       "loading": "Loading rules…",
       "loadFailed": "Could not load the rules from the Claude settings files.",
+      "details": "Details",
       "projectNote": "A project's own .claude/settings.json and .claude/settings.local.json also apply to chats in that project. The Claude CLI ignores allow rules in .claude/settings.json until the folder is trusted: run Claude Code interactively there once and accept the trust dialog."
     },
     "allowedCommands": {
@@ -590,6 +606,44 @@
     },
     "actions": {
       "add": "Add"
+    },
+    "nativeRules": {
+      "loading": "Loading rules…",
+      "modeNote": "The chat mode picker controls sandbox and approval behavior separately from these native rules.",
+      "claude": {
+        "rule": "New rule",
+        "group": "Rule group",
+        "remove": "Remove rule",
+        "saveFailed": "Could not save your Claude rules. Your edits are still here."
+      },
+      "opencode": {
+        "title": "OpenCode permission rules",
+        "file": "Configuration file",
+        "description": "Configure tool, action and pattern rules in your OpenCode settings.",
+        "globalAction": "Global action",
+        "unsupported": "This permission configuration contains unsupported values and is shown read-only to avoid losing them.",
+        "inherit": "Inherit",
+        "tool": "Tool",
+        "action": "Action",
+        "pattern": "Pattern",
+        "patternRules": "Pattern rules",
+        "noPatterns": "No pattern rules configured.",
+        "preservedKeys": "Preserved keys (read-only): {{keys}}",
+        "add": "Add rule",
+        "remove": "Remove",
+        "loadFailed": "Could not load OpenCode permission rules.",
+        "saveFailed": "Could not save OpenCode permission rules. Your edits are still here."
+      },
+      "codex": {
+        "title": "Codex rule file",
+        "description": "Edit your Codex rules in their native file format.",
+        "file": "Rule file",
+        "directory": "~/.codex/rules/ (or $CODEX_HOME/rules/ when configured)",
+        "fileName": "New rule filename",
+        "newFile": "New rule file",
+        "loadFailed": "Could not load the Codex rule file.",
+        "saveFailed": "Could not save the Codex rule file. Your edits are still here."
+      }
     }
   },
   "mcpServers": {
@@ -653,6 +707,31 @@
     "disable": "Disable",
     "installAriaLabel": "Plugin git repository URL",
     "runningStatus": "running"
+  },
+  "providerAgents": {
+    "tab": "Agents",
+    "title": "Agents",
+    "subtitle": "Manage custom {{provider}} agents for your account and workspace.",
+    "new": "New agent",
+    "refresh": "Refresh",
+    "loading": "Loading agents…",
+    "user": "User",
+    "project": "Project",
+    "empty": "No agents in this scope.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete agent {{name}}?",
+    "editTitle": "Edit agent",
+    "scope": "Scope",
+    "workspace": "Workspace",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "model": "Model (optional)",
+      "instructions": "Instructions"
+    },
+    "content": "Agent file content",
+    "save": "Save"
   },
   "skillsPage": {
     "description": "Manage {{provider}} skills from local files, complete folders, and project-aware locations.",

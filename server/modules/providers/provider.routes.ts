@@ -2,6 +2,7 @@ import express, { type Request, type Response } from 'express';
 
 import { providerAuthService } from '@/modules/providers/services/provider-auth.service.js';
 import { claudeSettingsPermissionsService } from '@/modules/providers/services/claude-settings-permissions.service.js';
+import { codexRulesService, openCodePermissionsService } from '@/modules/providers/services/provider-permission-files.service.js';
 import { providerCapabilitiesService } from '@/modules/providers/services/provider-capabilities.service.js';
 import { providerCliService } from '@/modules/providers/services/provider-cli.service.js';
 import { providerMcpService } from '@/modules/providers/services/mcp.service.js';
@@ -9,6 +10,7 @@ import { providerModelsService } from '@/modules/providers/services/provider-mod
 import { providerQuotaService } from '@/modules/providers/services/provider-quota.service.js';
 import { providerTokenUsageService } from '@/modules/providers/services/provider-token-usage.service.js';
 import { providerSkillsService } from '@/modules/providers/services/skills.service.js';
+import { providerAgentsService } from '@/modules/providers/services/agents.service.js';
 import { sessionConversationsSearchService } from '@/modules/providers/services/session-conversations-search.service.js';
 import { sessionsService } from '@/modules/providers/services/sessions.service.js';
 import type {
@@ -19,6 +21,8 @@ import type {
   McpTransport,
   ProviderSkillCreateFile,
   ProviderSkillCreateInput,
+  ProviderAgentScope,
+  ProviderAgentCreateInput,
   UpsertProviderMcpServerInput,
 } from '@/shared/types.js';
 import { AppError, asyncHandler, createApiSuccessResponse } from '@/shared/utils.js';
@@ -796,6 +800,123 @@ router.delete(
   }),
 );
 
+// ----------------- Agent definition routes -----------------
+const agentNamePattern = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/;
+
+const parseAgentName = (value: unknown): string => {
+  if (typeof value !== 'string' || !agentNamePattern.test(value) || value === '.' || value === '..') {
+    throw new AppError('Invalid agent name.', { code: 'PROVIDER_AGENT_INVALID', statusCode: 400 });
+  }
+  return value;
+};
+
+const parseAgentScope = (value: unknown): ProviderAgentScope => {
+  if (value !== 'user' && value !== 'project') {
+    throw new AppError('Invalid agent scope.', { code: 'PROVIDER_AGENT_INVALID', statusCode: 400 });
+  }
+  return value;
+};
+
+const parseAgentCreatePayload = (payload: unknown): ProviderAgentCreateInput => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new AppError('Request body must be an object.', { code: 'INVALID_REQUEST_BODY', statusCode: 400 });
+  }
+
+  const body = payload as Record<string, unknown>;
+  const scope = parseAgentScope(body.scope);
+  const name = parseAgentName(body.name);
+  const requiredString = (value: unknown, field: string): string => {
+    if (typeof value !== 'string' || !value.trim()) {
+      throw new AppError(`${field} is required.`, { code: 'PROVIDER_AGENT_INVALID', statusCode: 400 });
+    }
+    return value;
+  };
+  const optionalString = (value: unknown, field: string): string | undefined => {
+    if (value === undefined) return undefined;
+    if (typeof value !== 'string') {
+      throw new AppError(`${field} must be a string.`, { code: 'PROVIDER_AGENT_INVALID', statusCode: 400 });
+    }
+    return value;
+  };
+
+  const workspacePath = optionalString(body.workspacePath, 'workspacePath');
+  if (scope === 'project' && !workspacePath?.trim()) {
+    throw new AppError('workspacePath is required for project agents.', {
+      code: 'PROVIDER_AGENT_INVALID',
+      statusCode: 400,
+    });
+  }
+
+  return {
+    scope,
+    name,
+    workspacePath,
+    description: requiredString(body.description, 'description'),
+    model: optionalString(body.model, 'model'),
+    instructions: requiredString(body.instructions, 'instructions'),
+  };
+};
+
+router.get(
+  '/:provider/agents',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    const workspacePath = readOptionalQueryString(req.query.workspacePath);
+    const agents = await providerAgentsService.list(provider, workspacePath);
+    res.json(createApiSuccessResponse({ provider, agents }));
+  }),
+);
+
+router.get(
+  '/:provider/agents/:scope/:name',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    const scope = parseAgentScope(req.params.scope);
+    const name = parseAgentName(req.params.name);
+    const workspacePath = readOptionalQueryString(req.query.workspacePath);
+    const agent = await providerAgentsService.get(provider, scope, name, workspacePath);
+    res.json(createApiSuccessResponse(agent));
+  }),
+);
+
+router.post(
+  '/:provider/agents',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    const input = parseAgentCreatePayload(req.body);
+    const agent = await providerAgentsService.create(provider, input);
+    res.status(201).json(createApiSuccessResponse(agent));
+  }),
+);
+
+router.put(
+  '/:provider/agents/:scope/:name',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    const scope = parseAgentScope(req.params.scope);
+    const name = parseAgentName(req.params.name);
+    const body = req.body as Record<string, unknown> | undefined;
+    if (!body || typeof body !== 'object' || Array.isArray(body) || typeof body.content !== 'string'
+      || (body.workspacePath !== undefined && typeof body.workspacePath !== 'string')) {
+      throw new AppError('Invalid agent update payload.', { code: 'PROVIDER_AGENT_INVALID', statusCode: 400 });
+    }
+    const agent = await providerAgentsService.update(provider, scope, name, body.content, body.workspacePath);
+    res.json(createApiSuccessResponse(agent));
+  }),
+);
+
+router.delete(
+  '/:provider/agents/:scope/:name',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    const scope = parseAgentScope(req.params.scope);
+    const name = parseAgentName(req.params.name);
+    const workspacePath = readOptionalQueryString(req.query.workspacePath);
+    await providerAgentsService.delete(provider, scope, name, workspacePath);
+    res.json(createApiSuccessResponse({ removed: true }));
+  }),
+);
+
 // ----------------- MCP routes -----------------
 router.get(
   '/:provider/mcp/servers',
@@ -878,12 +999,86 @@ router.get(
   }),
 );
 
-// Read-only: the rules Claude's own settings files add on top of the UI's lists.
+// The rules Claude's own settings files add on top of the UI's lists.
 router.get(
   '/claude/settings-permissions',
   asyncHandler(async (_req: Request, res: Response) => {
     const sources = await claudeSettingsPermissionsService.listRuleSources();
     res.json(createApiSuccessResponse({ sources }));
+  }),
+);
+
+const parsePermissionCategory = (value: unknown): 'allow' | 'deny' | 'ask' => {
+  if (value === 'allow' || value === 'deny' || value === 'ask') return value;
+  throw new AppError('Invalid permission category.', { code: 'INVALID_PERMISSION_CATEGORY', statusCode: 400 });
+};
+
+router.post(
+  '/claude/settings-permissions/rules',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const category = parsePermissionCategory(body.category);
+    if (typeof body.rule !== 'string') {
+      throw new AppError('A permission rule is required.', { code: 'INVALID_PERMISSION_RULE', statusCode: 400 });
+    }
+    const source = await claudeSettingsPermissionsService.changeUserRule('add', category, body.rule);
+    res.json(createApiSuccessResponse({ source }));
+  }),
+);
+
+router.delete(
+  '/claude/settings-permissions/rules',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const category = parsePermissionCategory(body.category);
+    if (typeof body.rule !== 'string') {
+      throw new AppError('A permission rule is required.', { code: 'INVALID_PERMISSION_RULE', statusCode: 400 });
+    }
+    const source = await claudeSettingsPermissionsService.changeUserRule('remove', category, body.rule);
+    res.json(createApiSuccessResponse({ source }));
+  }),
+);
+
+router.get(
+  '/opencode/settings-permissions',
+  asyncHandler(async (_req: Request, res: Response) => {
+    res.json(createApiSuccessResponse(await openCodePermissionsService.read()));
+  }),
+);
+
+router.put(
+  '/opencode/settings-permissions',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    if (!Object.hasOwn(body, 'permission')) {
+      throw new AppError('permission is required.', { code: 'INVALID_OPENCODE_PERMISSION', statusCode: 400 });
+    }
+    res.json(createApiSuccessResponse(await openCodePermissionsService.update(body.permission)));
+  }),
+);
+
+router.get(
+  '/codex/rules',
+  asyncHandler(async (_req: Request, res: Response) => {
+    res.json(createApiSuccessResponse({ files: await codexRulesService.list() }));
+  }),
+);
+
+router.get(
+  '/codex/rules/:name',
+  asyncHandler(async (req: Request, res: Response) => {
+    res.json(createApiSuccessResponse(await codexRulesService.read(readPathParam(req.params.name, 'name'))));
+  }),
+);
+
+router.put(
+  '/codex/rules/:name',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    if (typeof body.content !== 'string') {
+      throw new AppError('content must be a string.', { code: 'INVALID_RULES_CONTENT', statusCode: 400 });
+    }
+    res.json(createApiSuccessResponse(await codexRulesService.save(readPathParam(req.params.name, 'name'), body.content)));
   }),
 );
 

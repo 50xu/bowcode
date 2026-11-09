@@ -1,7 +1,34 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-import type { Project, ProjectSession, QuickSettingsTab, SlashCommand } from '@/shared/types';
+import type { LLMProvider, PermissionMode, Project, ProjectSession, QuickSettingsTab, SlashCommand } from '@/shared/types';
+import { PROVIDER_PERMISSION_PREFERENCE_KEYS } from '@/shared/constants';
+import { readUserPreference } from '@/shared/userSettings';
+
+//----------------- DEFAULT CHAT PERMISSION MODE ------------
+
+/** Resolves the configured new-chat mode, including legacy Codex migration; null means remember the last used mode. */
+export function readDefaultChatPermissionMode(provider: LLMProvider, validModes: readonly PermissionMode[]): PermissionMode | null {
+  const preference = readUserPreference<unknown>(PROVIDER_PERMISSION_PREFERENCE_KEYS[provider], {});
+  if (!preference || typeof preference !== 'object' || Array.isArray(preference)) {
+    return null;
+  }
+
+  const settings = preference as Record<string, unknown>;
+  const configured = settings.defaultPermissionMode === undefined && provider === 'codex'
+    ? settings.permissionMode
+    : settings.defaultPermissionMode;
+  if (configured === undefined || configured === null || configured === '' ||
+    (provider === 'codex' && settings.defaultPermissionMode === undefined && configured === 'default')) {
+    return null;
+  }
+
+  return typeof configured === 'string' && validModes.includes(configured as PermissionMode)
+    ? configured as PermissionMode
+    : null;
+}
+
+// ---------------------------
 
 //----------------- TAILWIND CLASS COMPOSITION ------------
 

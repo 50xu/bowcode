@@ -765,6 +765,15 @@ export type OpenCodeSessionTokenUsage = {
 };
 
 // ---------------------------
+//----------------- PROVIDER AGENT TYPES ------------
+/** User-global or workspace-local storage scope for a custom provider agent. */
+export type ProviderAgentScope = 'user' | 'project';
+/** Normalized agent definition; filePath identifies its native file and model is absent when unspecified. */
+export type ProviderAgent = { name: string; description: string; model: string | null; scope: ProviderAgentScope; filePath: string; format: 'markdown' | 'toml' };
+/** Fields submitted to create a native agent file; project scope requires workspacePath. */
+export type ProviderAgentCreateInput = { scope: ProviderAgentScope; workspacePath?: string; name: string; description: string; model?: string; instructions: string };
+
+// ---------------------------
 //----------------- PROVIDER SKILL TYPES ------------
 /**
  * Scope where a provider skill definition was discovered.

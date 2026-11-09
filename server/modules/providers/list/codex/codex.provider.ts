@@ -6,8 +6,10 @@ import { codexRuntime } from '@/modules/providers/list/codex/codex-runtime.provi
 import { CodexMcpProvider } from '@/modules/providers/list/codex/codex-mcp.provider.js';
 import { CodexSessionSynchronizer } from '@/modules/providers/list/codex/codex-session-synchronizer.provider.js';
 import { CodexSessionsProvider } from '@/modules/providers/list/codex/codex-sessions.provider.js';
+import { CodexAgentsProvider } from '@/modules/providers/list/codex/codex-agents.provider.js';
 import { CodexSkillsProvider } from '@/modules/providers/list/codex/codex-skills.provider.js';
 import type {
+  IProviderAgents,
   IProviderAuth,
   IProviderFork,
   IProviderModels,
@@ -23,6 +25,7 @@ export class CodexProvider extends AbstractProvider {
   readonly mcp = new CodexMcpProvider();
   readonly auth: IProviderAuth = new CodexProviderAuth();
   readonly skills: IProviderSkills = new CodexSkillsProvider();
+  readonly agents: IProviderAgents = new CodexAgentsProvider();
   readonly sessions: IProviderSessions = new CodexSessionsProvider();
   readonly fork: IProviderFork = new CodexForkProvider();
   readonly sessionSynchronizer: IProviderSessionSynchronizer = new CodexSessionSynchronizer();
