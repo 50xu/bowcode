@@ -24,7 +24,7 @@ const checkCredentials = (auth: ClaudeProviderAuth): Promise<CheckCredentialsRes
 
 // getStatus() is the public API the route serves, but it first shells out to
 // `claude --version`. Stubbing checkInstalled() lets the test cover the mapping
-// from checkCredentials() to the wire shape without the CLI.
+// from injected auth status or local fallback to the wire shape without the CLI.
 const getStatusWithCliInstalled = (auth: ClaudeProviderAuth): Promise<ProviderAuthStatus> => {
   auth.checkInstalled = () => ({ installed: true, exitCode: 0, version: '2.1.0' });
   return auth.getStatus();
@@ -137,6 +137,76 @@ test('checkCredentials: no CLAUDE_CODE_OAUTH_TOKEN, valid credentials file falls
       assert.equal(status.authenticated, true);
       assert.equal(status.method, 'credentials_file');
       assert.equal(status.email, 'someone@example.com');
+    });
+  });
+});
+
+test('checkCredentials: macOS Keychain credentials authenticate when no credentials file exists', async () => {
+  await withTempHome(async (homeDir) => {
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth({
+        platform: 'darwin',
+        homeDir,
+        readKeychain: async () => JSON.stringify(validSubscriptionCredentials('keychain@example.com')),
+      });
+      const status = await checkCredentials(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'credentials_file');
+      assert.equal(status.email, 'keychain@example.com');
+    });
+  });
+});
+
+test('checkCredentials: macOS falls back to a valid credentials file when the Keychain is empty', async () => {
+  await withTempHome(async (homeDir) => {
+    await writeCredentialsFile(homeDir, validSubscriptionCredentials('file@example.com'));
+
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth({ platform: 'darwin', homeDir, readKeychain: async () => null });
+      const status = await checkCredentials(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'credentials_file');
+      assert.equal(status.email, 'file@example.com');
+    });
+  });
+});
+
+test('checkCredentials: macOS Keychain credentials win over an expired credentials file', async () => {
+  await withTempHome(async (homeDir) => {
+    await writeCredentialsFile(homeDir, {
+      claudeAiOauth: { accessToken: 'expired-file-token', expiresAt: 1_000_000_000_000 },
+    });
+
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth({
+        platform: 'darwin',
+        homeDir,
+        readKeychain: async () => JSON.stringify(validSubscriptionCredentials('keychain@example.com')),
+      });
+      const status = await checkCredentials(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'credentials_file');
+      assert.equal(status.email, 'keychain@example.com');
+    });
+  });
+});
+
+test('checkCredentials: non-macOS ignores the Keychain reader and does not authenticate without a file', async () => {
+  await withTempHome(async (homeDir) => {
+    let keychainCalls = 0;
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth({
+        platform: 'linux',
+        homeDir,
+        readKeychain: async () => {
+          keychainCalls += 1;
+          return JSON.stringify(validSubscriptionCredentials());
+        },
+      });
+      const status = await checkCredentials(auth);
+      assert.equal(status.authenticated, false);
+      assert.equal(status.method, null);
+      assert.equal(keychainCalls, 0);
     });
   });
 });
@@ -330,12 +400,88 @@ test('checkCredentials: a valid subscription login with no API key reports crede
   });
 });
 
+test('getStatus: claude.ai CLI status authenticates with its email without stored credentials', async () => {
+  await withTempHome(async () => {
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth(undefined, {
+        runAuthStatus: async () => ({ loggedIn: true, authMethod: 'claude.ai', email: 'cli@example.com' }),
+      });
+      const status = await getStatusWithCliInstalled(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'credentials_file');
+      assert.equal(status.email, 'cli@example.com');
+    });
+  });
+});
+
+test('getStatus: logged-out CLI status overrides a valid credentials file', async () => {
+  await withTempHome(async (homeDir) => {
+    await writeCredentialsFile(homeDir, validSubscriptionCredentials('stored@example.com'));
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth(undefined, {
+        runAuthStatus: async () => ({ loggedIn: false, authMethod: 'none' }),
+      });
+      const status = await getStatusWithCliInstalled(auth);
+      assert.equal(status.authenticated, false);
+      assert.equal(status.method, null);
+      assert.equal(status.error, 'Claude CLI is not authenticated. Run claude /login or configure ANTHROPIC_API_KEY.');
+    });
+  });
+});
+
+test('getStatus: API key CLI status preserves the env label and subscription override', async () => {
+  await withTempHome(async (homeDir) => {
+    await writeCredentialsFile(homeDir, validSubscriptionCredentials('someone@example.com'));
+    await withEnv({ ANTHROPIC_API_KEY: 'test-api-key' }, async () => {
+      const auth = new ClaudeProviderAuth(undefined, {
+        runAuthStatus: async () => ({ loggedIn: true, authMethod: 'api_key' }),
+      });
+      const status = await getStatusWithCliInstalled(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'api_key');
+      assert.equal(status.email, 'API Key Auth');
+      assert.deepEqual(status.subscriptionOverride, {
+        variable: 'ANTHROPIC_API_KEY',
+        source: 'process_env',
+        subscriptionEmail: 'someone@example.com',
+      });
+    });
+  });
+});
+
+test('getStatus: OAuth token CLI status preserves the long-lived environment label', async () => {
+  await withTempHome(async () => {
+    await withEnv({ CLAUDE_CODE_OAUTH_TOKEN: 'test-oauth-token' }, async () => {
+      const auth = new ClaudeProviderAuth(undefined, {
+        runAuthStatus: async () => ({ loggedIn: true, authMethod: 'oauth_token' }),
+      });
+      const status = await getStatusWithCliInstalled(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'environment');
+      assert.equal(status.email, 'OAuth Token (long-lived)');
+    });
+  });
+});
+
+test('getStatus: null CLI status falls back to local credentials', async () => {
+  await withTempHome(async (homeDir) => {
+    await writeCredentialsFile(homeDir, validSubscriptionCredentials('fallback@example.com'));
+    await withEnv({}, async () => {
+      const auth = new ClaudeProviderAuth(undefined, { runAuthStatus: async () => null });
+      const status = await getStatusWithCliInstalled(auth);
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'credentials_file');
+      assert.equal(status.email, 'fallback@example.com');
+    });
+  });
+});
+
 test('getStatus: passes the subscription override through to the wire shape, and omits the key when there is none', async () => {
   await withTempHome(async (homeDir) => {
     await writeCredentialsFile(homeDir, validSubscriptionCredentials('someone@example.com'));
 
     await withEnv({ ANTHROPIC_API_KEY: 'test-api-key' }, async () => {
-      const status = await getStatusWithCliInstalled(new ClaudeProviderAuth());
+      const status = await getStatusWithCliInstalled(new ClaudeProviderAuth(undefined, { runAuthStatus: async () => null }));
       assert.equal(status.installed, true);
       assert.equal(status.provider, 'claude');
       assert.equal(status.authenticated, true);
@@ -349,7 +495,7 @@ test('getStatus: passes the subscription override through to the wire shape, and
     });
 
     await withEnv({}, async () => {
-      const status = await getStatusWithCliInstalled(new ClaudeProviderAuth());
+      const status = await getStatusWithCliInstalled(new ClaudeProviderAuth(undefined, { runAuthStatus: async () => null }));
       assert.equal(status.method, 'credentials_file');
       // Omitted, not null: existing JSON consumers see exactly the old payload.
       assert.equal('subscriptionOverride' in status, false);

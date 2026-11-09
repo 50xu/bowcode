@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import {
@@ -14,6 +15,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 import Database from 'better-sqlite3';
@@ -25,6 +27,7 @@ import type {
   AnyRecord,
   ApiSuccessShape,
   AppErrorOptions,
+  ClaudeCredentialsSourceDeps,
   CliVersionProbe,
   NormalizedMessage,
   OpenCodeCredential,
@@ -665,6 +668,74 @@ export const readStringRecord = (value: unknown): Record<string, string> | undef
 
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 };
+
+// ---------------------------
+//----------------- CLAUDE OAUTH CREDENTIAL UTILITIES ------------
+const execFileAsync = promisify(execFile);
+
+async function readClaudeKeychainCredential(): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync(
+      'security',
+      ['find-generic-password', '-s', 'Claude Code-credentials', '-w'],
+      { timeout: 5000 },
+    );
+    return stdout.trim() || null;
+  } catch {
+    // Keychain lookup failures are equivalent to no keychain credential so the
+    // legacy credentials file remains available as a fallback.
+    return null;
+  }
+}
+
+/**
+ * Reads the JSON credential object written by `claude /login` from the source
+ * Claude Code uses on the selected platform.
+ *
+ * On macOS, the generic-password item named `Claude Code-credentials` is tried
+ * first through the `security` CLI; command failures, timeouts, a missing binary,
+ * and empty output are treated as no keychain credential. A non-empty keychain
+ * secret is parsed immediately and wins over the file. On every other platform,
+ * or when macOS has no usable keychain value, the function reads
+ * `<homeDir>/.claude/.credentials.json`. A missing file returns `null`; malformed
+ * JSON and non-ENOENT filesystem errors propagate so consumers can preserve
+ * their existing unreadable-credential handling.
+ *
+ * Consumed by the Claude auth provider and provider quota service so both use
+ * identical macOS Keychain priority and credentials-file fallback behavior.
+ */
+export async function readClaudeOAuthCredentials(
+  deps?: ClaudeCredentialsSourceDeps,
+): Promise<unknown | null> {
+  const sourceDeps = deps ?? {};
+  const platform = sourceDeps.platform ?? process.platform;
+  if (platform === 'darwin') {
+    let keychainValue: string | null = null;
+    try {
+      keychainValue = await (sourceDeps.readKeychain ?? readClaudeKeychainCredential)();
+    } catch {
+      // Injected and production keychain readers have the same best-effort contract.
+    }
+    const trimmedKeychainValue = keychainValue?.trim();
+    if (trimmedKeychainValue) {
+      return JSON.parse(trimmedKeychainValue) as unknown;
+    }
+  }
+
+  const credentialsPath = path.join(
+    sourceDeps.homeDir ?? os.homedir(),
+    '.claude',
+    '.credentials.json',
+  );
+  try {
+    return JSON.parse(await readFile(credentialsPath, 'utf8')) as unknown;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
 
 // ---------------------------
 //----------------- PROVIDER MODEL LOOKUP UTILITIES ------------

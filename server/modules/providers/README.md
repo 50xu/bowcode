@@ -57,10 +57,14 @@ The service returns `ok`, `unsupported`, `unauthenticated`, or `error` as data,
 with `fetchedAt`, `source`, `planType`, and normalized windows. Credential values
 and tokens are never returned.
 
-Claude Code reads its OAuth login from `~/.claude/.credentials.json` (or
-`CLAUDE_CODE_OAUTH_TOKEN`) and requests Anthropic's OAuth usage endpoint. API
-keys do not expose subscription quota. For expiring or rejected file credentials,
-the service asks the Claude CLI to refresh its login and then re-reads the file;
+Claude auth status asks `claude auth status --json`; if that command is
+unavailable or returns no parseable status, it falls back to local credential
+discovery. Claude Code reads its OAuth login from the macOS Keychain first on
+macOS, with `~/.claude/.credentials.json` as fallback (or
+`CLAUDE_CODE_OAUTH_TOKEN`), and requests Anthropic's OAuth usage endpoint. API
+keys do not expose subscription quota. For expiring or rejected stored
+credentials, the service asks the Claude CLI to refresh its login and then
+re-reads the platform credential source;
 environment OAuth tokens are never refreshed. Codex reads account/rate-limit
 snapshots through its app-server client (subscription accounts only). OpenCode
 always reports `unsupported`: it has no quota of its own and only bills whichever
