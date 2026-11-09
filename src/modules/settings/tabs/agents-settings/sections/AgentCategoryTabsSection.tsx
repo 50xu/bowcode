@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/utils';
+import { useProviderAgents } from '@/modules/provider-agents';
 import type { AgentCategory, AgentProvider } from '@/shared/types';
 
 type AgentCategoryTabsSectionProps = {
@@ -18,6 +19,7 @@ export default function AgentCategoryTabsSection({
   onSelectCategory,
 }: AgentCategoryTabsSectionProps) {
   const { t } = useTranslation('settings');
+  const { agents } = useProviderAgents(selectedAgent);
 
   return (
     <div className="shrink-0 border-b border-border">
@@ -38,6 +40,7 @@ export default function AgentCategoryTabsSection({
             {category === 'account' && t('tabs.account')}
             {category === 'permissions' && t('tabs.permissions')}
             {category === 'mcp' && t('tabs.mcpServers')}
+            {category === 'agents' && `${t('providerAgents.tab')} (${agents.length})`}
             {category === 'skills' && t('tabs.skills', {
               defaultValue: selectedAgent === 'opencode' ? 'Shared Skills' : 'Skills',
             })}

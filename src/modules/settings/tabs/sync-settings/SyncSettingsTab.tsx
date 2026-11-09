@@ -5,7 +5,7 @@ import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import SettingsToggle from '@/modules/settings/SettingsToggle';
 import { useSettingsSync } from '@/modules/settings/hooks/useSettingsSync';
-import { Button, Input } from '@/shared/ui';
+import { Button, Input, Select } from '@/shared/ui';
 
 const CATEGORIES = ['preferences', 'notifications', 'providerModels', 'plugins', 'gitIdentity', 'mcp', 'claudeConfig'] as const;
 
@@ -24,10 +24,10 @@ export default function SyncSettingsTab() {
             <Input className="w-full" value={config.branch} onChange={(event) => setConfig({ ...config, branch: event.target.value })} />
           </SettingsRow>
           <SettingsRow stacked label={t('sync.token')} description={t('sync.tokenHint')}>
-            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={config.githubTokenId ?? ''} onChange={(event) => setConfig({ ...config, githubTokenId: event.target.value ? Number(event.target.value) : null })}>
+            <Select value={config.githubTokenId ?? ''} onChange={(event) => setConfig({ ...config, githubTokenId: event.target.value ? Number(event.target.value) : null })}>
               <option value="">{t('sync.noToken')}</option>
               {tokens.map((token) => <option key={token.id} value={token.id}>{token.credential_name}</option>)}
-            </select>
+            </Select>
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>

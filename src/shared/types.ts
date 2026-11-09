@@ -1450,7 +1450,14 @@ export type SettingsMainTab = 'agents' | 'appearance' | 'git' | 'api' | 'voice' 
 export type AgentProvider = LLMProvider;
 
 /** One category of per-agent configuration in the agents settings tab (account, permissions, MCP servers or skills); use it to key which panel the tab renders. */
-export type AgentCategory = 'account' | 'permissions' | 'mcp' | 'skills';
+export type AgentCategory = 'account' | 'permissions' | 'mcp' | 'skills' | 'agents';
+
+//----------------- PROVIDER AGENT TYPES ------------
+/** Native user or current-workspace agent definition shown in provider settings. */
+export type ProviderAgentDefinition = { name: string; description: string; model: string | null; scope: 'user' | 'project'; filePath: string; format: 'markdown' | 'toml' };
+/** Input for creating an agent definition in the provider's native format. */
+export type ProviderAgentCreatePayload = { scope: 'user' | 'project'; workspacePath?: string; name: string; description: string; model?: string; instructions: string };
+// ---------------------------
 
 /** How much Codex may do without asking, from prompting on every edit to bypassing permission checks entirely; persisted as the Codex agent's permission setting. */
 export type CodexPermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions';

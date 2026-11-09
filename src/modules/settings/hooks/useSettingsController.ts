@@ -12,7 +12,8 @@ import {
   writeUserPreferences,
 } from '@/shared/userSettings';
 import { useProviderAuthStatus } from '@/modules/provider-auth';
-import type { AgentProvider, ClaudePermissionsState, CodeEditorSettingsState, CodexPermissionMode, NotificationPreferencesState, ProjectSortOrder, SettingsMainTab } from '@/shared/types';
+import type { AgentProvider, ClaudePermissionsState, CodeEditorSettingsState, NotificationPreferencesState, PermissionMode, ProjectSortOrder, SettingsMainTab } from '@/shared/types';
+import { readDefaultChatPermissionMode } from '@/shared/utils';
 
 type ThemeContextValue = {
   isDarkMode: boolean;
@@ -31,8 +32,16 @@ type ClaudeSettingsStorage = {
   projectSortOrder?: ProjectSortOrder;
 };
 
-type CodexSettingsStorage = {
-  permissionMode?: CodexPermissionMode;
+type ProviderPermissionSettings = {
+  defaultPermissionMode?: string;
+  permissionMode?: string;
+  [key: string]: unknown;
+};
+
+const PERMISSION_MODES: Record<AgentProvider, PermissionMode[]> = {
+  claude: ['default', 'auto', 'acceptEdits', 'bypassPermissions', 'plan'],
+  codex: ['default', 'acceptEdits', 'bypassPermissions'],
+  opencode: ['default', 'acceptEdits', 'bypassPermissions', 'plan'],
 };
 
 type NotificationPreferencesResponse = {
@@ -51,14 +60,6 @@ const normalizeMainTab = (tab: string): SettingsMainTab => {
   }
 
   return KNOWN_MAIN_TABS.includes(tab as SettingsMainTab) ? (tab as SettingsMainTab) : 'agents';
-};
-
-const toCodexPermissionMode = (value: unknown): CodexPermissionMode => {
-  if (value === 'acceptEdits' || value === 'bypassPermissions') {
-    return value;
-  }
-
-  return 'default';
 };
 
 const toResponseJson = async <T>(response: Response): Promise<T> => response.json() as Promise<T>;
@@ -118,7 +119,15 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferencesState>(() => (
     createDefaultNotificationPreferences()
   ));
-  const [codexPermissionMode, setCodexPermissionMode] = useState<CodexPermissionMode>('default');
+  // Retains each provider's selected new-chat default until the settings dialog saves it.
+  const [defaultPermissionModes, setDefaultPermissionModes] = useState<Record<AgentProvider, string>>({
+    claude: '',
+    codex: '',
+    opencode: '',
+  });
+  const setDefaultPermissionMode = useCallback((provider: AgentProvider, mode: string) => {
+    setDefaultPermissionModes((previous) => ({ ...previous, [provider]: mode }));
+  }, []);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginProvider, setLoginProvider] = useState<ActiveLoginProvider>('');
@@ -138,8 +147,11 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
       });
       setProjectSortOrder(readUserPreference<ProjectSortOrder>('projectSortOrder', 'name') === 'date' ? 'date' : 'name');
 
-      const savedCodexSettings = readUserPreference<CodexSettingsStorage>('codexPermissions', {});
-      setCodexPermissionMode(toCodexPermissionMode(savedCodexSettings.permissionMode));
+      setDefaultPermissionModes({
+        claude: readDefaultChatPermissionMode('claude', PERMISSION_MODES.claude) ?? '',
+        codex: readDefaultChatPermissionMode('codex', PERMISSION_MODES.codex) ?? '',
+        opencode: readDefaultChatPermissionMode('opencode', PERMISSION_MODES.opencode) ?? '',
+      });
 
       try {
         const notificationResponse = await api.settings.notificationPreferences();
@@ -161,7 +173,7 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
       console.error('Error loading settings:', error);
       setClaudePermissions(createEmptyClaudePermissions());
       setNotificationPreferences(createDefaultNotificationPreferences());
-      setCodexPermissionMode('default');
+      setDefaultPermissionModes({ claude: '', codex: '', opencode: '' });
       setProjectSortOrder('name');
     }
   }, []);
@@ -193,15 +205,25 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
     try {
       // One call so the whole dialog's state reaches the server as a single
       // merge-patch rather than four racing requests.
+      const existingClaude = readUserPreference<ProviderPermissionSettings>('claudePermissions', {});
+      const existingCodex = readUserPreference<ProviderPermissionSettings>('codexPermissions', {});
+      const existingOpenCode = readUserPreference<ProviderPermissionSettings>('opencodePermissions', {});
       writeUserPreferences({
         claudePermissions: {
+          ...existingClaude,
           allowedTools: claudePermissions.allowedTools,
           disallowedTools: claudePermissions.disallowedTools,
           skipPermissions: claudePermissions.skipPermissions,
+          defaultPermissionMode: defaultPermissionModes.claude || undefined,
         },
         projectSortOrder,
         codexPermissions: {
-          permissionMode: codexPermissionMode,
+          ...existingCodex,
+          defaultPermissionMode: defaultPermissionModes.codex || undefined,
+        },
+        opencodePermissions: {
+          ...existingOpenCode,
+          defaultPermissionMode: defaultPermissionModes.opencode || undefined,
         },
       });
 
@@ -221,7 +243,7 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
     claudePermissions.allowedTools,
     claudePermissions.disallowedTools,
     claudePermissions.skipPermissions,
-    codexPermissionMode,
+    defaultPermissionModes,
     notificationPreferences,
     projectSortOrder,
   ]);
@@ -327,8 +349,8 @@ export function useSettingsController({ isOpen, initialTab }: UseSettingsControl
     setClaudePermissions,
     notificationPreferences,
     setNotificationPreferences,
-    codexPermissionMode,
-    setCodexPermissionMode,
+    defaultPermissionModes,
+    setDefaultPermissionMode,
     providerAuthStatus,
     openLoginForProvider,
     showLoginModal,

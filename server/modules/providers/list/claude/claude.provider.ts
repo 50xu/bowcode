@@ -6,8 +6,10 @@ import { ClaudeForkProvider } from '@/modules/providers/list/claude/claude-fork.
 import { ClaudeMcpProvider } from '@/modules/providers/list/claude/claude-mcp.provider.js';
 import { ClaudeSessionSynchronizer } from '@/modules/providers/list/claude/claude-session-synchronizer.provider.js';
 import { ClaudeSessionsProvider } from '@/modules/providers/list/claude/claude-sessions.provider.js';
+import { ClaudeAgentsProvider } from '@/modules/providers/list/claude/claude-agents.provider.js';
 import { ClaudeSkillsProvider } from '@/modules/providers/list/claude/claude-skills.provider.js';
 import type {
+  IProviderAgents,
   IProviderAuth,
   IProviderFork,
   IProviderModels,
@@ -23,6 +25,7 @@ export class ClaudeProvider extends AbstractProvider {
   readonly mcp = new ClaudeMcpProvider();
   readonly auth: IProviderAuth = new ClaudeProviderAuth();
   readonly skills: IProviderSkills = new ClaudeSkillsProvider();
+  readonly agents: IProviderAgents = new ClaudeAgentsProvider();
   readonly sessions: IProviderSessions = new ClaudeSessionsProvider();
   readonly sessionSynchronizer: IProviderSessionSynchronizer = new ClaudeSessionSynchronizer();
   readonly fork: IProviderFork = new ClaudeForkProvider();

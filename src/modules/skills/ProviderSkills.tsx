@@ -55,9 +55,10 @@ const PROVIDER_NAMES: Record<SkillsProvider, string> = {
   opencode: 'OpenCode',
 };
 
-const PROVIDER_SKILL_PATHS: Record<Exclude<SkillsProvider, 'opencode'>, string> = {
+const PROVIDER_SKILL_PATHS: Record<SkillsProvider, string> = {
   claude: '~/.claude/skills/<skill-name>/SKILL.md',
   codex: '~/.agents/skills/<skill-name>/SKILL.md',
+  opencode: '~/.config/opencode/skills/<skill-name>/SKILL.md',
 };
 
 const SCOPE_BADGE_CLASSES: Record<SkillsScope, string> = {
@@ -204,7 +205,7 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
   const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   const providerName = PROVIDER_NAMES[selectedProvider];
-  const providerPath = selectedProvider === 'opencode' ? null : PROVIDER_SKILL_PATHS[selectedProvider];
+  const providerPath = PROVIDER_SKILL_PATHS[selectedProvider];
 
   useEffect(() => {
     setQueuedFiles([]);
@@ -694,37 +695,29 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
               </span>
             </div>
 
-            <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+            <div className="min-w-0 divide-y divide-border rounded-lg border border-border bg-card/50">
               {group.skills.map((skill) => (
                 <div
                   key={`${skill.command}:${skill.sourcePath}:${skill.projectPath || 'global'}`}
-                  className="min-w-0 rounded-lg border border-border bg-card/50 p-4"
+                  className="min-w-0 space-y-1.5 px-3 py-2.5"
                 >
-                  <div className="min-w-0 space-y-1">
-                    <div className="break-all font-mono text-sm font-semibold text-foreground">{skill.command}</div>
-                    <div className="text-sm text-muted-foreground">{skill.name}</div>
-                  </div>
-
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    {skill.description || t('skillsPage.noDescription')}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="break-all font-mono text-sm font-semibold text-foreground">{skill.command}</span>
+                    <span className="text-sm text-muted-foreground">{skill.name}</span>
                     {skill.pluginName && (
-                      <Badge variant="outline" className="rounded-full bg-background/70">
+                      <Badge variant="outline" className="bg-background/70">
                         {t('skillsPage.pluginBadge', { name: skill.pluginName })}
                       </Badge>
                     )}
                     {skill.projectDisplayName && (
-                      <Badge variant="outline" className="rounded-full bg-background/70">
+                      <Badge variant="outline" className="bg-background/70">
                         {t('skillsPage.projectBadge', { name: skill.projectDisplayName })}
                       </Badge>
                     )}
                   </div>
-
-                  <div className="mt-4 min-w-0 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{t('skillsPage.source')}</div>
-                    <code className="mt-1 block whitespace-normal break-all text-xs text-foreground">{skill.sourcePath}</code>
+                  <p className="text-sm text-muted-foreground">{skill.description || t('skillsPage.noDescription')}</p>
+                  <div className="min-w-0 text-xs text-muted-foreground">
+                    {t('skillsPage.source')}: <code className="break-all text-foreground">{skill.sourcePath}</code>
                   </div>
                 </div>
               ))}

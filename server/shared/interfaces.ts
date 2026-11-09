@@ -7,6 +7,9 @@ import type {
   LLMProvider,
   McpScope,
   NormalizedMessage,
+  ProviderAgent,
+  ProviderAgentCreateInput,
+  ProviderAgentScope,
   ProviderSkill,
   ProviderSkillListOptions,
   ProviderAuthStatus,
@@ -67,6 +70,7 @@ export interface IProvider {
   readonly mcp: IProviderMcp;
   readonly auth: IProviderAuth;
   readonly skills: IProviderSkills;
+  readonly agents: IProviderAgents;
   readonly sessions: IProviderSessions;
   readonly sessionSynchronizer: IProviderSessionSynchronizer;
   /**
@@ -177,6 +181,17 @@ export interface IProviderSkills {
   removeSkill(
     input: ProviderSkillRemoveInput,
   ): Promise<{ removed: boolean; provider: LLMProvider; directoryName: string }>;
+}
+
+// ---------------------------
+//----------------- PROVIDER AGENTS INTERFACE ------------
+/** Contract for reading and writing provider-native custom agent definitions. */
+export interface IProviderAgents {
+  listAgents(workspacePath?: string): Promise<ProviderAgent[]>;
+  getAgent(scope: ProviderAgentScope, name: string, workspacePath?: string): Promise<ProviderAgent & { content: string }>;
+  createAgent(input: ProviderAgentCreateInput): Promise<ProviderAgent>;
+  updateAgent(scope: ProviderAgentScope, name: string, content: string, workspacePath?: string): Promise<ProviderAgent>;
+  deleteAgent(scope: ProviderAgentScope, name: string, workspacePath?: string): Promise<void>;
 }
 
 // ---------------------------

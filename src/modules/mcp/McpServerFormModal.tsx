@@ -2,7 +2,7 @@ import { FolderOpen, Globe, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Input } from '@/shared/ui';
+import { Button, Input, Select } from '@/shared/ui';
 import { MCP_PROVIDER_NAMES, MCP_SUPPORTED_SCOPES, MCP_SUPPORTED_TRANSPORTS, MCP_SUPPORTS_WORKING_DIRECTORY } from '@/shared/constants';
 import { useMcpServerForm } from '@/modules/mcp/hooks/useMcpServerForm';
 import type { McpFormState, McpProject, McpProvider, McpScope, McpTransport, ProviderMcpServer } from '@/shared/types';
@@ -168,28 +168,19 @@ export default function McpServerFormModal({
           {!isEditing && (
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-foreground">
+                <label htmlFor="mcp-server-scope" className="mb-2 block text-sm font-medium text-foreground">
                   {t('mcpForm.scope.label')} *
                 </label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Select
+                  id="mcp-server-scope"
+                  value={formData.scope}
+                  onChange={(event) => updateScope(event.target.value as McpScope)}
+                  className="w-full sm:w-72"
+                >
                   {availableScopes.map((scope) => (
-                    <button
-                      key={scope}
-                      type="button"
-                      onClick={() => updateScope(scope)}
-                      className={`rounded-lg px-4 py-2 font-medium transition-colors ${
-                        formData.scope === scope
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        {scope === 'user' ? <Globe className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />}
-                        <span>{getScopeLabel(scope, mode, t)}</span>
-                      </div>
-                    </button>
+                    <option key={scope} value={scope}>{getScopeLabel(scope, mode, t)}</option>
                   ))}
-                </div>
+                </Select>
                 <p className="mt-2 text-xs text-muted-foreground">{getScopeDescription(formData.scope, mode, t)}</p>
               </div>
 
@@ -198,10 +189,10 @@ export default function McpServerFormModal({
                   <label className="mb-2 block text-sm font-medium text-foreground">
                     {t('mcpForm.fields.selectProject')} *
                   </label>
-                  <select
+                  <Select
                     value={formData.workspacePath}
                     onChange={(event) => updateForm('workspacePath', event.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    className="w-full"
                     required
                   >
                     <option value="">{t('mcpForm.fields.selectProject')}</option>
@@ -210,7 +201,7 @@ export default function McpServerFormModal({
                         {project.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   {formData.workspacePath && (
                     <p className="mt-1 truncate text-xs text-muted-foreground">
                       {t('mcpForm.projectPath', { path: formData.workspacePath })}
@@ -239,17 +230,17 @@ export default function McpServerFormModal({
                 <label className="mb-2 block text-sm font-medium text-foreground">
                   {t('mcpForm.fields.transportType')} *
                 </label>
-                <select
+                <Select
                   value={formData.transport}
                   onChange={(event) => updateTransport(event.target.value as McpFormState['transport'])}
-                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  className="w-full"
                 >
                   {availableTransports.map((transport) => (
                     <option key={transport} value={transport}>
                       {transport === 'sse' ? 'SSE' : transport.toUpperCase()}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
           </div>
@@ -303,7 +294,7 @@ export default function McpServerFormModal({
                 <textarea
                   value={multilineText.args}
                   onChange={(event) => updateMultilineText('args', event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  className="w-full"
                   rows={3}
                   placeholder="--port&#10;3000"
                 />
@@ -347,7 +338,7 @@ export default function McpServerFormModal({
               <textarea
                 value={multilineText.env}
                 onChange={(event) => updateMultilineText('env', event.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full"
                 rows={3}
                 placeholder="API_KEY=your-key&#10;DEBUG=true"
               />
@@ -362,7 +353,7 @@ export default function McpServerFormModal({
               <textarea
                 value={multilineText.headers}
                 onChange={(event) => updateMultilineText('headers', event.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full"
                 rows={3}
                 placeholder="Authorization=Bearer token&#10;X-API-Key=your-key"
               />
@@ -377,7 +368,7 @@ export default function McpServerFormModal({
               <textarea
                 value={multilineText.envVars}
                 onChange={(event) => updateMultilineText('envVars', event.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full"
                 rows={3}
                 placeholder="GITHUB_TOKEN&#10;API_KEY"
               />

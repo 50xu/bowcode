@@ -1,6 +1,7 @@
-import type { AgentCategory, AgentContextByProvider, AgentProvider, AgentSettingsProject, ClaudePermissionsState, CodexPermissionMode, McpProject, SkillsProject } from '@/shared/types';
+import type { AgentCategory, AgentContextByProvider, AgentProvider, AgentSettingsProject, ClaudePermissionsState, McpProject, SkillsProject } from '@/shared/types';
 import { McpServers } from '@/modules/mcp';
 import { ProviderSkills } from '@/modules/skills';
+import { ProviderAgents } from '@/modules/provider-agents';
 import AccountContent from '@/modules/settings/tabs/agents-settings/sections/content/AccountContent';
 import PermissionsContent from '@/modules/settings/tabs/agents-settings/sections/content/PermissionsContent';
 
@@ -10,8 +11,8 @@ type AgentCategoryContentSectionProps = {
   agentContextById: AgentContextByProvider;
   claudePermissions: ClaudePermissionsState;
   onClaudePermissionsChange: (value: ClaudePermissionsState) => void;
-  codexPermissionMode: CodexPermissionMode;
-  onCodexPermissionModeChange: (value: CodexPermissionMode) => void;
+  defaultPermissionModes: Record<AgentProvider, string>;
+  onDefaultPermissionModeChange: (provider: AgentProvider, mode: string) => void;
   projects: AgentSettingsProject[];
 };
 
@@ -22,8 +23,8 @@ export default function AgentCategoryContentSection({
   agentContextById,
   claudePermissions,
   onClaudePermissionsChange,
-  codexPermissionMode,
-  onCodexPermissionModeChange,
+  defaultPermissionModes,
+  onDefaultPermissionModeChange,
   projects,
 }: AgentCategoryContentSectionProps) {
   return (
@@ -39,6 +40,8 @@ export default function AgentCategoryContentSection({
       {selectedCategory === 'permissions' && selectedAgent === 'claude' && (
         <PermissionsContent
           agent="claude"
+          defaultPermissionMode={defaultPermissionModes.claude}
+          onDefaultPermissionModeChange={(mode) => onDefaultPermissionModeChange('claude', mode)}
           skipPermissions={claudePermissions.skipPermissions}
           onSkipPermissionsChange={(value) => {
             onClaudePermissionsChange({ ...claudePermissions, skipPermissions: value });
@@ -54,11 +57,11 @@ export default function AgentCategoryContentSection({
         />
       )}
 
-      {selectedCategory === 'permissions' && selectedAgent === 'codex' && (
+      {selectedCategory === 'permissions' && selectedAgent !== 'claude' && (
         <PermissionsContent
-          agent="codex"
-          permissionMode={codexPermissionMode}
-          onPermissionModeChange={onCodexPermissionModeChange}
+          agent={selectedAgent}
+          defaultPermissionMode={defaultPermissionModes[selectedAgent]}
+          onDefaultPermissionModeChange={(mode) => onDefaultPermissionModeChange(selectedAgent, mode)}
         />
       )}
 
@@ -76,7 +79,17 @@ export default function AgentCategoryContentSection({
         />
       )}
 
-      {selectedCategory === 'skills' && selectedAgent !== 'opencode' && (
+      {selectedCategory === 'agents' && (
+        <ProviderAgents
+          provider={selectedAgent}
+          workspaces={projects.map((project) => ({
+            name: project.displayName || project.name,
+            path: project.fullPath || project.path || '',
+          })).filter((project) => project.path)}
+        />
+      )}
+
+      {selectedCategory === 'skills' && (
         <ProviderSkills
           selectedProvider={selectedAgent}
           currentProjects={projects.map<SkillsProject>((project) => ({

@@ -10,6 +10,7 @@ import type { PendingPermissionRequest, PermissionMode,
   ProviderModelOption,
   ProviderModelsDefinition } from '@/shared/types';
 import { DEFAULT_EFFORT_VALUE } from '@/shared/constants';
+import { readDefaultChatPermissionMode } from '@/shared/utils';
 import { readSelectedProvider, writeSelectedProvider } from '@/shared/selectedProvider';
 
 const FALLBACK_PROVIDER_EFFORT_VALUES: Partial<Record<LLMProvider, readonly string[]>> = {
@@ -403,7 +404,13 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
     // mode chosen beforehand would snap back to the default as soon as the
     // session id appears.
     const providerSavedMode = localStorage.getItem(`permissionMode-last-${provider}`) as PermissionMode | null;
-    const savedMode = [sessionSavedMode, providerSavedMode].find(
+    const configuredMode = !selectedSession?.id
+      ? readDefaultChatPermissionMode(provider, validModes)
+      : null;
+    if (configuredMode) {
+      localStorage.setItem(`permissionMode-last-${provider}`, configuredMode);
+    }
+    const savedMode = [sessionSavedMode, configuredMode, providerSavedMode].find(
       (mode): mode is PermissionMode => Boolean(mode && validModes.includes(mode)),
     );
     setPermissionMode(savedMode ?? getDefaultPermissionModeForProvider(provider));

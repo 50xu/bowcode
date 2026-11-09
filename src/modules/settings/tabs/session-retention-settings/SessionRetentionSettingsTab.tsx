@@ -1,7 +1,7 @@
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '@/shared/ui';
+import { Button, Select } from '@/shared/ui';
 import SettingsCard from '@/modules/settings/SettingsCard';
 import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
@@ -11,9 +11,6 @@ import type { SessionRetentionAction, SessionRetentionRun } from '@/shared/types
 
 /** Threshold presets offered in the picker; a stored value outside this list is shown as an extra option. */
 const INACTIVE_DAY_PRESETS = [7, 14, 30, 60, 90, 180, 365];
-
-const SELECT_CLASS_NAME =
-  'w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary max-w-[11rem] sm:w-48 sm:max-w-none';
 
 function formatDateTime(value: string): string {
   const date = new Date(value);
@@ -123,33 +120,33 @@ export default function SessionRetentionSettingsTab() {
             label={t('sessionRetention.thresholdLabel')}
             description={t('sessionRetention.thresholdDescription')}
           >
-            <select
+            <Select
               value={settings.inactiveDays}
               disabled={isSaving}
               onChange={(event) => void saveSettings({ inactiveDays: Number(event.target.value) })}
               aria-label={t('sessionRetention.thresholdLabel')}
-              className={SELECT_CLASS_NAME}
+              className="w-48"
             >
               {dayOptions.map((days) => (
                 <option key={days} value={days}>{t('sessionRetention.days', { count: days })}</option>
               ))}
-            </select>
+            </Select>
           </SettingsRow>
 
           <SettingsRow
             label={t('sessionRetention.actionLabel')}
             description={isDelete ? t('sessionRetention.actionDeleteDescription') : t('sessionRetention.actionArchiveDescription')}
           >
-            <select
+            <Select
               value={settings.action}
               disabled={isSaving}
               onChange={(event) => handleActionChange(event.target.value as SessionRetentionAction)}
               aria-label={t('sessionRetention.actionLabel')}
-              className={SELECT_CLASS_NAME}
+              className="w-48"
             >
               <option value="archive">{t('sessionRetention.actions.archive')}</option>
               <option value="delete">{t('sessionRetention.actions.delete')}</option>
-            </select>
+            </Select>
           </SettingsRow>
 
           <SettingsRow

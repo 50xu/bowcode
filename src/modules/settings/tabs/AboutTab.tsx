@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { APP_VERSION, PROJECT_REPO_URL } from '@/shared/constants';
 import { api, readApiJson, ApiRequestError } from '@/shared/api';
 import type { AppUpdateStatus } from '@/shared/types';
-import { BrandMark } from '@/shared/ui';
+import { BrandMark, Select } from '@/shared/ui';
 import SettingsCard from '@/modules/settings/SettingsCard';
 
 function GitHubIcon({ className }: { className?: string }) {
@@ -150,16 +150,16 @@ export default function AboutTab() {
         </div>
         <div className="space-y-1 px-4 py-3.5 text-sm">
           <label htmlFor="release-channel" className="block text-foreground">{t('about.update.channel')}</label>
-          <select
+          <Select
             id="release-channel"
             value={update?.channel ?? 'stable'}
             disabled={!update || checking || updating}
             onChange={(event) => { void changeChannel(event.target.value as 'stable' | 'beta'); }}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-foreground disabled:opacity-50"
+            className="w-32"
           >
             <option value="stable">{t('about.update.stable')}</option>
             <option value="beta">{t('about.update.beta')}</option>
-          </select>
+          </Select>
           {update?.channel === 'beta' && <p className="text-muted-foreground">{t('about.update.betaHint')}</p>}
         </div>
         <a

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { AgentCategory, AgentContextByProvider, AgentProvider, AgentSettingsProject, ClaudePermissionsState, CodexPermissionMode, ProviderAuthStatus } from '@/shared/types';
+import type { AgentCategory, AgentContextByProvider, AgentProvider, AgentSettingsProject, ClaudePermissionsState, ProviderAuthStatus } from '@/shared/types';
 import AgentCategoryContentSection from '@/modules/settings/tabs/agents-settings/sections/AgentCategoryContentSection';
 import AgentCategoryTabsSection from '@/modules/settings/tabs/agents-settings/sections/AgentCategoryTabsSection';
 import AgentSelectorSection from '@/modules/settings/tabs/agents-settings/sections/AgentSelectorSection';
@@ -12,8 +12,8 @@ type AgentsSettingsTabProps = {
   onProviderLogin: (provider: AgentProvider) => void;
   claudePermissions: ClaudePermissionsState;
   onClaudePermissionsChange: (value: ClaudePermissionsState) => void;
-  codexPermissionMode: CodexPermissionMode;
-  onCodexPermissionModeChange: (value: CodexPermissionMode) => void;
+  defaultPermissionModes: Record<AgentProvider, string>;
+  onDefaultPermissionModeChange: (provider: AgentProvider, mode: string) => void;
   projects: AgentSettingsProject[];
 };
 
@@ -23,17 +23,15 @@ export default function AgentsSettingsTab({
   onProviderLogin,
   claudePermissions,
   onClaudePermissionsChange,
-  codexPermissionMode,
-  onCodexPermissionModeChange,
+  defaultPermissionModes,
+  onDefaultPermissionModeChange,
   projects,
 }: AgentsSettingsTabProps) {
   const [selectedAgent, setSelectedAgent] = useState<AgentProvider>('claude');
   const [selectedCategory, setSelectedCategory] = useState<AgentCategory>('account');
   const visibleCategories = useMemo<AgentCategory[]>(() => (
-    selectedAgent === 'opencode'
-      ? ['account', 'permissions', 'mcp']
-      : ['account', 'permissions', 'mcp', 'skills']
-  ), [selectedAgent]);
+    ['account', 'permissions', 'mcp', 'skills', 'agents']
+  ), []);
 
   const visibleAgents = useMemo<AgentProvider[]>(() => {
     return ['claude', 'codex', 'opencode'];
@@ -88,8 +86,8 @@ export default function AgentsSettingsTab({
           agentContextById={agentContextById}
           claudePermissions={claudePermissions}
           onClaudePermissionsChange={onClaudePermissionsChange}
-          codexPermissionMode={codexPermissionMode}
-          onCodexPermissionModeChange={onCodexPermissionModeChange}
+          defaultPermissionModes={defaultPermissionModes}
+          onDefaultPermissionModeChange={onDefaultPermissionModeChange}
           projects={projects}
         />
       </div>

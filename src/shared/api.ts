@@ -108,14 +108,22 @@ export class ApiRequestError extends Error {
  * the structured AppError envelope (`error: { code, message, details }`).
  */
 export async function readApiJson<T>(response: Response): Promise<T> {
-  const data = await response.json();
+  let data: Record<string, unknown>;
+  try {
+    data = await response.json() as Record<string, unknown>;
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid API response');
+    }
+  } catch {
+    throw new ApiRequestError(`HTTP ${response.status} ${response.statusText}`.trim(), { status: response.status });
+  }
   if (!response.ok || data.success === false) {
     const raw = data.error ?? data.details;
-    const payload = raw && typeof raw === 'object' ? raw : {};
-    const message = (typeof raw === 'string' ? raw : payload?.message) || data.details || `Request failed (${response.status})`;
-    throw new ApiRequestError(message, {
-      code: typeof payload?.code === 'string' ? payload.code : undefined,
-      details: payload?.details ?? data.details,
+    const payload = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+    const message = (typeof raw === 'string' ? raw : payload.message) || data.details || `Request failed (${response.status})`;
+    throw new ApiRequestError(typeof message === 'string' ? message : `Request failed (${response.status})`, {
+      code: typeof payload.code === 'string' ? payload.code : undefined,
+      details: payload.details ?? data.details,
       status: response.status,
     });
   }
@@ -464,6 +472,16 @@ export const api = {
     updateCli: (provider: string) =>
       post(`/api/providers/${encodeURIComponent(provider)}/cli/update`),
     claudeSettingsPermissions: () => get('/api/providers/claude/settings-permissions'),
+    addClaudeSettingsPermissionRule: (category: 'allow' | 'ask' | 'deny', rule: string) =>
+      post('/api/providers/claude/settings-permissions/rules', { category, rule }),
+    removeClaudeSettingsPermissionRule: (category: 'allow' | 'ask' | 'deny', rule: string) =>
+      del('/api/providers/claude/settings-permissions/rules', { category, rule }),
+    opencodePermissionRules: () => get('/api/providers/opencode/settings-permissions'),
+    saveOpencodePermissionRules: (permission: unknown) =>
+      put('/api/providers/opencode/settings-permissions', { permission }),
+    codexRules: () => get('/api/providers/codex/rules'),
+    saveCodexRules: (name: string, content: string) =>
+      put(`/api/providers/codex/rules/${encodeURIComponent(name)}`, { content }),
 
     models: (provider: string) => get(`/api/providers/${provider}/models`),
     createModel: (provider: string, input: unknown) =>
@@ -513,6 +531,16 @@ export const api = {
         `/api/providers/${provider}/mcp/servers/${encodeURIComponent(serverName)}${query({ scope, workspacePath })}`,
       ),
     saveGlobalMcpServer: (payload: unknown) => post('/api/providers/mcp/servers/global', payload),
+
+    agents: (provider: string, workspacePath?: string) =>
+      get(`/api/providers/${encodeURIComponent(provider)}/agents${query({ workspacePath })}`),
+    agent: (provider: string, scope: string, name: string, workspacePath?: string) =>
+      get(`/api/providers/${encodeURIComponent(provider)}/agents/${scope}/${encodeURIComponent(name)}${query({ workspacePath })}`),
+    createAgent: (provider: string, payload: unknown) => post(`/api/providers/${encodeURIComponent(provider)}/agents`, payload),
+    updateAgent: (provider: string, scope: string, name: string, payload: unknown) =>
+      put(`/api/providers/${encodeURIComponent(provider)}/agents/${scope}/${encodeURIComponent(name)}`, payload),
+    deleteAgent: (provider: string, scope: string, name: string, workspacePath?: string) =>
+      del(`/api/providers/${encodeURIComponent(provider)}/agents/${scope}/${encodeURIComponent(name)}${query({ workspacePath })}`),
 
     skills: (provider: string, { workspacePath }: { workspacePath?: string } = {}) =>
       get(`/api/providers/${encodeURIComponent(provider)}/skills${query({ workspacePath })}`),
