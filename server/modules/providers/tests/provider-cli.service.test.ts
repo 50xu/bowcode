@@ -12,7 +12,10 @@ import spawn from 'cross-spawn';
 import { ClaudeProviderAuth } from '@/modules/providers/list/claude/claude-auth.provider.js';
 import { CodexProviderAuth } from '@/modules/providers/list/codex/codex-auth.provider.js';
 import { OpenCodeProviderAuth } from '@/modules/providers/list/opencode/opencode-auth.provider.js';
-import { createProviderCliService } from '@/modules/providers/services/provider-cli.service.js';
+import {
+  createProviderCliService,
+  listProcessingProviders,
+} from '@/modules/providers/services/provider-cli.service.js';
 import type { LLMProvider } from '@/shared/types.js';
 import { AppError } from '@/shared/utils.js';
 
@@ -430,6 +433,16 @@ test('Codex ships with Bowcode and offers no separate update', async () => {
 });
 
 // ----------------- the update action ------------
+
+test('listProcessingProviders ignores idle external holders and deduplicates active providers', () => {
+  assert.deepEqual(listProcessingProviders([
+    { provider: 'claude', processing: false },
+    { provider: 'claude' },
+    { provider: 'claude' },
+    { provider: 'codex' },
+    { provider: 'opencode', processing: false },
+  ]), ['claude', 'codex']);
+});
 
 test('updateCli runs the CLI\'s own updater and reports the version before and after', async () => {
   await withIsolatedCliEnv(async (binDir) => {

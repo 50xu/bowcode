@@ -120,7 +120,7 @@ type RunUpdaterOptions = {
 
 type ProviderCliServiceDependencies = {
   resolveProvider(provider: string): IProvider;
-  /** Providers with a chat run, background work or a busy Claude CLI session right now. */
+  /** Deduplicated providers that are actively processing, excluding idle external CLI holders. */
   listBusyProviders(): Promise<LLMProvider[]>;
   fetch: typeof fetch;
   now(): number;
@@ -129,9 +129,19 @@ type ProviderCliServiceDependencies = {
   updateKillGraceMs: number;
 };
 
+type ProviderProcessingEntry = {
+  provider: LLMProvider;
+  processing?: false;
+};
+
+/** Used by provider CLI updates to reduce session entries to unique, actively processing providers. */
+export function listProcessingProviders(entries: ProviderProcessingEntry[]): LLMProvider[] {
+  return [...new Set(entries.filter((entry) => entry.processing !== false).map((entry) => entry.provider))];
+}
+
 const defaultDependencies: ProviderCliServiceDependencies = {
   resolveProvider: (provider) => providerRegistry.resolveProvider(provider),
-  listBusyProviders: async () => (await sessionsService.listRunningSessions()).map((session) => session.provider),
+  listBusyProviders: async () => listProcessingProviders(await sessionsService.listRunningSessions()),
   fetch: (input, init) => fetch(input, init),
   now: () => Date.now(),
   latestVersionTimeoutMs: LATEST_VERSION_TIMEOUT_MS,
