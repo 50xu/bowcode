@@ -255,6 +255,7 @@ type ProviderCliServiceDependencies = {
   latestVersionTimeoutMs: number;
   updateTimeoutMs: number;
   updateKillGraceMs: number;
+  postUpdateProbeRetryDelaysMs: number[];
 };
 
 type ProviderProcessingEntry = {
@@ -275,6 +276,7 @@ const defaultDependencies: ProviderCliServiceDependencies = {
   latestVersionTimeoutMs: LATEST_VERSION_TIMEOUT_MS,
   updateTimeoutMs: UPDATE_TIMEOUT_MS,
   updateKillGraceMs: UPDATE_KILL_GRACE_MS,
+  postUpdateProbeRetryDelaysMs: [1000, 2000, 4000],
 };
 
 /**
@@ -505,7 +507,17 @@ export function createProviderCliService(dependencyOverrides: Partial<ProviderCl
       timeoutMs: dependencies.updateTimeoutMs,
       killGraceMs: dependencies.updateKillGraceMs,
     });
-    const installedVersion = provider.auth.checkInstalled().version;
+    let installedVersion = provider.auth.checkInstalled().version;
+    if (!run.timedOut && !run.spawnErrorCode && run.exitCode === 0 && before.version !== null && installedVersion === null) {
+      // A fresh binary may not answer --version right after the updater exits.
+      for (const delayMs of dependencies.postUpdateProbeRetryDelaysMs) {
+        await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+        installedVersion = provider.auth.checkInstalled().version;
+        if (installedVersion !== null) {
+          break;
+        }
+      }
+    }
 
     return {
       provider: provider.id,
