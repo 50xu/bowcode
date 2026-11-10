@@ -29,6 +29,7 @@ const pathExtKey = findEnvKey('PATHEXT');
 // `--version` prints and what the updater does without touching any real install.
 //   version            text `--version` prints (exit code from version-exit)
 //   version-count      incremented on every `--version` run
+//   post-update-version-failures makes that many `--version` runs fail after an update
 //   update-new-version written into `version` by a successful update
 //   update-stdout/-stderr, update-exit, update-sleep-ms shape the update run
 //   update-count       incremented on every update run
@@ -46,6 +47,11 @@ const read = (name, fallback) => (fs.existsSync(path.join(dir, name)) ? fs.readF
 const command = process.argv[2];
 if (command === '--version') {
   fs.writeFileSync(path.join(dir, 'version-count'), String(Number(read('version-count', '0')) + 1));
+  const remainingFailures = Number(read('post-update-version-failures', '0'));
+  if (fs.existsSync(path.join(dir, 'update-finished')) && remainingFailures > 0) {
+    fs.writeFileSync(path.join(dir, 'post-update-version-failures'), String(remainingFailures - 1));
+    process.exit(1);
+  }
   process.stdout.write(read('version', ''));
   if (read('lock-after-version', '')) {
     fs.chmodSync(path.join(dir, '..', path.basename(__filename, '.cjs')), 0o644);
@@ -169,6 +175,7 @@ afterEach(() => {
 
 const createService = (overrides: Parameters<typeof createProviderCliService>[0] = {}) => createProviderCliService({
   listBusyProviders: async () => [],
+  postUpdateProbeRetryDelaysMs: [],
   fetch: (async (input: string | URL | Request) => {
     unexpectedRegistryCalls.push(String(input));
     throw new Error('the registry must not be contacted in this test');
@@ -821,6 +828,21 @@ test('getCliStatus reports the starting version of a run that began during the r
 
     const secondResult = await withDeadline(secondRun, 5000, 'the second update never finished');
     assert.equal(secondResult.installedVersion, '1.20.0');
+  });
+});
+
+test('updateCli retries a transiently failing post-update version probe', async () => {
+  await withIsolatedCliEnv(async (binDir) => {
+    const opencode = await createFakeCli(binDir, 'opencode');
+    await opencode.set('version', '2.2.5\n');
+    await opencode.set('update-new-version', '2.2.6\n');
+    await opencode.set('post-update-version-failures', '1');
+
+    const result = await createService({ postUpdateProbeRetryDelaysMs: [1, 1, 1] }).updateCli('opencode');
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.previousVersion, '2.2.5');
+    assert.equal(result.installedVersion, '2.2.6');
+    assert.equal(result.failure, null);
   });
 });
 
