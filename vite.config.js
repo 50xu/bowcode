@@ -59,10 +59,15 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          manualChunks(id) {
-            if (['react', 'react-dom', 'react-router'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-react'
-            if (['@uiw/react-codemirror', '@codemirror/lang-css', '@codemirror/lang-html', '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-markdown', '@codemirror/lang-python', '@codemirror/theme-one-dark'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-codemirror'
-            if (['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-clipboard', '@xterm/addon-webgl'].some(pkg => id.includes(`/node_modules/${pkg}/`))) return 'vendor-xterm'
+          // Keep lazy vendor groups from capturing their shared React dependency:
+          // otherwise the entry imports (and preloads) the editor chunk for React.
+          codeSplitting: {
+            includeDependenciesRecursively: false,
+            groups: [
+              { name: 'vendor-react', test: /\/node_modules\/(?:react|react-dom|react-router)\// },
+              { name: 'vendor-codemirror', test: /\/node_modules\/(?:@uiw\/react-codemirror|@codemirror\/lang-(?:css|html|javascript|json|markdown|python)|@codemirror\/theme-one-dark)\// },
+              { name: 'vendor-xterm', test: /\/node_modules\/@xterm\/(?:xterm|addon-fit|addon-clipboard|addon-webgl)\// }
+            ]
           }
         }
       }

@@ -1,1 +1,1 @@
-export { default as GitPanel } from '@/modules/git-panel/GitPanel';
+export { GitPanel } from '@/modules/git-panel/LazyGitPanel';

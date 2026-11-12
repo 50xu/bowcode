@@ -1,10 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { scan } from 'react-scan'
 
 import App from '@/App'
 import '@/index.css'
-import 'katex/dist/katex.min.css'
 
 // Initialize i18n
 import '@/modules/i18n'
@@ -14,7 +12,10 @@ import '@/modules/i18n'
 // a few thousand DOM nodes of its own. It is worth all of that while hunting a
 // render bug and worth none of it the rest of the time, so it is opt-in —
 // `localStorage.setItem('react-scan', 'on')` and reload.
-scan({ enabled: import.meta.env.DEV && localStorage.getItem('react-scan') === 'on' })
+if (import.meta.env.DEV && localStorage.getItem('react-scan') === 'on') {
+  const { scan } = await import('react-scan')
+  scan({ enabled: true })
+}
 
 // Register service worker for PWA + Web Push support
 if ('serviceWorker' in navigator) {
