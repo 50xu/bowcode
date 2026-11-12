@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { NavigateFunction } from 'react-router';
 import { afterEach, beforeEach, test, vi } from 'vitest';
 
 import type { Project } from '@/shared/types';
@@ -115,6 +116,64 @@ test('new session does not reselect the old URL session before route transition 
   assert.equal(result.current.selectedSession, null);
   rerender({ sessionId: undefined });
   assert.equal(result.current.selectedSession, null);
+});
+
+const renderAtSession = async (navigate: NavigateFunction) => {
+  const [{ useProjectsState }, { SessionProtectionProvider }] = await Promise.all([
+    import('@/modules/project-workspace/hooks/useProjectsState'),
+    import('@/shared/context/SessionProtectionContext'),
+  ]);
+  return renderHook(({ sessionId }) => useProjectsState({
+    sessionId,
+    navigate,
+    subscribe: (listener: ServerEventListener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    isMobile: false,
+    isSessionProcessing: () => false,
+  }), { initialProps: { sessionId: 'session-a' as string | undefined }, wrapper: SessionProtectionProvider });
+};
+
+const twoProjects = () => [
+  buildProject({ projectId: 'project-a', displayName: 'A', sessions: [{ id: 'session-a', summary: 'In A' }] }),
+  buildProject({ projectId: 'project-b', displayName: 'B', sessions: [{ id: 'session-b', summary: 'In B' }] }),
+];
+
+test('selecting another project does not snap back to the open session before the route catches up', async () => {
+  respondWith(twoProjects());
+  const navigate = vi.fn();
+  const { result, rerender } = await renderAtSession(navigate as unknown as NavigateFunction);
+
+  await waitFor(() => assert.equal(result.current.selectedProject?.projectId, 'project-a'));
+  const projectB = result.current.projects.find((project) => project.projectId === 'project-b')!;
+  act(() => result.current.handleProjectSelect(projectB));
+  // The router still exposes the old URL on the render before its transition commits.
+  rerender({ sessionId: 'session-a' });
+  assert.equal(result.current.selectedProject?.projectId, 'project-b');
+  assert.equal(result.current.selectedSession, null);
+  rerender({ sessionId: undefined });
+  assert.equal(result.current.selectedProject?.projectId, 'project-b');
+});
+
+test('opening a session of another project does not flash back to the session being left', async () => {
+  respondWith(twoProjects());
+  const navigate = vi.fn();
+  const { result, rerender } = await renderAtSession(navigate as unknown as NavigateFunction);
+
+  await waitFor(() => assert.equal(result.current.selectedSession?.id, 'session-a'));
+  const projectB = result.current.projects.find((project) => project.projectId === 'project-b')!;
+  // The sidebar selects the owning project, then the session.
+  act(() => {
+    result.current.handleProjectSelect(projectB);
+    result.current.handleSessionSelect({ id: 'session-b', summary: 'In B', __projectId: 'project-b' });
+  });
+  rerender({ sessionId: 'session-a' });
+  assert.equal(result.current.selectedProject?.projectId, 'project-b');
+  assert.equal(result.current.selectedSession?.id, 'session-b');
+  rerender({ sessionId: 'session-b' });
+  assert.equal(result.current.selectedProject?.projectId, 'project-b');
+  assert.equal(result.current.selectedSession?.id, 'session-b');
 });
 
 test('a refresh that renames the selected project updates the selected copy', async () => {

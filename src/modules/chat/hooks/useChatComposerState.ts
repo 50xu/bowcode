@@ -1208,46 +1208,44 @@ export function useChatComposerState({
 
   // The VPS dispatcher owns sending. Reconcile even after an optimistic hide:
   // a refused send must restore the card from the persisted queue.
-  useEffect(() => {
-    if (!sessionKey) {
-      return;
+  const syncQueuedDraftFromServer = useCallback(async (sessionId: string) => {
+    if (sessionKeyRef.current !== sessionId) return;
+    await hydrateChatDrafts();
+    if (sessionKeyRef.current !== sessionId) return;
+    if (!readQueuedMessage(sessionId)) {
+      queuedDraftSessionRef.current = sessionId;
+      setQueuedDraft(null);
     }
-    let cancelled = false;
-    const reconcile = async () => {
-      await hydrateChatDrafts();
-      if (!cancelled && !readQueuedMessage(sessionKey)) {
-        queuedDraftSessionRef.current = sessionKey;
-        setQueuedDraft(null);
-      }
-      // Another tab may have added to the queued message; the card shows what
-      // will be sent, so it follows the server's copy.
-      const stored = cancelled ? null : restoreQueuedDraft(sessionKey);
-      if (stored) {
-        setQueuedDraft((card) => {
-          if (!card || showsQueuedMessage(card, stored)) {
-            return card ?? stored;
-          }
-          // This tab's browser files stay with its part of the message, so
-          // editing the card still brings them back into the composer.
-          return extendsQueuedMessage(card, stored) ? { ...stored, attachments: card.attachments } : stored;
-        });
-      }
-    };
-    const timer = setInterval(() => void reconcile(), 5_000);
+    // Another tab may have added to the queued message; follow the server's copy.
+    const stored = restoreQueuedDraft(sessionId);
+    if (stored) {
+      setQueuedDraft((card) => {
+        if (!card || showsQueuedMessage(card, stored)) {
+          return card ?? stored;
+        }
+        // Keep this tab's browser files when the server extended its message.
+        return extendsQueuedMessage(card, stored) ? { ...stored, attachments: card.attachments } : stored;
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!sessionKey) return;
+    const reconcile = () => { void syncQueuedDraftFromServer(sessionKey); };
+    const timer = setInterval(reconcile, 5_000);
     // A hidden tab's timers are throttled (to about once a minute after a few
     // minutes), so its card can be far behind; catch up as soon as it is shown.
     const reconcileWhenShown = () => {
       if (document.visibilityState === 'visible') {
-        void reconcile();
+        reconcile();
       }
     };
     document.addEventListener('visibilitychange', reconcileWhenShown);
     return () => {
-      cancelled = true;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', reconcileWhenShown);
     };
-  }, [sessionKey]);
+  }, [sessionKey, syncQueuedDraftFromServer]);
 
   // Editing or deleting the card takes the message off the server's queue at
   // once, before the dispatcher's next poll can send it.
@@ -1598,6 +1596,7 @@ export function useChatComposerState({
     deleteQueuedDraft,
     sendQueuedDraftNow,
     restoreQueuedDraftAfterFailure,
+    syncQueuedDraftFromServer,
     handleVoiceTranscript,
     handleInputChange,
     handleKeyDown,

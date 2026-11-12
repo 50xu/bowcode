@@ -44,6 +44,7 @@ type UseChatRealtimeHandlersArgs = {
   getSessionActivity?: GetSessionActivity;
   onExternalHoldError?: (sessionId: string, message: string) => void;
   onSendNowFailed?: (sessionId: string) => void;
+  onDetachedTurnStarted?: (sessionId: string) => void;
   onWebSocketReconnect?: () => void;
   requestLatestMessages: (sessionId: string, allowNetwork?: boolean) => Promise<void>;
   sessionStore: SessionStore;
@@ -81,6 +82,7 @@ export function useChatRealtimeHandlers({
   getSessionActivity,
   onExternalHoldError,
   onSendNowFailed,
+  onDetachedTurnStarted,
   onWebSocketReconnect,
   requestLatestMessages,
   sessionStore,
@@ -132,6 +134,22 @@ export function useChatRealtimeHandlers({
         case 'websocket_reconnected':
           onWebSocketReconnect?.();
           return;
+
+        case 'turn_started': {
+          if (!sid) return;
+          onSessionProcessing?.(sid, { statusText: null, canInterrupt: true });
+          const userMessage = msg.userMessage;
+          if (userMessage && typeof userMessage === 'object' && !Array.isArray(userMessage)) {
+            const row = userMessage as NormalizedMessage;
+            if (row.kind === 'text' && typeof row.id === 'string'
+                && !sessionStore.getMessages(sid).some((existing) => existing.id === row.id)) {
+              // The writer buffers this event for replay; the same row may arrive twice.
+              sessionStore.appendRealtime(sid, { ...row, sessionId: sid });
+            }
+          }
+          onDetachedTurnStarted?.(sid);
+          return;
+        }
 
         case 'history_truncated': {
           // An already-sent message was replaced. Every client watching this
@@ -470,6 +488,7 @@ export function useChatRealtimeHandlers({
     onWebSocketReconnect,
     onExternalHoldError,
     onSendNowFailed,
+    onDetachedTurnStarted,
     requestLatestMessages,
     sessionStore,
   ]);

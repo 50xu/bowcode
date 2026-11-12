@@ -187,6 +187,7 @@ test('an edit resumes through the turn before the one being replaced', async () 
     // Inclusive of the row it names, so this is the last turn KEPT.
     assert.equal(runs[0].options.resumeAnchorId, 'e-a1');
     assert.equal(runs[0].options.resumeFromScratch, false);
+    assert.equal(socket.frames.some((frame) => frame.kind === 'turn_started'), false);
   });
 });
 
