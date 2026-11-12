@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { closeConnection, initializeDatabase, scheduledMessagesDb, sessionDraftsDb, sessionsDb, userDb } from '@/modules/database/index.js';
-import { dispatchDueScheduledMessages, dispatchQueuedMessages } from '@/modules/scheduled-messages/services/scheduled-message-dispatcher.service.js';
+import { closeScheduledMessageDispatcher, dispatchDueScheduledMessages, dispatchQueuedMessages, dispatchQueuedMessagesForSession, initializeScheduledMessageDispatcher } from '@/modules/scheduled-messages/services/scheduled-message-dispatcher.service.js';
 import { scheduledMessagesService } from '@/modules/scheduled-messages/services/scheduled-messages.service.js';
 import { chatRunRegistry, connectedClients } from '@/modules/websocket/index.js';
 
@@ -24,6 +24,7 @@ async function withIsolatedDatabase(runTest: (userId: number) => void | Promise<
     sessionsDb.createAppSession(SESSION_ID, 'claude', tempDirectory, 'Scheduled session');
     await runTest(Number(user.id));
   } finally {
+    closeScheduledMessageDispatcher();
     chatRunRegistry.clearAll();
     connectedClients.clear();
     closeConnection();
@@ -119,6 +120,91 @@ test('a queued message is sent by the server without a browser connection', asyn
     assert.equal(runs[0].options.model, 'claude-opus-5');
     assert.deepEqual(runs[0].options.attachments, []);
     assert.equal(sessionDraftsDb.getDrafts(userId).length, 0);
+  });
+});
+
+test('settling a run sends its queued turn without waiting for the poll', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    const runs: RunCall[] = [];
+    const runtime = createRuntime(runs);
+    initializeScheduledMessageDispatcher(runtime);
+    sessionDraftsDb.saveDraft(userId, SESSION_ID, { text: '', queuedMessage: { content: 'after settle' } });
+    chatRunRegistry.notifyRunSettled(SESSION_ID);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(runs.map((run) => run.command), ['after settle']);
+  });
+});
+
+test('closing the dispatcher prevents pending and later settle notifications from sending', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    const runs: RunCall[] = [];
+    initializeScheduledMessageDispatcher(createRuntime(runs));
+    // Let the dispatcher's startup catch-up pass finish before queuing this turn.
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    sessionDraftsDb.saveDraft(userId, SESSION_ID, { text: '', queuedMessage: { content: 'still queued' } });
+    chatRunRegistry.notifyRunSettled(SESSION_ID);
+    closeScheduledMessageDispatcher();
+    chatRunRegistry.notifyRunSettled(SESSION_ID);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(runs, []);
+    assert.equal(sessionDraftsDb.listQueuedMessages(SESSION_ID).length, 1);
+  });
+});
+
+test('closing during the startup pass does not send a queued turn', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    const runs: RunCall[] = [];
+    initializeScheduledMessageDispatcher(createRuntime(runs));
+    sessionDraftsDb.saveDraft(userId, SESSION_ID, { text: '', queuedMessage: { content: 'added during startup' } });
+    closeScheduledMessageDispatcher();
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(runs, []);
+    assert.equal(sessionDraftsDb.listQueuedMessages(SESSION_ID).length, 1);
+  });
+});
+
+test('a scoped pass leaves other sessions queued', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    sessionsDb.createAppSession('other-session', 'claude', tmpdir());
+    sessionDraftsDb.saveDraft(userId, SESSION_ID, { text: '', queuedMessage: { content: 'first' } });
+    sessionDraftsDb.saveDraft(userId, 'other-session', { text: '', queuedMessage: { content: 'second' } });
+    const runs: RunCall[] = [];
+    assert.equal(await dispatchQueuedMessages(createRuntime(runs), undefined, SESSION_ID), 1);
+    assert.deepEqual(runs.map((run) => run.command), ['first']);
+    assert.equal(sessionDraftsDb.listQueuedMessages('other-session').length, 1);
+  });
+});
+
+test('settle notifications still respect running runs and background work', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    sessionDraftsDb.saveDraft(userId, SESSION_ID, { text: '', queuedMessage: { content: 'wait' } });
+    const runs: RunCall[] = [];
+    let background = true;
+    initializeScheduledMessageDispatcher(createRuntime(runs, 'ok', [], () => background));
+    chatRunRegistry.notifyRunSettled(SESSION_ID);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.equal(runs.length, 0);
+    background = false;
+    const run = chatRunRegistry.startRun({ appSessionId: SESSION_ID, provider: 'claude', providerSessionId: null, connection: null, userId });
+    chatRunRegistry.notifyRunSettled(SESSION_ID);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.equal(runs.length, 0);
+    run?.writer.sendComplete({ exitCode: 0 });
+    chatRunRegistry.notifyRunSettled(SESSION_ID);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(runs.map((entry) => entry.command), ['wait']);
+  });
+});
+
+test('an idle session sends its newly appended queued turn immediately', async () => {
+  await withIsolatedDatabase(async (userId) => {
+    const runs: RunCall[] = [];
+    dispatchQueuedMessagesForSession(SESSION_ID); // no dispatcher yet
+    initializeScheduledMessageDispatcher(createRuntime(runs));
+    sessionDraftsDb.appendQueuedMessage(userId, SESSION_ID, { content: 'idle turn', attachments: [] });
+    dispatchQueuedMessagesForSession(SESSION_ID);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(runs.map((run) => run.command), ['idle turn']);
   });
 });
 

@@ -59,6 +59,9 @@ const MAX_BUFFERED_EVENTS_PER_RUN = 5000;
  */
 const runs = new Map<string, ChatRun>();
 
+/** Subscribers interested in a provider process fully settling, not just its complete event. */
+const runSettledListeners = new Set<(appSessionId: string) => void>();
+
 /**
  * Answers whether a completed run must stay registered a while longer. Set by
  * the composition root to the provider runtimes' background-work check: a
@@ -179,6 +182,25 @@ function recordProviderSessionId(run: ChatRun, providerSessionId: string): void 
  * regardless of which provider runtime produced them.
  */
 export const chatRunRegistry = {
+  /** Used by the scheduled-messages dispatcher to send waiting turns once their blocking process exits. */
+  onRunSettled(listener: (appSessionId: string) => void): () => void {
+    runSettledListeners.add(listener);
+    return () => { runSettledListeners.delete(listener); };
+  },
+
+  /** Used by the chat gateway after the runtime promise settles; listeners cannot interrupt teardown. */
+  notifyRunSettled(appSessionId: string): void {
+    queueMicrotask(() => {
+      for (const listener of runSettledListeners) {
+        try {
+          listener(appSessionId);
+        } catch (error) {
+          console.error('[ChatRunRegistry] Run-settled listener failed', error);
+        }
+      }
+    });
+  },
+
   /** Installs the check that keeps a completed run registered while its session still has background work. */
   setRetentionGuard(guard: (appSessionId: string) => boolean): void {
     retainCompletedRun = guard;
@@ -332,3 +354,6 @@ export const chatRunRegistry = {
     runs.clear();
   },
 };
+
+/** Used by scheduled-messages to subscribe to fully settled provider runs. */
+export const onRunSettled = chatRunRegistry.onRunSettled;

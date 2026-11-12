@@ -259,6 +259,8 @@ export type MessageKind =
   | 'permission_cancelled'
   | 'session_created'
   | 'history_truncated'
+  /** Gateway announcement of a detached turn and its provisional user row. */
+  | 'turn_started'
   | 'task_notification'
   | 'task_status';
 

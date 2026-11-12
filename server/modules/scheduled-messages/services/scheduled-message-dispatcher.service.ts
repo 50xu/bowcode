@@ -2,21 +2,28 @@ import { scheduledMessagesDb, sessionDraftsDb, sessionsDb } from '@/modules/data
 import type { QueuedSessionMessageRecord, ScheduledMessageRow } from '@/modules/database/index.js';
 import { findExternalClaudeCliSession } from '@/modules/providers/index.js';
 import { announceScheduledMessagesChanged } from '@/modules/scheduled-messages/services/scheduled-messages.service.js';
-import { chatRunRegistry, runDetachedChatTurn } from '@/modules/websocket/index.js';
+import { chatRunRegistry, onRunSettled, runDetachedChatTurn } from '@/modules/websocket/index.js';
 import type { ProviderRuntimeGateway } from '@/modules/websocket/index.js';
 import { readQueuedChatMessage } from '@/shared/utils.js';
 
 /**
  * How often due messages are looked for.
  *
- * A minute is the granularity the composer offers, and a claim is indexed on
- * `(status, scheduled_for)`, so the poll is one cheap query. Anything finer
- * would buy precision nobody asked for.
+ * Scheduled messages and a queued-turn safety net use this poll; queued turns
+ * no longer depend on it when their blocking run settles or they are appended
+ * to an idle session.
  */
 const POLL_INTERVAL_MS = 30_000;
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let dispatchInFlight = false;
+let activeRuntime: ProviderRuntimeGateway | null = null;
+let unsubscribeRunSettled: (() => void) | null = null;
+
+function logDispatchError(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error('[ScheduledMessages] Dispatch pass failed', { error: message });
+}
 
 function readOptions(raw: string): Record<string, unknown> {
   try {
@@ -85,7 +92,7 @@ async function isSessionBusy(
 
 /** Used by the websocket module to claim and start one queued turn on demand, even over background work. */
 export async function dispatchQueuedMessageNow(sessionId: string, runtime: ProviderRuntimeGateway): Promise<boolean> {
-  const candidate = sessionDraftsDb.listQueuedMessages().find((row) => row.sessionId === sessionId);
+  const candidate = sessionDraftsDb.listQueuedMessages(sessionId)[0];
   if (!candidate || !sessionDraftsDb.claimQueuedMessage(candidate)) return false;
   return sendClaimedQueuedMessage(candidate, runtime, true);
 }
@@ -94,8 +101,9 @@ export async function dispatchQueuedMessageNow(sessionId: string, runtime: Provi
 export async function dispatchQueuedMessages(
   runtime: ProviderRuntimeGateway,
   findHolder: typeof findExternalClaudeCliSession = findExternalClaudeCliSession,
+  sessionId?: string,
 ): Promise<number> {
-  const candidates = sessionDraftsDb.listQueuedMessages();
+  const candidates = sessionDraftsDb.listQueuedMessages(sessionId);
   let claimed = 0;
 
   await Promise.all(candidates.map(async (candidate) => {
@@ -110,6 +118,12 @@ export async function dispatchQueuedMessages(
   }));
 
   return claimed;
+}
+
+/** Used by the user module to send a newly appended turn immediately if its session is idle. */
+export function dispatchQueuedMessagesForSession(sessionId: string): void {
+  if (!activeRuntime) return;
+  void dispatchQueuedMessages(activeRuntime, undefined, sessionId).catch(logDispatchError);
 }
 
 /** Records why a claimed message did not go, and shows it on its session's banner. */
@@ -193,6 +207,13 @@ export function initializeScheduledMessageDispatcher(runtime: ProviderRuntimeGat
     return;
   }
 
+  activeRuntime = runtime;
+  unsubscribeRunSettled = onRunSettled((sessionId) => {
+    // A notification queued before shutdown must not start another turn.
+    if (activeRuntime !== runtime) return;
+    void dispatchQueuedMessages(runtime, undefined, sessionId).catch(logDispatchError);
+  });
+
   const poll = () => {
     // A pass that overruns the interval must not be started again underneath
     // itself; the claim is transactional but the runs are not.
@@ -201,11 +222,11 @@ export function initializeScheduledMessageDispatcher(runtime: ProviderRuntimeGat
     }
     dispatchInFlight = true;
     void dispatchDueScheduledMessages(runtime)
-      .then(() => dispatchQueuedMessages(runtime))
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error('[ScheduledMessages] Dispatch pass failed', { error: message });
+      .then(() => {
+        // A startup pass may settle after shutdown; do not start its queued phase then.
+        if (activeRuntime === runtime) return dispatchQueuedMessages(runtime);
       })
+      .catch(logDispatchError)
       .finally(() => {
         dispatchInFlight = false;
       });
@@ -220,6 +241,9 @@ export function initializeScheduledMessageDispatcher(runtime: ProviderRuntimeGat
 }
 
 export function closeScheduledMessageDispatcher(): void {
+  activeRuntime = null;
+  unsubscribeRunSettled?.();
+  unsubscribeRunSettled = null;
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
