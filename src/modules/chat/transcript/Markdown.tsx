@@ -1,9 +1,9 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import type rehypeKatex from 'rehype-katex';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +73,21 @@ const childrenToText = (children: React.ReactNode): string => {
 const MATH_DELIMITER = /\$\$/;
 
 const EMPTY_PLUGINS: never[] = [];
+
+// Each message probes its own text, but all math-bearing messages share one
+// request so streaming ticks and simultaneous transcript rows never duplicate it.
+let katexPlugin: typeof rehypeKatex | null = null;
+let mathAssetsPromise: Promise<void> | null = null;
+
+const loadMathAssets = (): Promise<void> => {
+  mathAssetsPromise ??= Promise.all([
+    import('rehype-katex'),
+    import('katex/dist/katex.min.css'),
+  ]).then(([module]) => {
+    katexPlugin = module.default;
+  });
+  return mathAssetsPromise;
+};
 
 type CodeBlockProps = {
   node?: any;
@@ -269,10 +284,28 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
   // render, and almost no assistant message contains math. Only wire the two
   // plugins up when the text has a delimiter they could act on.
   const hasMath = useMemo(() => MATH_DELIMITER.test(content), [content]);
+  // Trigger a render after the plugin and stylesheet have both arrived; the
+  // cached module value alone cannot update a memoized, settled streaming half.
+  const [, setMathReady] = useState(false);
+  const mathReady = hasMath && katexPlugin !== null;
+  useEffect(() => {
+    if (!hasMath || mathReady) {
+      return;
+    }
+    let mounted = true;
+    void loadMathAssets().then(() => {
+      if (mounted) {
+        setMathReady(true);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [hasMath, mathReady]);
   const remarkPlugins = useMemo(
     () => {
       const plugins: unknown[] = [remarkGfm];
-      if (hasMath) {
+      if (mathReady) {
         plugins.push([remarkMath, { singleDollarTextMath: false }]);
       }
       if (breaks) {
@@ -280,9 +313,9 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
       }
       return plugins as any;
     },
-    [breaks, hasMath],
+    [breaks, mathReady],
   );
-  const rehypePlugins = useMemo(() => (hasMath ? [rehypeKatex] : EMPTY_PLUGINS), [hasMath]);
+  const rehypePlugins = useMemo(() => (mathReady ? [katexPlugin!] : EMPTY_PLUGINS), [mathReady]);
   const { openFileInEditor, openDirectory } = usePaletteOps();
 
   const components = useMemo(

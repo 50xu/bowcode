@@ -266,12 +266,14 @@ function Sidebar({
         t={t}
       />
 
-      <SchedulesDialog
-        open={showSchedules}
-        onOpenChange={setShowSchedules}
-        projects={projects}
-        onOpenSession={openScheduledSession}
-      />
+      {showSchedules && (
+        <SchedulesDialog
+          open={showSchedules}
+          onOpenChange={setShowSchedules}
+          projects={projects}
+          onOpenSession={openScheduledSession}
+        />
+      )}
 
       {isSidebarCollapsed ? (
         <SidebarCollapsed

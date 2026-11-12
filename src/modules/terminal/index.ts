@@ -1,1 +1,1 @@
-export { TerminalView } from '@/modules/terminal/TerminalView';
+export { TerminalView } from '@/modules/terminal/LazyTerminalView';

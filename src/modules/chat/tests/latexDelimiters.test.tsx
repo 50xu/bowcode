@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { test, vi } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -35,10 +35,10 @@ const renderChatMarkdown = (markdown: string): HTMLElement => {
   return container;
 };
 
-test("the reporter's sample renders as math, not as literal delimiters", () => {
+test("the reporter's sample renders as math, not as literal delimiters", async () => {
   const container = renderChatMarkdown(REPORTER_SAMPLE);
 
-  assert.equal(container.querySelectorAll('.katex').length, 2);
+  await waitFor(() => assert.equal(container.querySelectorAll('.katex').length, 2));
   assert.equal(container.querySelectorAll('.katex-display').length, 1);
   assert.ok(!container.textContent?.includes('\\('), 'a raw \\( delimiter reached the DOM');
   assert.ok(!container.textContent?.includes('\\['), 'a raw \\[ delimiter reached the DOM');
@@ -49,9 +49,9 @@ test("the reporter's sample renders as math, not as literal delimiters", () => {
   assert.ok(annotations[1]?.includes('\\widehat{T}_{\\mathrm{eq}}'));
 });
 
-test('a one-line \\[x\\] still renders as a display equation', () => {
+test('a one-line \\[x\\] still renders as a display equation', async () => {
   const container = renderChatMarkdown(String.raw`\[a^2 + b^2 = c^2\]`);
-  assert.equal(container.querySelectorAll('.katex-display').length, 1);
+  await waitFor(() => assert.equal(container.querySelectorAll('.katex-display').length, 1));
 });
 
 test('LaTeX inside code stays literal', () => {
@@ -77,13 +77,13 @@ test('LaTeX inside code stays literal', () => {
   assert.ok(container.textContent?.includes('\\(z\\)'));
 });
 
-test('dollar amounts and $$ math keep the behaviour singleDollarTextMath was turned off for', () => {
+test('dollar amounts and $$ math keep the behaviour singleDollarTextMath was turned off for', async () => {
   const prices = renderChatMarkdown('It costs $5 and $7 in total.');
   assert.equal(prices.querySelectorAll('.katex').length, 0);
   assert.ok(prices.textContent?.includes('$5 and $7'));
 
   const displayDollars = renderChatMarkdown('Energy:\n\n$$\nE = mc^2\n$$\n');
-  assert.equal(displayDollars.querySelectorAll('.katex-display').length, 1);
+  await waitFor(() => assert.equal(displayDollars.querySelectorAll('.katex-display').length, 1));
 });
 
 test('an escaped backslash does not open math and an unmatched opener stays text', () => {

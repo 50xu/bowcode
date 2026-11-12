@@ -1,1 +1,1 @@
-export { default as ProjectCreationWizard } from '@/modules/project-creation-wizard/ProjectCreationWizard';
+export { ProjectCreationWizard } from '@/modules/project-creation-wizard/LazyProjectCreationWizard';
