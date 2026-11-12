@@ -37,6 +37,7 @@ type UserDependencies = {
     clearQueuedMessage(userId: number, scope: string): void;
     deleteDraft(userId: number, scope: string): void;
   };
+  onQueuedMessageAppended?: (scope: string) => void;
   readSystemGitConfig(): Promise<GitConfig>;
   applyGlobalGitConfig(gitName: string, gitEmail: string): Promise<void>;
   logInfo(message: string): void;
@@ -239,6 +240,7 @@ export function createUserService(dependencies: UserDependencies) {
           { code: 'QUEUED_MESSAGE_NOT_COMBINABLE', statusCode: 409 },
         );
       }
+      dependencies.onQueuedMessageAppended?.(scope);
       return { success: true, queuedMessage: result.queuedMessage, appended: result.appended };
     },
 

@@ -181,6 +181,24 @@ test('appendQueuedMessage hands the repository the message and returns what is n
   });
 });
 
+test('appendQueuedMessage notifies only after a successful append', () => {
+  const operations: string[] = [];
+  const service = createUserService(createDependencies({
+    drafts: {
+      ...noDrafts,
+      appendQueuedMessage: (_id, _scope, message) => {
+        operations.push('persist');
+        return message.content.startsWith('/') ? null : { queuedMessage: message, appended: false };
+      },
+    },
+    onQueuedMessageAppended: (scope) => operations.push(`notify:${scope}`),
+  }));
+  service.appendQueuedMessage(5, 'session-1', { content: 'hello' });
+  assert.deepEqual(operations, ['persist', 'notify:session-1']);
+  assert.throws(() => service.appendQueuedMessage(5, 'session-1', { content: '/compact' }));
+  assert.deepEqual(operations, ['persist', 'notify:session-1', 'persist']);
+});
+
 test('appendQueuedMessage refuses a message with nothing to send, or a bad scope', () => {
   const service = createUserService(createDependencies());
 

@@ -127,15 +127,16 @@ export const sessionDraftsDb = {
   },
 
   /** Lists persisted queued turns whose scopes are real chat sessions. */
-  listQueuedMessages(): QueuedSessionMessageRecord[] {
+  listQueuedMessages(sessionId?: string): QueuedSessionMessageRecord[] {
     const rows = getConnection()
       .prepare(
         `SELECT drafts.user_id, drafts.draft_scope, drafts.queued_message
          FROM session_drafts AS drafts
          INNER JOIN sessions ON sessions.session_id = drafts.draft_scope
-         WHERE drafts.queued_message IS NOT NULL`
+         WHERE drafts.queued_message IS NOT NULL
+         ${sessionId === undefined ? '' : 'AND drafts.draft_scope = ?'}`
       )
-      .all() as QueuedMessageRow[];
+      .all(...(sessionId === undefined ? [] : [sessionId])) as QueuedMessageRow[];
 
     return rows.map((row) => ({
       userId: row.user_id,

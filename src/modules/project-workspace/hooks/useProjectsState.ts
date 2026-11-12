@@ -461,7 +461,12 @@ export function useProjectsState({
   projectsRef.current = projects;
   const sessionIdRef = useRef(sessionId);
   sessionIdRef.current = sessionId;
-  /** The session a New Session click is navigating away from, until the route catches up. */
+  /**
+   * The session a click is navigating away from (New Session, another project,
+   * another session), until the route catches up. The route change renders in
+   * a transition after the new selection, so in between the URL-to-session
+   * sync still sees the old id and would select it — and its project — again.
+   */
   const leavingSessionIdRef = useRef<string | null>(null);
   /** URL session id whose backend lookup already ran (or is in flight) — one attempt per id. */
   const sessionLookupRef = useRef<string | null>(null);
@@ -1045,6 +1050,9 @@ export function useProjectsState({
 
   const handleProjectSelect = useCallback(
     (project: Project) => {
+      // Without this the sync below re-selects the open session, and with it
+      // the project being left: the row flashes and the old project wins.
+      leavingSessionIdRef.current = sessionIdRef.current ?? null;
       setSelectedProject(project);
       setSelectedSession(null);
       navigate('/');
@@ -1059,6 +1067,13 @@ export function useProjectsState({
   const handleSessionSelect = useCallback(
     (session: ProjectSession) => {
       clearSessionAttention(session.id);
+      // Same race as handleProjectSelect: until the route reaches the new id,
+      // the sync must not switch back to the session being left.
+      // Re-opening the session already in the URL (the sidebar selects its
+      // project first, which marks it as leaving) must not leave it ignored.
+      leavingSessionIdRef.current = sessionIdRef.current && sessionIdRef.current !== session.id
+        ? sessionIdRef.current
+        : null;
       setSelectedSession(session);
 
       if (activeTab === 'tasks' || activeTab === 'browser') {

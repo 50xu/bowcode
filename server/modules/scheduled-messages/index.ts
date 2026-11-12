@@ -6,4 +6,6 @@ export {
   initializeScheduledMessageDispatcher,
   closeScheduledMessageDispatcher,
   dispatchQueuedMessageNow,
+  // Consumed by user.module when a queued turn is appended to an idle session.
+  dispatchQueuedMessagesForSession,
 } from './services/scheduled-message-dispatcher.service.js';

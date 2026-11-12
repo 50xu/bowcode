@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 import type { WebSocket } from 'ws';
 
@@ -275,6 +276,7 @@ async function dispatchRun(
   dependencies: ChatWebSocketDependencies,
   extraRuntimeOptions: AnyRecord = {},
   beforeRun?: (run: NonNullable<ReturnType<typeof chatRunRegistry.startRun>>) => void | Promise<void>,
+  announceUserTurn = false,
 ): Promise<ChatRunDispatchResult> {
   const provider = session.provider as LLMProvider;
 
@@ -391,6 +393,18 @@ async function dispatchRun(
     // be taken back. Inside the try so a rewind that throws still releases the
     // run instead of leaving the session processing forever.
     await beforeRun?.(run);
+    if (announceUserTurn) {
+      const timestamp = new Date().toISOString();
+      run.writer.send({
+        kind: 'turn_started', provider, sessionId, timestamp,
+        userMessage: {
+          id: `local_turn_${randomUUID()}`, sessionId, provider, timestamp,
+          kind: 'text', role: 'user', content: command,
+          images: runtimeOptions.images.length ? runtimeOptions.images : undefined,
+          files: runtimeOptions.files.length ? runtimeOptions.files : undefined,
+        },
+      });
+    }
     await dependencies.runtime.run(provider, command, runtimeOptions, run.writer);
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
@@ -404,6 +418,11 @@ async function dispatchRun(
     stopTakeoverWatch();
     chatRunRegistry.completeRunIfCurrent(run, { exitCode: 1 });
   }
+
+  // The runtime promise settles only once the provider process is done, including
+  // a Claude process held for background work. A complete event can arrive earlier;
+  // sending a queued turn then would interrupt that still-working process.
+  chatRunRegistry.notifyRunSettled(sessionId);
 
   // Read after the safety net above, so a runtime that never completed still
   // reports the synthetic non-zero exit it was given.
@@ -861,6 +880,7 @@ export async function runDetachedChatTurn(
         chatRunRegistry.attachConnection(run.appSessionId, connection);
       }
     },
+    true,
   );
 }
 
