@@ -7,6 +7,7 @@ import http from 'http';
 
 import express, { type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
+import compression from 'compression';
 
 import { getAppDataDir } from '@/shared/data-directory.js';
 import { AppError, findApplicationRoot, getModuleDirectory, terminalTextStyles } from '@/shared/utils.js';
@@ -204,6 +205,8 @@ app.use('/api/agent', agentRoutes);
 app.use('/api/voice', authenticateToken, voiceRoutes);
 
 // Serve public files (like api-docs.html)
+// /api excluded because SSE streams (text/event-stream) must not be buffered.
+app.use(compression({ filter: (req, res) => (req.path === '/api' || req.path.startsWith('/api/')) ? false : compression.filter(req, res) }));
 app.use(express.static(path.join(APP_ROOT, 'public')));
 
 // Static files served after API routes

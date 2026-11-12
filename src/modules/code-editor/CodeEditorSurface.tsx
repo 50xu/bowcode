@@ -6,7 +6,7 @@ import type { Extension } from '@codemirror/state';
 
 import type { CodeEditorGotoTarget } from '@/shared/types';
 
-import MarkdownPreview from '@/modules/code-editor/markdown/MarkdownPreview';
+import { MarkdownPreview } from '@/modules/code-editor/LazyMarkdownPreview';
 
 type CodeEditorSurfaceProps = {
   content: string;
