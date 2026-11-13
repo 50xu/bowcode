@@ -59,14 +59,14 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          // Keep lazy vendor groups from capturing their shared React dependency:
-          // otherwise the entry imports (and preloads) the editor chunk for React.
+          // Only React gets a named vendor group, and it keeps its dependencies
+          // (scheduler etc.). CodeMirror and xterm are reached solely through lazy
+          // panels, so the bundler splits them on its own. Forcing vendor groups
+          // without their dependencies created circular chunk imports: the editor
+          // chunk read @lezer's JSON parser before it was initialised and crashed.
           codeSplitting: {
-            includeDependenciesRecursively: false,
             groups: [
-              { name: 'vendor-react', test: /\/node_modules\/(?:react|react-dom|react-router)\// },
-              { name: 'vendor-codemirror', test: /\/node_modules\/(?:@uiw\/react-codemirror|@codemirror\/lang-(?:css|html|javascript|json|markdown|python)|@codemirror\/theme-one-dark)\// },
-              { name: 'vendor-xterm', test: /\/node_modules\/@xterm\/(?:xterm|addon-fit|addon-clipboard|addon-webgl)\// }
+              { name: 'vendor-react', test: /\/node_modules\/(?:react|react-dom|react-router)\// }
             ]
           }
         }
