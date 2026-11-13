@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import type { ComponentProps } from 'react';
 
 import type EditorSidebarComponent from '@/modules/code-editor/EditorSidebar';
+import CodeEditorLoadingState from '@/modules/code-editor/CodeEditorLoadingState';
 
 type EditorSidebarProps = ComponentProps<typeof EditorSidebarComponent>;
 
@@ -11,8 +12,14 @@ const EditorSidebarContent = lazy(() => import('@/modules/code-editor/EditorSide
 export function EditorSidebar(props: EditorSidebarProps) {
   if (!props.editingFile) return null;
 
+  const docked = !props.isMobile;
+  const flexWidth = props.editorExpanded || (props.fillSpace && !props.hasManualWidth);
   return (
-    <Suspense fallback={<div className="flex min-h-24 items-center justify-center text-sm text-muted-foreground" role="status">Loading editor…</div>}>
+    <Suspense fallback={(
+      <div className={docked ? `h-full min-w-0 ${flexWidth ? 'flex-1' : ''}` : 'contents'} style={docked && !flexWidth ? { width: props.editorWidth } : undefined}>
+        <CodeEditorLoadingState file={props.editingFile} isSidebar={docked} />
+      </div>
+    )}>
       <EditorSidebarContent {...props} />
     </Suspense>
   );

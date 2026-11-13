@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 
 import { api } from '@/shared/api';
 import type { CodeEditorFile,PreviewKind } from '@/shared/types';
 import { getPreviewMimeType } from '@/modules/code-editor/utils/previewableFile';
+import CodeEditorHeader from '@/modules/code-editor/CodeEditorHeader';
+import { Tooltip } from '@/shared/ui';
 
 type CodeEditorMediaPreviewProps = {
   file: CodeEditorFile;
@@ -203,62 +206,18 @@ export default function CodeEditorMediaPreview({
     </div>
   );
 
-  const headerActions = (
-    <div className="flex shrink-0 items-center gap-0.5">
-      {canOpenInNewTab && currentUrl && (
-        <a
-          href={currentUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-          aria-label={labels.openInNewTab}
-          title={labels.openInNewTab}
-        >
-          <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </a>
-      )}
-      {!isSidebar && (
-        <button
-          type="button"
-          onClick={onToggleFullscreen}
-          className="flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-          aria-label={isFullscreen ? labels.exitFullscreen : labels.fullscreen}
-          title={isFullscreen ? labels.exitFullscreen : labels.fullscreen}
-        >
-          {isFullscreen ? (
-            <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5" />
-            </svg>
-          ) : (
-            <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
-          )}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={onClose}
-        className="flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-        aria-label={labels.close}
-        title={labels.close}
-      >
-        <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  );
-
   const header = (
-    <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <h3 className="truncate text-sm font-medium text-gray-900 dark:text-white">{file.name}</h3>
-      </div>
-      {headerActions}
-    </div>
+    <CodeEditorHeader file={file} previewOnly isSidebar={isSidebar} isExpanded={false} isFullscreen={isFullscreen}
+      isMarkdownFile={false} isHtmlPreviewFile={false} markdownPreview={false} showDiff={false} changeIndex={0} changeCount={0}
+      saving={false} saveSuccess={false} hasUnsavedChanges={false} onToggleMarkdownPreview={() => {}} onOpenHtmlPreview={() => {}}
+      onToggleDiff={() => {}} onNavigateDiff={() => {}} onToggleExpand={null} onPopOut={null} onOpenSettings={() => {}}
+      onDownload={() => {}} onSave={() => {}} onToggleFullscreen={onToggleFullscreen} onClose={onClose} labels={labels}
+      previewActions={canOpenInNewTab && currentUrl && (
+        <Tooltip content={labels.openInNewTab} position="bottom">
+          <a href={currentUrl} target="_blank" rel="noopener noreferrer" aria-label={labels.openInNewTab} title={labels.openInNewTab} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"><ExternalLink className="size-4" /></a>
+        </Tooltip>
+      )}
+    />
   );
 
   if (isSidebar) {

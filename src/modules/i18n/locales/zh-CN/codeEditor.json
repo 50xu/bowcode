@@ -7,7 +7,8 @@
     "showDiff": "显示差异高亮",
     "settings": "编辑器设置",
     "collapse": "折叠编辑器",
-    "expand": "展开编辑器到全宽"
+    "expand": "展开编辑器到全宽",
+    "popOut": "Open in modal"
   },
   "loading": "正在加载 {{fileName}}...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "全屏",
     "close": "关闭",
     "previewMarkdown": "预览 Markdown",
-    "editMarkdown": "编辑 Markdown"
+    "editMarkdown": "编辑 Markdown",
+    "saveShortcut": "保存 (Ctrl+S)"
   },
   "footer": {
     "lines": "行数：",
@@ -43,5 +45,10 @@
   "unsavedChanges": {
     "confirmClose": "您有未保存的更改。关闭此文件并放弃这些更改？",
     "indicator": "未保存的更改"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "已保存！"
   }
 }

@@ -7,7 +7,8 @@
     "showDiff": "הצגת הדגשת ה-diff",
     "settings": "הגדרות העורך",
     "collapse": "כיווץ העורך",
-    "expand": "הרחבת העורך לרוחב מלא"
+    "expand": "הרחבת העורך לרוחב מלא",
+    "popOut": "Open in modal"
   },
   "loading": "טוען את {{fileName}}…",
   "header": {
@@ -25,7 +26,8 @@
     "close": "סגירה",
     "previewMarkdown": "תצוגה מקדימה של Markdown",
     "editMarkdown": "עריכת Markdown",
-    "previewHtml": "פתיחת תצוגה מקדימה של HTML בלשונית חדשה"
+    "previewHtml": "פתיחת תצוגה מקדימה של HTML בלשונית חדשה",
+    "saveShortcut": "שמירה (Ctrl+S)"
   },
   "footer": {
     "lines": "שורות:",
@@ -44,5 +46,10 @@
   "unsavedChanges": {
     "confirmClose": "יש שינויים שלא נשמרו. לסגור את הקובץ ולבטל אותם?",
     "indicator": "שינויים שלא נשמרו"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "נשמר!"
   }
 }

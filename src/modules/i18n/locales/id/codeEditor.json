@@ -7,7 +7,8 @@
     "showDiff": "Tampilkan penyorotan diff",
     "settings": "Pengaturan Editor",
     "collapse": "Ciutkan editor",
-    "expand": "Perluas editor ke lebar penuh"
+    "expand": "Perluas editor ke lebar penuh",
+    "popOut": "Open in modal"
   },
   "loading": "Memuat {{fileName}}...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "Layar Penuh",
     "close": "Tutup",
     "previewMarkdown": "Pratinjau Markdown",
-    "editMarkdown": "Edit Markdown"
+    "editMarkdown": "Edit Markdown",
+    "saveShortcut": "Simpan (Ctrl+S)"
   },
   "footer": {
     "lines": "Baris:",
@@ -43,5 +45,10 @@
   "unsavedChanges": {
     "confirmClose": "Ada perubahan yang belum disimpan. Tutup file ini dan buang perubahannya?",
     "indicator": "Perubahan belum disimpan"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "Tersimpan!"
   }
 }

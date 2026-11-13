@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next';
+
 import type { CodeEditorFile } from '@/shared/types';
+import CodeEditorHeader from '@/modules/code-editor/CodeEditorHeader';
 
 type CodeEditorBinaryFileProps = {
   file: CodeEditorFile;
@@ -20,6 +23,8 @@ export default function CodeEditorBinaryFile({
   title,
   message,
 }: CodeEditorBinaryFileProps) {
+  const { t } = useTranslation('codeEditor');
+  const header = <CodeEditorHeader file={file} previewOnly isSidebar={isSidebar} isExpanded={false} isFullscreen={isFullscreen} isMarkdownFile={false} isHtmlPreviewFile={false} markdownPreview={false} showDiff={false} changeIndex={0} changeCount={0} saving={false} saveSuccess={false} hasUnsavedChanges={false} onToggleMarkdownPreview={() => {}} onOpenHtmlPreview={() => {}} onToggleDiff={() => {}} onNavigateDiff={() => {}} onToggleExpand={null} onPopOut={null} onOpenSettings={() => {}} onDownload={() => {}} onSave={() => {}} onToggleFullscreen={onToggleFullscreen} onClose={onClose} labels={{ fullscreen: t('actions.fullscreen'), exitFullscreen: t('actions.exitFullscreen'), close: t('actions.close') }} />;
   const binaryContent = (
     <div className="flex h-full w-full flex-col items-center justify-center bg-background p-8 text-muted-foreground">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
@@ -45,21 +50,7 @@ export default function CodeEditorBinaryFile({
   if (isSidebar) {
     return (
       <div className="flex h-full w-full flex-col bg-background">
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <h3 className="truncate text-sm font-medium text-gray-900 dark:text-white">{file.name}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            title="Close"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        {header}
         {binaryContent}
       </div>
     );
@@ -76,39 +67,7 @@ export default function CodeEditorBinaryFile({
   return (
     <div className={containerClassName}>
       <div className={innerClassName}>
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <h3 className="truncate text-sm font-medium text-gray-900 dark:text-white">{file.name}</h3>
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              className="flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-            >
-              {isFullscreen ? (
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5" />
-                </svg>
-              ) : (
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-              title="Close"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        {header}
         {binaryContent}
       </div>
     </div>

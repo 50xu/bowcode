@@ -7,7 +7,8 @@
     "showDiff": "顯示差異醒目提示",
     "settings": "編輯器設定",
     "collapse": "收合編輯器",
-    "expand": "展開編輯器到全寬"
+    "expand": "展開編輯器到全寬",
+    "popOut": "Open in modal"
   },
   "loading": "正在載入 {{fileName}}...",
   "header": {
@@ -22,7 +23,8 @@
     "saved": "已儲存！",
     "exitFullscreen": "離開全螢幕",
     "fullscreen": "全螢幕",
-    "close": "關閉"
+    "close": "關閉",
+    "saveShortcut": "儲存 (Ctrl+S)"
   },
   "footer": {
     "lines": "行數：",
@@ -36,5 +38,10 @@
   "unsavedChanges": {
     "confirmClose": "您有未儲存的變更。關閉此檔案並放棄這些變更？",
     "indicator": "未儲存的變更"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "已儲存！"
   }
 }

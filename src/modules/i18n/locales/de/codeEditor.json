@@ -7,7 +7,8 @@
     "showDiff": "Diff-Hervorhebung anzeigen",
     "settings": "Editor-Einstellungen",
     "collapse": "Editor einklappen",
-    "expand": "Editor auf volle Breite erweitern"
+    "expand": "Editor auf volle Breite erweitern",
+    "popOut": "Open in modal"
   },
   "loading": "{{fileName}} wird geladen...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "Vollbild",
     "close": "Schließen",
     "previewMarkdown": "Markdown-Vorschau",
-    "editMarkdown": "Markdown bearbeiten"
+    "editMarkdown": "Markdown bearbeiten",
+    "saveShortcut": "Speichern (Ctrl+S)"
   },
   "footer": {
     "lines": "Zeilen:",
@@ -38,5 +40,10 @@
   "unsavedChanges": {
     "confirmClose": "Du hast ungespeicherte Änderungen. Diese Datei schließen und die Änderungen verwerfen?",
     "indicator": "Ungespeicherte Änderungen"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "Gespeichert!"
   }
 }

@@ -7,7 +7,8 @@
     "showDiff": "差分ハイライトを表示",
     "settings": "エディタ設定",
     "collapse": "エディタを折りたたむ",
-    "expand": "エディタを全幅に展開"
+    "expand": "エディタを全幅に展開",
+    "popOut": "Open in modal"
   },
   "loading": "{{fileName}}を読み込んでいます...",
   "header": {
@@ -22,7 +23,8 @@
     "saved": "保存しました！",
     "exitFullscreen": "全画面を終了",
     "fullscreen": "全画面",
-    "close": "閉じる"
+    "close": "閉じる",
+    "saveShortcut": "保存 (Ctrl+S)"
   },
   "footer": {
     "lines": "行数:",
@@ -36,5 +38,10 @@
   "unsavedChanges": {
     "confirmClose": "保存されていない変更があります。このファイルを閉じて変更を破棄しますか？",
     "indicator": "未保存の変更"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "保存しました！"
   }
 }

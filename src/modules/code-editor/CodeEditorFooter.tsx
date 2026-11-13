@@ -1,29 +1,22 @@
 type CodeEditorFooterProps = {
   content: string;
-  linesLabel: string;
-  charactersLabel: string;
-  shortcutsLabel: string;
+  line: number;
+  column: number;
+  language: string;
+  dirty: boolean;
+  labels: { line: string; column: string; lines: string; saved: string; unsaved: string };
 };
 
-/** Rendered by CodeEditor inside the code-editor module to show the open file's line and character counts plus the shortcut hint. */
-export default function CodeEditorFooter({
-  content,
-  linesLabel,
-  charactersLabel,
-  shortcutsLabel,
-}: CodeEditorFooterProps) {
+/** Used by CodeEditor to show cursor position, language and save state without a second toolbar. */
+export default function CodeEditorFooter({ content, line, column, language, dirty, labels }: CodeEditorFooterProps) {
   return (
-    <div className="flex shrink-0 items-center justify-between border-t border-border bg-muted px-3 py-1.5">
-      <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-        <span>
-          {linesLabel} {content.split('\n').length}
-        </span>
-        <span>
-          {charactersLabel} {content.length}
-        </span>
+    <div className="flex h-6 shrink-0 items-center justify-between gap-3 border-t border-border bg-background px-3 text-xs text-muted-foreground">
+      <span data-testid="editor-cursor">{labels.line} {line}, {labels.column} {column}</span>
+      <div className="flex items-center gap-3">
+        <span>{language}</span>
+        <span>{labels.lines} {content.split('\n').length}</span>
+        <span>{dirty ? labels.unsaved : labels.saved}</span>
       </div>
-
-      <div className="text-xs text-gray-500 dark:text-gray-400">{shortcutsLabel}</div>
     </div>
   );
 }

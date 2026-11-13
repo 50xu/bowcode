@@ -7,7 +7,8 @@
     "showDiff": "Diff vurgusunu göster",
     "settings": "Editör Ayarları",
     "collapse": "Editörü daralt",
-    "expand": "Editörü tüm genişliğe aç"
+    "expand": "Editörü tüm genişliğe aç",
+    "popOut": "Open in modal"
   },
   "loading": "{{fileName}} yükleniyor...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "Tam ekran",
     "close": "Kapat",
     "previewMarkdown": "Markdown önizle",
-    "editMarkdown": "Markdown düzenle"
+    "editMarkdown": "Markdown düzenle",
+    "saveShortcut": "Kaydet (Ctrl+S)"
   },
   "footer": {
     "lines": "Satır:",
@@ -38,5 +40,10 @@
   "unsavedChanges": {
     "confirmClose": "Kaydedilmemiş değişikliklerin var. Bu dosya kapatılsın ve değişiklikler silinsin mi?",
     "indicator": "Kaydedilmemiş değişiklikler"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "Kaydedildi!"
   }
 }

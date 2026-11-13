@@ -7,7 +7,8 @@
     "showDiff": "Mostrar destaque de diff",
     "settings": "Configurações do editor",
     "collapse": "Recolher editor",
-    "expand": "Expandir editor para largura total"
+    "expand": "Expandir editor para largura total",
+    "popOut": "Open in modal"
   },
   "loading": "Carregando {{fileName}}...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "Tela cheia",
     "close": "Fechar",
     "previewMarkdown": "Visualizar markdown",
-    "editMarkdown": "Editar markdown"
+    "editMarkdown": "Editar markdown",
+    "saveShortcut": "Salvar (Ctrl+S)"
   },
   "footer": {
     "lines": "Linhas:",
@@ -43,5 +45,10 @@
   "unsavedChanges": {
     "confirmClose": "Você tem alterações não salvas. Fechar este arquivo e descartá-las?",
     "indicator": "Alterações não salvas"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "Salvo!"
   }
 }

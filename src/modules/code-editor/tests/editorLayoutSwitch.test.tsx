@@ -41,26 +41,6 @@ vi.mock('@uiw/react-codemirror', () => {
   return { default: CodeMirrorStub };
 });
 
-type ToolbarPanelParams = {
-  isSidebar: boolean;
-  isExpanded: boolean;
-  onPopOut: (() => void) | null;
-  onToggleExpand: (() => void) | null;
-};
-
-// The pop-out button lives in a CodeMirror panel, which the stubbed editor does
-// not build. Standing in for the panel keeps hold of the exact arguments the
-// real `.cm-popout-btn` was rendered from and of the callback its click handler
-// invokes, so the test can press it and can check when it is offered at all.
-const toolbarPanels: ToolbarPanelParams[] = [];
-
-vi.mock('@/modules/code-editor/utils/editorToolbarPanel', () => ({
-  createEditorToolbarPanelExtension: (params: ToolbarPanelParams) => {
-    toolbarPanels.push(params);
-    return [];
-  },
-}));
-
 const { default: EditorSidebar } = await import('@/modules/code-editor/EditorSidebar');
 
 const file: CodeEditorFile = { name: 'a.txt', path: '/repo/a.txt', projectId: 'p1' };
@@ -103,7 +83,6 @@ const sidebar = (isMobile: boolean) => (
 
 const renderSidebar = async (isMobile = false) => {
   containerWidth = 1400;
-  toolbarPanels.length = 0;
   const view = render(sidebar(isMobile));
   const editor = await screen.findByTestId<HTMLTextAreaElement>('editor');
   await waitFor(() => assert.equal(editor.value, 'hello'));
@@ -135,10 +114,8 @@ test('the pop-out button keeps the unsaved buffer and the dirty dot', async () =
 
   typeInto(editor, 'hello edited');
 
-  // Exactly what clicking `.cm-popout-btn` does.
-  const popOut = toolbarPanels.at(-1)?.onPopOut;
-  assert.ok(popOut, 'the docked toolbar offers a pop-out button');
-  act(() => popOut());
+  // The header's React pop-out control replaces the old imperative CodeMirror panel.
+  fireEvent.click(screen.getByTitle('toolbar.popOut'));
 
   await waitFor(() => assert.ok(isFloating(container)));
   assert.equal(isDocked(), false);
@@ -147,9 +124,8 @@ test('the pop-out button keeps the unsaved buffer and the dirty dot', async () =
   assert.equal(confirm.mock.calls.length, 0);
   // The modal drops the sidebar chrome, as it always did: no pop-out or expand
   // button inside it, and a fullscreen toggle instead.
-  assert.equal(toolbarPanels.at(-1)?.isSidebar, false);
-  assert.equal(toolbarPanels.at(-1)?.onPopOut, null);
-  assert.equal(toolbarPanels.at(-1)?.onToggleExpand, null);
+  assert.equal(screen.queryByTitle('toolbar.popOut'), null);
+  assert.equal(screen.queryByTitle('toolbar.expand'), null);
   assert.ok(screen.getByTitle('actions.fullscreen'));
   assert.ok(screen.getByTitle('actions.close'));
 });
@@ -192,8 +168,7 @@ test('crossing the mobile breakpoint in both directions keeps the unsaved buffer
   await waitFor(() => assert.ok(isDocked()));
   assert.equal(isFloating(container), false);
   assertBufferSurvived();
-  assert.equal(toolbarPanels.at(-1)?.isSidebar, true);
-  assert.ok(toolbarPanels.at(-1)?.onPopOut);
+  assert.ok(screen.getByTitle('toolbar.popOut'));
 
   assert.equal(confirm.mock.calls.length, 0);
 });
@@ -203,5 +178,5 @@ test('an editor opened on mobile is floating from the start', async () => {
 
   assert.ok(isFloating(container));
   assert.equal(isDocked(), false);
-  assert.equal(toolbarPanels.at(-1)?.isSidebar, false);
+  assert.equal(screen.queryByTitle('toolbar.popOut'), null);
 });

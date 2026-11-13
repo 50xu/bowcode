@@ -1,10 +1,6 @@
-import { css } from '@codemirror/lang-css';
-import { html } from '@codemirror/lang-html';
-import { javascript } from '@codemirror/lang-javascript';
-import { json } from '@codemirror/lang-json';
-import { StreamLanguage } from '@codemirror/language';
-import { markdown } from '@codemirror/lang-markdown';
-import { python } from '@codemirror/lang-python';
+import { LanguageDescription, LanguageSupport, StreamLanguage } from '@codemirror/language';
+import { languages } from '@codemirror/language-data';
+import type { Extension } from '@codemirror/state';
 import { getChunks } from '@codemirror/merge';
 import { EditorView, ViewPlugin } from '@codemirror/view';
 import { showMinimap } from '@replit/codemirror-minimap';
@@ -28,42 +24,44 @@ const envLanguage = StreamLanguage.define({
   },
 });
 
-export const getLanguageExtensions = (filename: string) => {
-  const lowerName = filename.toLowerCase();
-  if (lowerName === '.env' || lowerName.startsWith('.env.')) {
-    return [envLanguage];
-  }
+// Keep both in-flight and completed loads: reopening a language never fetches its chunk twice.
+const languageCache = new Map<string, Promise<LanguageSupport>>();
 
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'js':
-    case 'jsx':
-    case 'mjs':
-    case 'cjs':
-    case 'ts':
-    case 'tsx':
-    case 'mts':
-    case 'cts':
-      return [javascript({ jsx: true, typescript: ext.includes('ts') })];
-    case 'py':
-      return [python()];
-    case 'html':
-    case 'htm':
-      return [html()];
-    case 'css':
-    case 'scss':
-    case 'less':
-      return [css()];
-    case 'json':
-      return [json()];
-    case 'md':
-    case 'markdown':
-      return [markdown()];
-    case 'env':
-      return [envLanguage];
-    default:
-      return [];
+export const resolveEditorLanguage = (filename: string) => {
+  const name = filename.split(/[\\/]/).pop() ?? filename;
+  if (name.toLowerCase() === '.env' || name.toLowerCase().startsWith('.env.')) {
+    return { name: 'Environment', load: () => Promise.resolve(envLanguage as Extension) };
   }
+  if (/^(?:GNUmakefile|Makefile|makefile)$/.test(name)) {
+    // Makefile recipes are shell; language-data has no Makefile filename rule.
+    return { name: 'Makefile', load: async () => {
+      const { shell } = await import('@codemirror/legacy-modes/mode/shell');
+      return new LanguageSupport(StreamLanguage.define({
+        startState: shell.startState,
+        token(stream, state) {
+          // The legacy mode ships its own StringStream type; both implementations share this API.
+          return shell.token(stream as unknown as Parameters<typeof shell.token>[0], state);
+        },
+      }));
+    } };
+  }
+  // language-data includes filename rules (Dockerfile) as well as extensions.
+  const description = LanguageDescription.matchFilename(languages, name);
+  if (!description) return { name: 'Plain Text', load: () => Promise.resolve([] as Extension) };
+  return {
+    name: description.name,
+    load: () => {
+      let cached = languageCache.get(description.name);
+      if (!cached) {
+        cached = description.load().catch((error: unknown) => {
+          languageCache.delete(description.name);
+          throw error;
+        });
+        languageCache.set(description.name, cached);
+      }
+      return cached;
+    },
+  };
 };
 
 export const createMinimapExtension = ({

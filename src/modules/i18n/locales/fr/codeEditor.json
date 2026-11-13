@@ -7,7 +7,8 @@
     "showDiff": "Afficher la mise en évidence des différences",
     "settings": "Paramètres de l'éditeur",
     "collapse": "Réduire l'éditeur",
-    "expand": "Étendre l'éditeur en pleine largeur"
+    "expand": "Étendre l'éditeur en pleine largeur",
+    "popOut": "Open in modal"
   },
   "loading": "Chargement de {{fileName}}...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "Plein écran",
     "close": "Fermer",
     "previewMarkdown": "Aperçu markdown",
-    "editMarkdown": "Modifier le markdown"
+    "editMarkdown": "Modifier le markdown",
+    "saveShortcut": "Enregistrer (Ctrl+S)"
   },
   "footer": {
     "lines": "Lignes :",
@@ -38,5 +40,10 @@
   "unsavedChanges": {
     "confirmClose": "Vous avez des modifications non enregistrées. Fermer ce fichier et les abandonner ?",
     "indicator": "Modifications non enregistrées"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "Enregistré !"
   }
 }
