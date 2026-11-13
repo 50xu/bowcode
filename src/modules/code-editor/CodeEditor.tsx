@@ -1,5 +1,5 @@
 import { EditorView } from '@codemirror/view';
-import { unifiedMergeView } from '@codemirror/merge';
+import { getChunks, unifiedMergeView } from '@codemirror/merge';
 import type { Extension } from '@codemirror/state';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,9 +10,7 @@ import { useCodeEditorDocument } from '@/modules/code-editor/hooks/useCodeEditor
 import { useCodeEditorSettings } from '@/modules/code-editor/hooks/useCodeEditorSettings';
 import { useEditorKeyboardShortcuts } from '@/modules/code-editor/hooks/useEditorKeyboardShortcuts';
 import type { CodeEditorFile, CodeEditorGotoTarget } from '@/shared/types';
-import { createMinimapExtension, createScrollToFirstChunkExtension, getLanguageExtensions } from '@/modules/code-editor/utils/editorExtensions';
-import { getEditorStyles } from '@/modules/code-editor/utils/editorStyles';
-import { createEditorToolbarPanelExtension } from '@/modules/code-editor/utils/editorToolbarPanel';
+import { createMinimapExtension, createScrollToFirstChunkExtension, resolveEditorLanguage } from '@/modules/code-editor/utils/editorExtensions';
 import CodeEditorFooter from '@/modules/code-editor/CodeEditorFooter';
 import CodeEditorHeader from '@/modules/code-editor/CodeEditorHeader';
 import CodeEditorLoadingState from '@/modules/code-editor/CodeEditorLoadingState';
@@ -49,6 +47,46 @@ export default function CodeEditor({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDiff, setShowDiff] = useState(Boolean(file.diffInfo));
   const [markdownPreview, setMarkdownPreview] = useState(false);
+  const resolvedLanguage = useMemo(() => resolveEditorLanguage(file.name), [file.name]);
+  // Loaded support belongs to this filename; old files must never colour a newly opened one.
+  const [loadedLanguage, setLoadedLanguage] = useState<{ fileName: string; extension: Extension } | null>(null);
+  // A short grace period avoids a plain-text flash for the first language load.
+  const [languageWaitExpiredFor, setLanguageWaitExpiredFor] = useState<string | null>(null);
+  // The view is shared with header navigation; changing the diff does not remount it.
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
+  // The selected diff index is independent of document edits and wraps on navigation.
+  const [changeIndex, setChangeIndex] = useState(0);
+  // Merge decorations can change after a transaction without a React render.
+  const [changeCount, setChangeCount] = useState(0);
+  // Updated by CodeMirror selection transactions for the slim status bar.
+  const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  const visibleChangeCount = editorView && showDiff ? changeCount : 0;
+  const visibleChangeIndex = Math.min(changeIndex, Math.max(0, visibleChangeCount - 1));
+
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => setLanguageWaitExpiredFor(file.name), 300);
+    void resolvedLanguage.load().then((extension) => {
+      if (active) setLoadedLanguage({ fileName: file.name, extension });
+    }).catch(() => {
+      if (active) setLoadedLanguage({ fileName: file.name, extension: [] });
+    });
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [file.name, resolvedLanguage]);
+
+  const handleViewChange = useCallback((view: EditorView | null) => {
+    setEditorView(view);
+    setChangeCount(view ? getChunks(view.state)?.chunks.length ?? 0 : 0);
+  }, []);
+
+  const navigateDiff = useCallback((direction: number) => {
+    if (!editorView) return;
+    const nextChunks = getChunks(editorView.state)?.chunks ?? [];
+    if (!nextChunks.length) return;
+    const next = (Math.min(changeIndex, nextChunks.length - 1) + direction + nextChunks.length) % nextChunks.length;
+    setChangeIndex(next);
+    editorView.dispatch({ effects: EditorView.scrollIntoView(nextChunks[next].fromB, { y: 'center' }) });
+  }, [editorView, changeIndex]);
 
   // The code editor follows the app-wide theme; it has no theme of its own.
   const { isDarkMode } = useTheme();
@@ -162,35 +200,8 @@ export default function CodeEditor({
     [file, showDiff],
   );
 
-  const toolbarPanelExtension = useMemo(
-    () => (
-      createEditorToolbarPanelExtension({
-        file,
-        showDiff,
-        isSidebar,
-        isExpanded,
-        onToggleDiff: () => setShowDiff((previous) => !previous),
-        onPopOut,
-        onToggleExpand,
-        labels: {
-          changes: t('toolbar.changes'),
-          previousChange: t('toolbar.previousChange'),
-          nextChange: t('toolbar.nextChange'),
-          hideDiff: t('toolbar.hideDiff'),
-          showDiff: t('toolbar.showDiff'),
-          collapse: t('toolbar.collapse'),
-          expand: t('toolbar.expand'),
-        },
-      })
-    ),
-    [file, isExpanded, isSidebar, onPopOut, onToggleExpand, showDiff, t],
-  );
-
   const extensions = useMemo(() => {
-    const allExtensions: Extension[] = [
-      ...getLanguageExtensions(file.name),
-      ...toolbarPanelExtension,
-    ];
+    const allExtensions: Extension[] = [];
 
     if (file.diffInfo && showDiff && file.diffInfo.old_string !== undefined) {
       allExtensions.push(
@@ -213,11 +224,9 @@ export default function CodeEditor({
     return allExtensions;
   }, [
     file.diffInfo,
-    file.name,
     minimapExtension,
     scrollToFirstChunkExtension,
     showDiff,
-    toolbarPanelExtension,
     wordWrap,
   ]);
 
@@ -227,14 +236,8 @@ export default function CodeEditor({
     dependency: content,
   });
 
-  if (loading) {
-    return (
-      <CodeEditorLoadingState
-        isDarkMode={isDarkMode}
-        isSidebar={isSidebar}
-        loadingText={t('loading', { fileName: file.name })}
-      />
-    );
+  if (loading || (!previewKind && !isBinary && languageWaitExpiredFor !== file.name && loadedLanguage?.fileName !== file.name)) {
+    return <CodeEditorLoadingState file={file} isSidebar={isSidebar} />;
   }
 
   // Natively previewable media (image/pdf/audio/video) is rendered inline
@@ -288,12 +291,19 @@ export default function CodeEditor({
 
   return (
     <>
-      <style>{getEditorStyles(isDarkMode)}</style>
       <div className={outerContainerClassName}>
         <div className={innerContainerClassName}>
           <CodeEditorHeader
             file={file}
             isSidebar={isSidebar}
+            isExpanded={isExpanded}
+            onToggleExpand={onToggleExpand}
+            onPopOut={onPopOut}
+            showDiff={showDiff}
+            changeIndex={visibleChangeIndex}
+            changeCount={visibleChangeCount}
+            onToggleDiff={() => { setChangeIndex(0); setShowDiff((previous) => !previous); }}
+            onNavigateDiff={navigateDiff}
             isFullscreen={isFullscreen}
             isMarkdownFile={isMarkdownFile}
             isHtmlPreviewFile={isHtmlPreviewFile}
@@ -310,6 +320,14 @@ export default function CodeEditor({
             onClose={requestClose}
             labels={{
               showingChanges: t('header.showingChanges'),
+              changes: t('toolbar.changes'),
+              previousChange: t('toolbar.previousChange'),
+              nextChange: t('toolbar.nextChange'),
+              hideDiff: t('toolbar.hideDiff'),
+              showDiff: t('toolbar.showDiff'),
+              collapse: t('toolbar.collapse'),
+              expand: t('toolbar.expand'),
+              popOut: t('toolbar.popOut'),
               copyPath: t('actions.copyPath', 'Copy file path'),
               pathCopied: t('actions.pathCopied', 'File path copied'),
               editMarkdown: t('actions.editMarkdown'),
@@ -318,6 +336,7 @@ export default function CodeEditor({
               settings: t('toolbar.settings'),
               download: t('actions.download'),
               save: t('actions.save'),
+              saveShortcut: t('actions.saveShortcut'),
               saving: t('actions.saving'),
               saved: t('actions.saved'),
               fullscreen: t('actions.fullscreen'),
@@ -343,15 +362,24 @@ export default function CodeEditor({
               fontSize={fontSize}
               showLineNumbers={showLineNumbers}
               extensions={extensions}
+              language={loadedLanguage?.fileName === file.name ? loadedLanguage.extension : []}
+              onViewChange={handleViewChange}
+              onCursorChange={(line, column) => setCursor({ line, column })}
+              onChunksChange={setChangeCount}
               gotoTarget={gotoTarget}
             />
           </div>
 
           <CodeEditorFooter
             content={content}
-            linesLabel={t('footer.lines')}
-            charactersLabel={t('footer.characters')}
-            shortcutsLabel={t('footer.shortcuts')}
+            line={cursor.line}
+            column={cursor.column}
+            language={resolvedLanguage.name}
+            dirty={hasUnsavedChanges}
+            labels={{
+              line: t('status.line'), column: t('status.column'), lines: t('footer.lines'),
+              saved: t('status.saved'), unsaved: t('unsavedChanges.indicator'),
+            }}
           />
         </div>
       </div>

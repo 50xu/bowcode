@@ -233,7 +233,7 @@ test('a save still in flight when another file opens leaves that file clean', as
   });
   // Back to the plain save title: neither the old file's baseline nor its
   // "saved" tick was allowed to land on the file that is open now.
-  await waitFor(() => assert.ok(screen.getByTitle('actions.save')));
+  await waitFor(() => assert.ok(screen.getByTitle('actions.saveShortcut')));
 
   assert.equal(isDirtyDotShown(), false);
   pressEscape();
@@ -299,7 +299,7 @@ test('a failed save of the previous file is not reported on the one open now', a
 
   assert.equal(screen.queryByText('disk full') !== null, false);
   // The open file can be saved straight away rather than waiting on the old write.
-  assert.equal(screen.getByTitle('actions.save').hasAttribute('disabled'), false);
+  assert.equal(screen.getByTitle('actions.saveShortcut').hasAttribute('disabled'), false);
 });
 
 test('the header close button is guarded the same way', async () => {

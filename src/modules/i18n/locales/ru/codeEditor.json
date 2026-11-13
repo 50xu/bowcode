@@ -7,7 +7,8 @@
     "showDiff": "Показать подсветку различий",
     "settings": "Настройки редактора",
     "collapse": "Свернуть редактор",
-    "expand": "Развернуть редактор на всю ширину"
+    "expand": "Развернуть редактор на всю ширину",
+    "popOut": "Open in modal"
   },
   "loading": "Загрузка {{fileName}}...",
   "header": {
@@ -24,7 +25,8 @@
     "fullscreen": "Полноэкранный режим",
     "close": "Закрыть",
     "previewMarkdown": "Предпросмотр markdown",
-    "editMarkdown": "Редактировать markdown"
+    "editMarkdown": "Редактировать markdown",
+    "saveShortcut": "Сохранить (Ctrl+S)"
   },
   "footer": {
     "lines": "Строк:",
@@ -38,5 +40,10 @@
   "unsavedChanges": {
     "confirmClose": "Есть несохраненные изменения. Закрыть этот файл и отменить их?",
     "indicator": "Несохраненные изменения"
+  },
+  "status": {
+    "line": "Ln",
+    "column": "Col",
+    "saved": "Сохранено!"
   }
 }
