@@ -5,6 +5,9 @@ import type { ChatMessage } from '@/shared/types';
 
 const BOTTOM_THRESHOLD = 24;
 
+const distanceFromBottom = (container: HTMLDivElement) =>
+  container.scrollHeight - container.scrollTop - container.clientHeight;
+
 type Anchor = { element: Element; timestamp: string | null; contentTop: number };
 type ScrollIntent = WheelEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>;
 
@@ -95,7 +98,15 @@ export function useTranscriptScroll({ isActive, sessionKey, messages, visibleMes
       capture(container);
       return;
     }
-    if (modeRef.current === 'follow') {
+    if (modeRef.current === 'follow' && container.scrollTop < lastScrollTopRef.current - 1 && distanceFromBottom(container) > BOTTOM_THRESHOLD) {
+      // The reader has already moved up (scrollbar drag, touch, keyboard) but the
+      // scroll event has not landed yet; snapping to the bottom here would swallow
+      // that gesture, so release follow mode instead. A clamp from shrinking
+      // content leaves the view at the bottom and is not mistaken for this.
+      setMode('free');
+      lastScrollTopRef.current = container.scrollTop;
+      savedScrollTopRef.current = container.scrollTop;
+    } else if (modeRef.current === 'follow') {
       const bottomTop = container.scrollHeight - container.clientHeight;
       if (Math.abs(bottomTop - container.scrollTop) >= 0.5) writeTop(container, container.scrollHeight);
     } else {
@@ -111,7 +122,7 @@ export function useTranscriptScroll({ isActive, sessionKey, messages, visibleMes
       }
     }
     capture(container);
-  }, [isActive, searchScrollActiveRef, capture, contentTopOf, writeTop]);
+  }, [isActive, searchScrollActiveRef, capture, contentTopOf, writeTop, setMode]);
 
   const visibleMessages = useMemo(() => {
     const tailStart = Math.max(0, messages.length - visibleMessageCount);
@@ -167,8 +178,14 @@ export function useTranscriptScroll({ isActive, sessionKey, messages, visibleMes
       return;
     }
     expectedScrollTopRef.current = null;
-    if (container.scrollHeight - top - container.clientHeight <= BOTTOM_THRESHOLD) setMode('follow');
-    else if (top < lastScrollTopRef.current - 1) setMode('free');
+    const movedUp = top < lastScrollTopRef.current - 1;
+    const atBottom = distanceFromBottom(container) <= BOTTOM_THRESHOLD;
+    // Re-pin only when the reader comes back down to the bottom. A small upward
+    // trackpad step still lands inside the threshold, and re-pinning on it made
+    // every streamed resize yank the view back down. An upward move that stays
+    // at the bottom (content shrank and the browser clamped) changes nothing.
+    if (movedUp && !atBottom) setMode('free');
+    else if (!movedUp && atBottom) setMode('follow');
     lastScrollTopRef.current = top;
     savedScrollTopRef.current = top;
     capture(container);

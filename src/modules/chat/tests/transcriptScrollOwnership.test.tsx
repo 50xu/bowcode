@@ -115,6 +115,22 @@ describe('transcript scroll ownership', () => {
     expect(container.writes).toEqual([]);
   });
 
+  it('keeps an upward scroll that lands before its scroll event while streaming', async () => {
+    const messages = new Map([[SESSION_A, [buildMessage(0)]]]);
+    const { result, rerender } = await renderChatSessionState({ session: { id: SESSION_A } as ProjectSession, store: createStore(messages) });
+    const container = createContainer();
+    result.current.scrollContainerRef.current = container.element;
+    act(() => { result.current.scrollToBottom(); });
+    // Scrollbar drag / touch: scrollTop moves up, no scroll event delivered yet.
+    container.element.scrollTop = 4300;
+    container.writes.length = 0;
+    container.setHeight(5100);
+    messages.set(SESSION_A, [...messages.get(SESSION_A)!, buildMessage(1)]);
+    act(() => { rerender({ session: { id: SESSION_A } as ProjectSession }); });
+    expect(container.writes).not.toContain(5100);
+    expect(result.current.isUserScrolledUp).toBe(true);
+  });
+
   it('compensates a prepend once by the inserted height', async () => {
     const messages = new Map([[SESSION_A, [buildMessage(1), buildMessage(2)]]]);
     const { result, rerender } = await renderChatSessionState({ session: { id: SESSION_A } as ProjectSession, store: createStore(messages) });
