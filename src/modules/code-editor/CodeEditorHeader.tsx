@@ -37,6 +37,12 @@ type CodeEditorHeaderProps = {
   previewActions?: ReactNode;
 };
 
+/** The folder that holds the file; the name is already shown beside it. */
+const directoryOf = (file: CodeEditorFile) => {
+  const directory = file.path.endsWith(file.name) ? file.path.slice(0, file.path.length - file.name.length) : file.path;
+  return directory.replace(/[\\/]+$/, '') || '/';
+};
+
 /** Used by CodeEditor to provide one compact React toolbar for editing, diff navigation and layout. */
 export default function CodeEditorHeader(props: CodeEditorHeaderProps) {
   const { file, labels } = props;
@@ -61,15 +67,17 @@ export default function CodeEditorHeader(props: CodeEditorHeaderProps) {
 
   return (
     <div className="flex h-10 min-w-0 shrink-0 items-center gap-2 border-b border-border px-3">
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <h3 className="shrink-0 truncate text-sm font-medium text-foreground">{file.name}</h3>
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+        <h3 className="max-w-[60%] shrink-0 truncate text-sm font-medium text-foreground" title={file.name}>{file.name}</h3>
         {props.hasUnsavedChanges && <span role="img" aria-label={labels.unsavedChanges} title={labels.unsavedChanges} className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />}
-        <Tooltip content={copiedPath === file.path ? (labels.pathCopied ?? t('actions.pathCopied')) : (labels.copyPath ?? t('actions.copyPath'))}>
-          <button type="button" onClick={copyPath} className="group flex min-w-0 items-center gap-1 text-muted-foreground hover:text-foreground" aria-label={copiedPath === file.path ? (labels.pathCopied ?? t('actions.pathCopied')) : (labels.copyPath ?? t('actions.copyPath'))}>
-            <span className="min-w-0 truncate text-xs [direction:rtl]" title={file.path}>{file.path}</span>
-            {copiedPath === file.path ? <Check className="size-3 shrink-0" /> : <Copy className="size-3 shrink-0 opacity-0 group-hover:opacity-100" />}
-          </button>
-        </Tooltip>
+        {/* No Tooltip wrapper here: its inline-block box cannot shrink, so a long
+            path overflowed across the action buttons. The native title covers it. */}
+        <button type="button" onClick={copyPath} className="group flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-muted-foreground hover:text-foreground" title={file.path} aria-label={copiedPath === file.path ? (labels.pathCopied ?? t('actions.pathCopied')) : (labels.copyPath ?? t('actions.copyPath'))}>
+          {/* rtl truncates from the left so the file's own folder stays visible;
+              the inner ltr span keeps the leading "/" from jumping to the end. */}
+          <span className="min-w-0 truncate text-left text-xs [direction:rtl]"><span dir="ltr">{directoryOf(file)}</span></span>
+          {copiedPath === file.path ? <Check className="size-3 shrink-0" /> : <Copy className="size-3 shrink-0 opacity-0 group-hover:opacity-100" />}
+        </button>
         {file.diffInfo && <span className="shrink-0 rounded bg-muted px-1.5 text-[10px] text-muted-foreground">{labels.showingChanges ?? t('header.showingChanges')}</span>}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
