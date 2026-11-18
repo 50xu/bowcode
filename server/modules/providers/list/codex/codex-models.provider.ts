@@ -19,7 +19,7 @@ import {
  * Curated Codex catalog shipped as immutable Bowcode defaults.
  *
  * Mirrors the `list`-visible entries of the model catalog bundled in the
- * `@openai/codex` CLI this package depends on (0.166): the CLI only carries
+ * `@openai/codex` CLI this package depends on (0.170): the CLI only carries
  * metadata — effort levels, context window, tool shape — for those slugs, and
  * a slug it does not know runs on fallback metadata that warns and quietly
  * downgrades unsupported efforts. GPT-5.4 and GPT-5.4 Mini left the bundled
@@ -30,9 +30,41 @@ import {
 export const CODEX_PREDEFINED_MODELS: ProviderModelsDefinition = {
   OPTIONS: [
     {
+      value: 'gpt-6.2-sol',
+      label: 'GPT-6.2 Sol',
+      description: 'Fast, go-to model for coding and everyday work.',
+      effort: {
+        default: 'low',
+        values: [
+          { value: 'low' },
+          { value: 'medium' },
+          { value: 'high' },
+          { value: 'xhigh' },
+          { value: 'max' },
+          { value: 'ultra' },
+        ],
+      },
+    },
+    {
+      value: 'gpt-6.2-astra',
+      label: 'GPT-6.2 Astra',
+      description: 'Our most capable model for complex coding and professional work.',
+      effort: {
+        default: 'low',
+        values: [
+          { value: 'low' },
+          { value: 'medium' },
+          { value: 'high' },
+          { value: 'xhigh' },
+          { value: 'max' },
+          { value: 'ultra' },
+        ],
+      },
+    },
+    {
       value: 'gpt-6.1-sol',
       label: 'GPT-6.1 Sol',
-      description: 'Latest workhorse model for coding and everyday work.',
+      description: 'Previous generation model for coding and everyday work.',
       effort: {
         default: 'low',
         values: [
@@ -48,7 +80,7 @@ export const CODEX_PREDEFINED_MODELS: ProviderModelsDefinition = {
     {
       value: 'gpt-6.1-terra',
       label: 'GPT-6.1 Terra',
-      description: 'Balanced model with a 500K-token context window for long sessions.',
+      description: 'Efficient model that excels at visual understanding and computer use.',
       effort: {
         default: 'low',
         values: [
@@ -64,7 +96,7 @@ export const CODEX_PREDEFINED_MODELS: ProviderModelsDefinition = {
     {
       value: 'gpt-6-astra',
       label: 'GPT-6 Astra',
-      description: 'Frontier intelligence for the most demanding work.',
+      description: 'Previous generation model for complex coding and professional work.',
       effort: {
         default: 'low',
         values: [
@@ -165,7 +197,7 @@ export const CODEX_PREDEFINED_MODELS: ProviderModelsDefinition = {
       },
     },
   ],
-  DEFAULT: 'gpt-6.1-sol',
+  DEFAULT: 'gpt-6.2-sol',
 };
 
 const CODEX_CONFIG_PATH = path.join(os.homedir(), '.codex', 'config.toml');

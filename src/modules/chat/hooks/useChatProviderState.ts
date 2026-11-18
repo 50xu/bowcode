@@ -32,7 +32,7 @@ const toProviderEffortOptions = (
 const FALLBACK_DEFAULT_MODEL: Record<LLMProvider, string> = {
   claude: 'default',
   // Mirrors the backend Codex catalog DEFAULT; only used before it loads.
-  codex: 'gpt-6.1-sol',
+  codex: 'gpt-6.2-sol',
   opencode: 'anthropic/claude-sonnet-4-5',
 };
 
