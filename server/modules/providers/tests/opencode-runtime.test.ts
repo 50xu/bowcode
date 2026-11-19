@@ -18,6 +18,7 @@ import type { ProviderPermissionDecision, ProviderRuntimeContext } from '@/share
 // Read when the runtime module loads, so set before importing it — the
 // sessions provider imports the runtime too, so it is loaded dynamically as well.
 process.env.OPENCODE_TOOL_APPROVAL_TIMEOUT_MS = '1500';
+process.env.OPENCODE_SUBAGENT_REPORT_GRACE_MS = '40';
 const {
   isCoveredByApprovals,
   opencodeRuntime,
@@ -260,6 +261,55 @@ test('a new session runs on a private, authenticated server that stops with the 
 
   assert.ok(turn.serverPid, 'the fake server reported its pid');
   assert.ok(await waitForExit(turn.serverPid!), 'the turn\'s server process is gone');
+});
+
+test('a turn stays open while a background subagent runs and ends after the parent\'s follow-up', async () => {
+  const turn = await runTurn({
+    scenario: { steps: [{ type: 'background-subagent', childSessionId: 'ses_child', delayMs: 250, finalText: 'Subagent reported back' }] },
+  });
+
+  assert.equal(turn.error, null);
+  assert.deepEqual(turn.frames.filter((frame) => frame.kind === 'text').map((frame) => frame.content), [
+    'Waiting for subagent', 'Subagent reported back',
+  ]);
+  assert.equal(turn.frames.filter((frame) => frame.kind === 'complete').length, 1);
+  assert.equal(turn.frames.at(-1)?.exitCode, 0);
+  assert.ok(turn.requests.some((entry) => entry.childFinished === 'ses_child'), 'the child finished before the turn stopped');
+  assert.ok(await waitForExit(turn.serverPid!), 'the turn\'s server process is gone');
+});
+
+test('a subagent that never reports back ends the turn after the grace period', async () => {
+  const turn = await runTurn({
+    scenario: { steps: [{ type: 'background-subagent', childSessionId: 'ses_child', delayMs: 100, finalText: 'not reported', report: false }] },
+  });
+
+  assert.equal(turn.error, null);
+  assert.ok(turn.requests.some((entry) => entry.childFinished === 'ses_child'));
+  assert.equal(turn.frames.some((frame) => frame.kind === 'text' && frame.content === 'not reported'), false);
+  assert.equal(turn.frames.filter((frame) => frame.kind === 'complete').length, 1);
+  assert.equal(turn.frames.at(-1)?.exitCode, 0);
+});
+
+test('stopping a turn that waits on a background subagent ends it as aborted', async () => {
+  let abortResult: boolean | null = null;
+  const turn = await runTurn({
+    appSessionId: 'app-background-abort',
+    scenario: { steps: [{ type: 'background-subagent', childSessionId: 'ses_child', delayMs: 2000, finalText: 'not reported' }] },
+    onFrame: (frame) => {
+      if (frame.kind === 'text' && frame.content === 'Waiting for subagent') {
+        setTimeout(() => {
+          void opencodeRuntime.abort('app-background-abort').then((result) => { abortResult = result; });
+        }, 100);
+      }
+    },
+  });
+
+  assert.equal(turn.error, null);
+  assert.equal(abortResult, true);
+  assert.ok(findRequest(turn.requests, 'POST', /^\/api\/session\/[^/]+\/interrupt$/));
+  assert.equal(turn.frames.some((frame) => frame.kind === 'complete' || frame.kind === 'error'), false);
+  assert.equal(turn.frames.some((frame) => frame.content === 'not reported'), false);
+  assert.ok(await waitForExit(turn.serverPid!), 'the stopped turn\'s server process is gone');
 });
 
 test('an attachment-only message sends the attachment list as the prompt', async () => {

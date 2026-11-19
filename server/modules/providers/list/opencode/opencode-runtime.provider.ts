@@ -6,7 +6,9 @@
  * `@opencode/client`.
  *
  * Every turn gets its own `opencode serve`, started by this runtime and stopped
- * when the turn ends. The client then creates or resumes the session, sends
+ * when the turn ends. A turn stays open while background subagents run, ending
+ * when the parent finishes with no outstanding descendants (or a missing
+ * follow-up times out). The client then creates or resumes the session, sends
  * the prompt, follows the server's event stream and answers the two requests
  * OpenCode makes of its user while a turn runs:
  *
@@ -143,6 +145,13 @@ const TOOL_APPROVAL_TIMEOUT_MS = readTimeoutFromEnv('OPENCODE_TOOL_APPROVAL_TIME
  * for permissions: a question usually needs thought, not just a yes or no.
  */
 const QUESTION_TIMEOUT_MS = readTimeoutFromEnv('OPENCODE_QUESTION_TIMEOUT_MS', 30 * 60_000);
+
+/**
+ * After the last background subagent finishes, OpenCode normally enqueues a
+ * parent follow-up just after the child's end event. Do not wait forever if
+ * that report never arrives; tests can shorten this grace period.
+ */
+const SUBAGENT_REPORT_GRACE_MS = readTimeoutFromEnv('OPENCODE_SUBAGENT_REPORT_GRACE_MS', 30_000);
 
 /**
  * Upper bound on how many chats keep their "Always allow" approvals in memory.
@@ -824,6 +833,30 @@ async function runOpenCodeTurn(
   let promptSent = false;
   let turnEnded = false;
   let turnError: string | null = null;
+  const descendants = new Set<string>();
+  const outstandingDescendants = new Set<string>();
+  let parentExecuting = false;
+  let subagentReportTimer: ReturnType<typeof setTimeout> | undefined;
+  const clearSubagentReportTimer = () => {
+    clearTimeout(subagentReportTimer);
+    subagentReportTimer = undefined;
+  };
+  const waitForSubagentReport = () => {
+    if (parentExecuting || outstandingDescendants.size > 0 || subagentReportTimer || turnEnded || turn.aborted) {
+      return;
+    }
+    subagentReportTimer = setTimeout(() => {
+      subagentReportTimer = undefined;
+      if (!turnEnded && !turn.aborted && !parentExecuting && outstandingDescendants.size === 0) {
+        turnDone();
+      }
+    }, SUBAGENT_REPORT_GRACE_MS);
+    subagentReportTimer.unref();
+  };
+  turn.finish = () => {
+    clearSubagentReportTimer();
+    turnDone();
+  };
 
   const failTurn = (message: string) => {
     sendError(message);
@@ -1096,6 +1129,31 @@ async function runOpenCodeTurn(
         break;
     }
 
+    // A created child is outstanding even before its execution.started event;
+    // retain its ancestry after it finishes so nested children can be tracked.
+    if (event.type === 'session.created'
+      && typeof data.sessionID === 'string'
+      && (data.parentID === turn.providerSessionId || descendants.has(String(data.parentID)))) {
+      descendants.add(data.sessionID);
+      outstandingDescendants.add(data.sessionID);
+      clearSubagentReportTimer();
+    }
+
+    if (typeof data.sessionID === 'string' && descendants.has(data.sessionID)) {
+      if (event.type === 'session.execution.started') {
+        outstandingDescendants.add(data.sessionID);
+        clearSubagentReportTimer();
+      } else if (event.type === 'session.execution.succeeded'
+        || event.type === 'session.execution.failed'
+        || event.type === 'session.execution.interrupted') {
+        outstandingDescendants.delete(data.sessionID);
+        // The parent's inbox follow-up is enqueued after this event, not before.
+        if (outstandingDescendants.size === 0) {
+          waitForSubagentReport();
+        }
+      }
+    }
+
     // Everything below concerns the chat's own session only.
     if (!turn.providerSessionId || data.sessionID !== turn.providerSessionId) {
       return;
@@ -1154,14 +1212,27 @@ async function runOpenCodeTurn(
       case 'session.usage.updated': {
         return;
       }
-      case 'session.execution.succeeded':
+      case 'session.execution.started': {
+        parentExecuting = true;
+        clearSubagentReportTimer();
+        return;
+      }
+      case 'session.execution.succeeded': {
+        parentExecuting = false;
+        if (promptSent && outstandingDescendants.size === 0) {
+          turnDone();
+        }
+        return;
+      }
       case 'session.execution.interrupted': {
+        parentExecuting = false;
         if (promptSent) {
           turnDone();
         }
         return;
       }
       case 'session.execution.failed': {
+        parentExecuting = false;
         if (!promptSent || turnEnded) {
           return;
         }
@@ -1323,6 +1394,7 @@ async function runOpenCodeTurn(
     }
   } finally {
     turnEnded = true;
+    clearSubagentReportTimer();
     // Whatever is still open was asked of a turn that has ended.
     for (const requestId of Array.from(turnPromptIds)) {
       pendingPrompts.get(requestId)?.settle('cancelled');
