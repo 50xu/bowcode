@@ -44,6 +44,8 @@ type Step =
   /** The turn fails with this error. */
   | { type: 'error'; errorType: string; message: string }
   | { type: 'usage'; input: number; output: number }
+  /** A subagent outlives the parent's first execution and may report back later. */
+  | { type: 'background-subagent'; childSessionId: string; delayMs: number; finalText: string; report?: boolean }
   | { type: 'crash' }
   | { type: 'hang' };
 
@@ -197,6 +199,29 @@ async function runTurn(sessionID: string): Promise<void> {
         tokens: { input: 900_000_000, output: 100_000_000, reasoning: 0, cache: { read: 0, write: 0 } },
       });
       continue;
+    }
+
+    if (step.type === 'background-subagent') {
+      emit('session.created', { sessionID: step.childSessionId, parentID: sessionID });
+      emit('session.execution.started', { sessionID: step.childSessionId });
+      emit('session.text.ended', { sessionID, assistantMessageID, ordinal: ordinal++, text: 'Waiting for subagent' });
+      emit('session.execution.succeeded', { sessionID });
+      const outcome = await Promise.race([
+        new Promise<'finished'>((resolve) => setTimeout(() => resolve('finished'), step.delayMs)),
+        aborted,
+      ]);
+      if (outcome === 'aborted') {
+        emit('session.execution.interrupted', { sessionID });
+        return;
+      }
+      emit('session.execution.succeeded', { sessionID: step.childSessionId });
+      log({ childFinished: step.childSessionId });
+      if (step.report !== false) {
+        emit('session.execution.started', { sessionID });
+        emit('session.text.ended', { sessionID, assistantMessageID, ordinal: ordinal++, text: step.finalText });
+        emit('session.execution.succeeded', { sessionID });
+      }
+      return;
     }
 
     if (step.type === 'text' || step.type === 'reasoning') {
