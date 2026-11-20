@@ -22,6 +22,12 @@ let serverDrafts: unknown[] = [];
 let draftsRequestFailed = false;
 // Lets a test hold the drafts response, to land it after a later queue change.
 let draftsResponseGate: Promise<void> | null = null;
+// Holds text saves open so hydrates can observe an in-flight write.
+let saveResponseGate: Promise<void> | null = null;
+// Controls save failures to verify unsaved text survives later snapshots.
+let saveStatus = 200;
+// Exercises both asynchronous rejection and the synchronous transport throw path.
+let saveFailure: 'reject' | 'throw' | null = null;
 // What the server answers to an append; by default it queues the message alone.
 let appendResponse: ((queuedMessage: unknown) => Response) | null = null;
 // Lets a test hold an append's answer, to make a queue change while it is in flight.
@@ -46,9 +52,20 @@ vi.mock('@/shared/api', async (importOriginal) => ({
         await draftsResponseGate;
         return json({ success: true, drafts: snapshot });
       },
-      saveDraft: async (scope: string, draft: { text: string; queuedMessage?: unknown }) => {
+      saveDraft: (scope: string, draft: { text: string; queuedMessage?: unknown }) => {
         savedDrafts.push({ scope, ...draft });
-        return new Response('{}', { status: 200 });
+        if (saveFailure === 'throw') {
+          throw new Error('offline');
+        }
+        const status = saveStatus;
+        const failure = saveFailure;
+        return (async () => {
+          await saveResponseGate;
+          if (failure === 'reject') {
+            throw new Error('offline');
+          }
+          return new Response('{}', { status });
+        })();
       },
       appendQueuedMessage: async (scope: string, queuedMessage: unknown) => {
         appendRequests.push({ scope, queuedMessage });
@@ -78,6 +95,9 @@ beforeEach(() => {
   serverDrafts = [];
   draftsRequestFailed = false;
   draftsResponseGate = null;
+  saveResponseGate = null;
+  saveStatus = 200;
+  saveFailure = null;
   appendResponse = null;
   appendResponseGate = null;
   clearStatus = 200;
@@ -173,6 +193,120 @@ test('hydrate does not overwrite a scope the user is typing into right now', asy
   await store.hydrateChatDrafts();
 
   assert.equal(store.readDraftText('session-a'), 'what I am writing');
+});
+
+test('a hydrate predating typing cannot overwrite text whose save has already completed', async () => {
+  serverDrafts = [{ scope: 'session-a', text: 'hello', queuedMessage: null }];
+  const store = await loadStore();
+  await store.hydrateChatDrafts();
+  let releaseDrafts!: () => void;
+  draftsResponseGate = new Promise((resolve) => { releaseDrafts = resolve; });
+  const hydrating = store.hydrateChatDrafts();
+
+  store.writeDraftText('session-a', 'hello world');
+  await vi.advanceTimersByTimeAsync(1_000);
+  assert.deepEqual(savedDrafts, [{ scope: 'session-a', text: 'hello world' }]);
+  releaseDrafts();
+  await hydrating;
+
+  assert.equal(store.readDraftText('session-a'), 'hello world');
+});
+
+test('a hydrate sent with a debounced write pending keeps text even after the save completes', async () => {
+  const store = await loadStore();
+  store.writeDraftText('session-a', 'hello world');
+  serverDrafts = [{ scope: 'session-a', text: 'hello', queuedMessage: null }];
+  let releaseDrafts!: () => void;
+  draftsResponseGate = new Promise((resolve) => { releaseDrafts = resolve; });
+  const hydrating = store.hydrateChatDrafts();
+
+  await vi.advanceTimersByTimeAsync(1_000);
+  releaseDrafts();
+  await hydrating;
+
+  assert.equal(store.readDraftText('session-a'), 'hello world');
+});
+
+for (const settleBeforeHydrate of [false, true]) {
+  test(`a hydrate sent during a save keeps local text when the save settles ${settleBeforeHydrate ? 'before' : 'after'} the GET`, async () => {
+    const store = await loadStore();
+    await store.appendQueuedMessage('session-a', { content: 'already queued' });
+    let releaseSave!: () => void;
+    saveResponseGate = new Promise((resolve) => { releaseSave = resolve; });
+    store.writeDraftText('session-a', 'hello world');
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    serverDrafts = [{ scope: 'session-a', text: 'hello', queuedMessage: null }];
+    let releaseDrafts!: () => void;
+    draftsResponseGate = new Promise((resolve) => { releaseDrafts = resolve; });
+    const hydrating = store.hydrateChatDrafts();
+    if (settleBeforeHydrate) {
+      releaseSave();
+      await vi.advanceTimersByTimeAsync(0);
+    }
+    releaseDrafts();
+    await hydrating;
+
+    assert.equal(store.readDraftText('session-a'), 'hello world');
+    assert.equal(store.readQueuedMessage('session-a'), null, 'server queue still wins field by field');
+    releaseSave();
+    await vi.advanceTimersByTimeAsync(0);
+  });
+}
+
+for (const failure of ['non-ok', 'reject', 'throw'] as const) {
+  test(`a ${failure} text save protects local text until a subsequent save succeeds`, async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const store = await loadStore();
+      saveStatus = failure === 'non-ok' ? 503 : 200;
+      saveFailure = failure === 'non-ok' ? null : failure;
+      store.writeDraftText('session-a', 'unsaved text');
+      await vi.advanceTimersByTimeAsync(1_000);
+      assert.equal(errorLog.mock.calls.length, 1);
+
+      for (const snapshot of [[], [{ scope: 'session-a', text: 'stale', queuedMessage: null }]]) {
+        serverDrafts = snapshot;
+        await store.hydrateChatDrafts();
+        assert.equal(store.readDraftText('session-a'), 'unsaved text');
+      }
+      assert.equal(savedDrafts.length, 1, 'hydrate must not automatically retry');
+
+      saveStatus = 200;
+      saveFailure = null;
+      store.writeDraftText('session-a', 'saved text');
+      await vi.advanceTimersByTimeAsync(1_000);
+      serverDrafts = [{ scope: 'session-a', text: 'from another device', queuedMessage: null }];
+      await store.hydrateChatDrafts();
+      assert.equal(store.readDraftText('session-a'), 'from another device');
+    } finally {
+      errorLog.mockRestore();
+    }
+  });
+}
+
+test('reset clears failed and in-flight text save protection', async () => {
+  const store = await loadStore();
+  const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    saveStatus = 503;
+    store.writeDraftText('failed-scope', 'private');
+    await vi.advanceTimersByTimeAsync(1_000);
+  } finally {
+    errorLog.mockRestore();
+  }
+  saveStatus = 200;
+  let releaseSave!: () => void;
+  saveResponseGate = new Promise((resolve) => { releaseSave = resolve; });
+  store.writeDraftText('saving-scope', 'private');
+  await vi.advanceTimersByTimeAsync(1_000);
+  store.resetChatDrafts();
+  serverDrafts = ['failed-scope', 'saving-scope'].map((scope) => ({ scope, text: 'new user' }));
+  await store.hydrateChatDrafts();
+  assert.equal(store.readDraftText('failed-scope'), 'new user');
+  assert.equal(store.readDraftText('saving-scope'), 'new user');
+  releaseSave();
+  await vi.advanceTimersByTimeAsync(0);
 });
 
 test('a failed hydrate keeps the mirrored draft rather than blanking the composer', async () => {
