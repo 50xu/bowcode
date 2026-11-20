@@ -19,7 +19,7 @@ import {
  * Curated Codex catalog shipped as immutable Bowcode defaults.
  *
  * Mirrors the `list`-visible entries of the model catalog bundled in the
- * `@openai/codex` CLI this package depends on (0.170): the CLI only carries
+ * `@openai/codex` CLI this package depends on (0.171): the CLI only carries
  * metadata — effort levels, context window, tool shape — for those slugs, and
  * a slug it does not know runs on fallback metadata that warns and quietly
  * downgrades unsupported efforts. GPT-5.4 and GPT-5.4 Mini left the bundled
