@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { CODEX_PREDEFINED_MODELS } from '@/modules/providers/list/codex/codex-models.provider.js';
 
@@ -60,4 +63,47 @@ test('bundles a Codex CLI new enough to know every listed model', () => {
   const { version } = require('@openai/codex/package.json') as { version: string };
   const [major, minor] = version.split('.').map(Number);
   assert.ok(major > 0 || minor >= 170, `bundled @openai/codex ${version} predates 0.170.0`);
+});
+
+test('curated catalog matches the model catalog bundled in the installed Codex CLI', () => {
+  // Guard the core-update process relies on: scripts/check-core-updates.mjs only
+  // compares slugs, so effort levels and default efforts could drift silently.
+  // On drift, update CODEX_PREDEFINED_MODELS from `codex debug models --bundled`.
+  // Labels, descriptions and option order are curated on purpose and not compared.
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+  const output = execFileSync(
+    path.join(repoRoot, 'node_modules', '.bin', 'codex'),
+    ['debug', 'models', '--bundled'],
+    { encoding: 'utf8', timeout: 60_000, maxBuffer: 64 * 1024 * 1024 },
+  );
+  const bundled = (
+    JSON.parse(output) as {
+      models: {
+        slug: string;
+        visibility: string;
+        priority: number;
+        default_reasoning_level: string;
+        supported_reasoning_levels: { effort: string }[];
+      }[];
+    }
+  ).models.filter((model) => model.visibility === 'list');
+
+  const curatedSlugs = CODEX_PREDEFINED_MODELS.OPTIONS.map((option) => option.value);
+  const bundledSlugs = bundled.map((model) => model.slug);
+  const missing = bundledSlugs.filter((slug) => !curatedSlugs.includes(slug));
+  const extra = curatedSlugs.filter((slug) => !bundledSlugs.includes(slug));
+  assert.deepEqual({ missing, extra }, { missing: [], extra: [] }, 'curated slugs differ from bundled list-visible slugs');
+
+  for (const model of bundled) {
+    const option = findCodexModel(model.slug);
+    assert.deepEqual(
+      option?.effort?.values.map((effort) => effort.value),
+      model.supported_reasoning_levels.map((level) => level.effort),
+      `${model.slug}: effort levels`,
+    );
+    assert.equal(option?.effort?.default, model.default_reasoning_level, `${model.slug}: default effort`);
+  }
+
+  const topPriority = [...bundled].sort((a, b) => a.priority - b.priority)[0];
+  assert.equal(CODEX_PREDEFINED_MODELS.DEFAULT, topPriority?.slug, 'default model is the lowest-priority bundled model');
 });
